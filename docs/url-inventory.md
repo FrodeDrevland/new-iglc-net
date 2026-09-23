@@ -38,6 +38,20 @@ The PDF links redirect to the full-text URL stored on each paper, which today po
 
 The old conference page also listed a ZIP of all papers (`papers-zipped` container) and full proceedings PDFs (`proceedings` container, files named `Proceedings-IGLC{number}*.pdf`). Not yet ported.
 
+## Crossref findings (inventory/crossref.csv, September 2026)
+
+1,340 DOIs are registered under 10.24928, all from 2017 (IGLC 25) to 2026 (IGLC 34). Papers from 1993 to 2016 have no DOIs.
+
+| Points to | DOIs | New site |
+| --- | --- | --- |
+| `http://iglc.net/Papers/Details/{id}` (paper IDs 1367 to 2595) | 1,213 | Redirects to `/papers/details/{id}` |
+| `http://iglc.net/Papers/Conference/{id}` (conference IDs 27 to 36, one per volume) | 10 | Redirects to `/papers/conference/{id}` |
+| `http://itc.scix.net/cgi-bin/works/Show?_id=lc3-2017-...` (DOIs `10.24928/jc3-2017/...`, all 2017) | 117 | Not on iglc.net; unaffected by the switch |
+
+- Every registered URL uses `http://iglc.net` with capitals. They all keep working through redirects, but should be updated to `https://www.iglc.net/papers/...` in a bulk Crossref update after the switch.
+- The 117 `jc3-2017` DOIs depend on itc.scix.net staying online. If those papers are also in the IGLC archive, they could be pointed to iglc.net instead.
+- No DOI is registered twice, and no two DOIs share a URL.
+
 ## Content pages (redirect to new Wagtail pages)
 
 The new pages must be created in the CMS with these slugs; until then the redirects lead to a 404.
