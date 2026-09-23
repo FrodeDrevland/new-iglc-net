@@ -214,8 +214,34 @@ def _urls_from(path: Path) -> list[str]:
         return [row[column] for row in reader if row.get(column)]
 
 
-def check(files: list[Path], base: str, out: Path, delay: float) -> int:
+def _check_one(url: str, base: str) -> dict:
+    parts = urllib.parse.urlsplit(url)
+    current = base + parts.path + (f"?{parts.query}" if parts.query else "")
+    chain = []
+    status = 0
+    for _ in range(6):
+        status, headers, _ = fetch(current, method="GET")
+        chain.append(f"{status} {current}")
+        location = headers.get("Location") if headers else None
+        if status in (301, 302, 303, 307, 308) and location:
+            current = urllib.parse.urljoin(current, location)
+            if urllib.parse.urlsplit(current).netloc != urllib.parse.urlsplit(base).netloc:
+                status = 200  # hands over to file storage or another host
+                chain.append(f"off site {current}")
+                break
+            continue
+        break
+    return {"old_url": url, "ok": status == 200, "final_status": status, "chain": " -> ".join(chain)}
+
+
+def check(files: list[Path], base: str, out: Path, workers: int) -> int:
+    from concurrent.futures import ThreadPoolExecutor
+
     base = base.rstrip("/")
+    if "//localhost" in base:
+        # On Windows "localhost" tries IPv6 first, and runserver only listens on IPv4:
+        # every request would wait about two seconds before falling back.
+        base = base.replace("//localhost", "//127.0.0.1")
     urls: list[str] = []
     for path in files:
         for url in _urls_from(path):
@@ -223,30 +249,16 @@ def check(files: list[Path], base: str, out: Path, delay: float) -> int:
             if parts.hostname in SITE_HOSTS and not _skip_fetch(url, NOT_CHECKED_PREFIXES):
                 urls.append(url)
     urls = list(dict.fromkeys(urls))
+    print(f"Checking {len(urls)} URLs against {base} with {workers} workers", file=sys.stderr)
 
-    rows, failures = [], 0
-    for url in urls:
-        parts = urllib.parse.urlsplit(url)
-        current = base + parts.path + (f"?{parts.query}" if parts.query else "")
-        chain = []
-        status = 0
-        for _ in range(6):
-            status, headers, _ = fetch(current, method="GET")
-            chain.append(f"{status} {current}")
-            location = headers.get("Location") if headers else None
-            if status in (301, 302, 303, 307, 308) and location:
-                current = urllib.parse.urljoin(current, location)
-                if urllib.parse.urlsplit(current).netloc != urllib.parse.urlsplit(base).netloc:
-                    status = 200  # hands over to file storage or another host
-                    chain.append(f"off site {current}")
-                    break
-                continue
-            break
-        ok = status == 200
-        failures += not ok
-        rows.append({"old_url": url, "ok": ok, "final_status": status, "chain": " -> ".join(chain)})
-        time.sleep(delay)
+    rows = []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for i, row in enumerate(pool.map(lambda u: _check_one(u, base), urls), 1):
+            rows.append(row)
+            if i % 250 == 0:
+                print(f"{i} of {len(urls)} checked", file=sys.stderr)
 
+    failures = sum(not row["ok"] for row in rows)
     _write_csv(out, rows, ["old_url", "ok", "final_status", "chain"])
     print(f"Checked {len(rows)} URLs: {len(rows) - failures} working, {failures} failing. Report: {out}",
           file=sys.stderr)
@@ -278,7 +290,7 @@ def main(argv: list[str] | None = None) -> int:
     p_check = sub.add_parser("check", help="check a new site against inventory files")
     p_check.add_argument("files", nargs="+", type=Path)
     p_check.add_argument("--base", required=True, help="for example http://localhost:8000")
-    p_check.add_argument("--delay", type=float, default=0.0)
+    p_check.add_argument("--workers", type=int, default=8, help="requests in parallel")
     p_check.add_argument("--out", type=Path, default=Path("inventory/check-report.csv"))
 
     args = parser.parse_args(argv)
@@ -286,7 +298,7 @@ def main(argv: list[str] | None = None) -> int:
         return crawl(args.start, args.max_pages, args.delay, args.out)
     if args.command == "crossref":
         return crossref(args.mailto, args.out)
-    return check(args.files, args.base, args.out, args.delay)
+    return check(args.files, args.base, args.out, args.workers)
 
 
 if __name__ == "__main__":
