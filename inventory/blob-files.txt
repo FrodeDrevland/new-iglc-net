@@ -1,0 +1,4 @@
+https://iglcstorage.blob.core.windows.net/proceedings/Proceedings-IGLC32.pdf
+https://iglcstorage.blob.core.windows.net/proceedings/Proceedings-IGLC33.pdf
+https://iglcstorage.blob.core.windows.net/papers-zipped/IGLC32_Papers.zip
+https://iglcstorage.blob.core.windows.net/papers-zipped/IGLC33_Papers.zip

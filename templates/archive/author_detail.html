@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ person.full_name }}{% endblock %}
+{% block admin_edit %}<a class="admin-edit" href="{% url 'admin:archive_authorperson_change' person.pk %}">Edit this author</a>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'archive:authors' %}">Authors</a></p>
+  <h1>{{ person.full_name }}</h1>
+  <p class="lead">{{ papers|length }} paper{{ papers|length|pluralize }}{% if conference_count > 1 %} at {{ conference_count }} conferences{% endif %}{% if first_year %}, {% if first_year == last_year %}{{ first_year }}{% else %}{{ first_year }}&ndash;{{ last_year }}{% endif %}{% endif %}.</p>
+  {% if person.orcid %}<p class="orcid">ORCID <a href="https://orcid.org/{{ person.orcid }}">{{ person.orcid }}</a></p>{% endif %}
+  {% if other_names %}<p class="also">Also published as {{ other_names|join:", " }}.</p>{% endif %}
+</div>
+<div class="author-layout">
+  <ol class="paper-list">
+    {% for paper in papers %}{% include "archive/_paper_item.html" with show_conference=True %}{% endfor %}
+  </ol>
+  {% if coauthors %}
+  <aside class="coauthors">
+    <h2>Co-authors</h2>
+    <ul>{% for c in coauthors %}<li><a href="{{ c.get_absolute_url }}">{{ c.full_name }}</a> <span title="joint papers">{{ c.joint }}</span></li>{% endfor %}</ul>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

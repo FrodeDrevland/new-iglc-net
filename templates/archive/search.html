@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load archive_tags %}
 {% block title %}{% if query %}{{ query }} | {% endif %}Search{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -7,16 +8,47 @@
   <form class="search-form" action="{% url 'archive:search' %}" method="get" role="search">
     <label for="q">Title, abstract, keyword or author</label>
     <div class="search-row">
-      <input id="q" name="q" type="search" value="{{ query }}">
+      <input id="q" name="q" type="search" value="{{ query }}" placeholder="for example: last planner, takt, Ballard">
       <button class="button" type="submit">Search</button>
     </div>
+    <div class="search-filters">
+      <label>From <select name="from"><option value="">any year</option>{% for y in years %}<option{% if y == year_from %} selected{% endif %}>{{ y }}</option>{% endfor %}</select></label>
+      <label>to <select name="to"><option value="">any year</option>{% for y in years %}<option{% if y == year_to %} selected{% endif %}>{{ y }}</option>{% endfor %}</select></label>
+      <label>Conference <select name="conference"><option value="">all</option>{% for c in conferences %}<option value="{{ c.number }}"{% if c.number == conference %} selected{% endif %}>IGLC {{ c.number }}{% if c.year %} ({{ c.year }}){% endif %}</option>{% endfor %}</select></label>
+      <label>Sort <select name="sort">{% for key, label in sorts %}<option value="{{ key }}"{% if key == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    </div>
   </form>
+  <p class="search-help">Words are matched in any order, and <em>planning</em> also finds <em>planned</em>. Use "quotes" for a phrase and -word to leave a word out.</p>
 </div>
-{% if query %}
-  <p style="margin-top:1.5rem"><strong>{{ papers|length }}</strong> paper{{ papers|length|pluralize }} found for &ldquo;{{ query }}&rdquo;.
-  {% if papers %}Export as <a href="{% url 'archive:export_search_bibtex' %}?query={{ query|urlencode }}" rel="nofollow">BibTeX</a> or <a href="{% url 'archive:export_search_ris' %}?query={{ query|urlencode }}" rel="nofollow">RIS</a>.{% endif %}</p>
-  <ol class="paper-list">
-    {% for paper in papers %}{% include "archive/_paper_item.html" with show_conference=True %}{% endfor %}
+
+{% if authors %}
+<section class="author-hits">
+  <h2>Authors</h2>
+  <ul>{% for person in authors %}<li><a href="{{ person.get_absolute_url }}">{{ person.full_name }}</a> <span>{{ person.paper_count }} paper{{ person.paper_count|pluralize }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if searched %}
+  <p class="result-count"><strong>{{ page.paginator.count }}</strong> paper{{ page.paginator.count|pluralize }} found{% if query %} for &ldquo;{{ query }}&rdquo;{% endif %}.
+  {% if page.paginator.count %}Export as <a href="{% url 'archive:export_search_bibtex' %}?{{ query_string }}" rel="nofollow">BibTeX</a> or <a href="{% url 'archive:export_search_ris' %}?{{ query_string }}" rel="nofollow">RIS</a>.{% endif %}</p>
+  <ol class="paper-list search-results">
+    {% for paper in page.object_list %}
+    <li>
+      <span class="pp">{{ paper.year }}</span>
+      <div>
+        <a class="title" href="{{ paper.get_absolute_url }}">{{ paper.title|highlight:query }}</a>
+        <div class="meta">{{ paper.full_author_string|highlight:query }} &middot; IGLC {{ paper.conference.number }}{% if paper.full_text_url %} &middot; <a href="{% url 'archive:paper_pdf' paper.pk %}" title="Download the paper">PDF</a>{% endif %}{% if paper.presentation_url %} &middot; <a href="{% url 'archive:paper_presentation' paper.pk %}" title="Download the presentation">Slides</a>{% endif %}</div>
+        {% if query and paper.abstract %}<p class="snippet">{{ paper.abstract|snippet:query }}</p>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
   </ol>
+  {% if page.has_other_pages %}
+  <nav class="pager" aria-label="Result pages">
+    {% if page.has_previous %}<a href="?{{ query_string }}&amp;page={{ page.previous_page_number }}" rel="prev">&larr; Previous</a>{% endif %}
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?{{ query_string }}&amp;page={{ page.next_page_number }}" rel="next">Next &rarr;</a>{% endif %}
+  </nav>
+  {% endif %}
 {% endif %}
 {% endblock %}

@@ -16,6 +16,8 @@ urlpatterns = [
     re_path(rf"^papers/details/{ID}/pdf/?$", views.paper_pdf, name="paper_pdf"),
     re_path(rf"^papers/details/{ID}/presentation/?$", views.paper_presentation, name="paper_presentation"),
     re_path(r"^papers/search/?$", views.search, name="search"),
+    re_path(r"^authors/?$", views.author_list, name="authors"),
+    re_path(rf"^authors/{ID}/?$", views.author_detail, name="author"),
     re_path(r"^papers/findbyconftoolid(?:/(?P<conftool_id>[\w-]+))?/?$", views.find_by_conftool_id,
             name="find_by_conftool_id"),
     # Exports, with the old action names

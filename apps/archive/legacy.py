@@ -50,6 +50,8 @@ STATIC_REDIRECTS = {
     "/papers/index": "/papers",
     "/index/papers": "/papers",  # broken link on the old Proceedings page
     "/errors/error404": "/",
+    "/authors/index": "/authors/",
+    "/authors/createorassignauthorpersons": "/manage/",
 }
 
 # Old areas that need a login are replaced by the new admin.
@@ -57,7 +59,6 @@ PREFIX_REDIRECTS = [
     ("/admin", "/cms/"),
     ("/account", "/cms/login/"),
     ("/datapunching", "/manage/"),
-    ("/authors", "/manage/"),
 ]
 
 # Old path that took ?id= -> new path.

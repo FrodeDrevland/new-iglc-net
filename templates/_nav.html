@@ -16,6 +16,7 @@
     <li class="has-sub{% if nav_section == 'community' or nav_section == 'links' %} current{% endif %}">
       <a href="/community/">Community</a>
       <ul>
+        <li><a href="{% url 'archive:authors' %}">Authors</a></li>
         <li><a href="{% url 'archive:links' %}">Links</a></li>
         <li><a href="/community/coaching/">Coaching</a></li>
         <li><a href="/community/mailing-list/">Mailing list</a></li>

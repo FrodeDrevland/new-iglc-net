@@ -1,13 +1,16 @@
 from datetime import date
 
 from django.conf import settings
-from django.db.models import Count, Prefetch, Q
+from django.core.paginator import Paginator
+from django.db.models import Count, Max, Min, Prefetch, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
 from . import citations, exports
-from .models import Author, Conference, LinkCategory, Paper
+from .models import Author, AuthorPerson, Conference, LinkCategory, Paper
+from .management.commands.group_authors import fold
+from .search import SORTS, matching_authors, search_papers
 
 
 def _papers():
@@ -85,21 +88,98 @@ def paper_presentation(request, pk):
     return redirect(paper.presentation_url)
 
 
-def _search(query: str):
-    if not query:
-        return Paper.objects.none()
-    match = (
-        Q(title__icontains=query) | Q(abstract__icontains=query) | Q(keywords__icontains=query)
-        | Q(authors__last_name__icontains=query) | Q(authors__first_name__icontains=query)
-    )
-    ids = Paper.objects.filter(match, conference__is_published=True).values("pk")
-    return _papers().filter(pk__in=ids).order_by("-conference__number", "first_page", "title")
+def _int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _search_params(request):
+    data = request.GET
+    sort = data.get("sort", "relevance")
+    return {
+        "query": (data.get("q") or data.get("query") or request.POST.get("query") or "").strip()[:200],
+        "year_from": _int(data.get("from")),
+        "year_to": _int(data.get("to")),
+        "conference": _int(data.get("conference")),
+        "sort": sort if sort in SORTS else "relevance",
+    }
 
 
 @csrf_exempt  # read-only; the old site's search form posted here
 def search(request):
-    query = (request.GET.get("q") or request.POST.get("query") or "").strip()
-    return render(request, "archive/search.html", {"query": query, "papers": _search(query)})
+    params = _search_params(request)
+    searched = bool(params["query"] or params["year_from"] or params["year_to"] or params["conference"])
+    page = None
+    if searched:
+        ids = list(search_papers(**params).values_list("pk", flat=True))
+        page = Paginator(ids, 25).get_page(request.GET.get("page"))
+        by_id = _papers().in_bulk(list(page.object_list))
+        page.object_list = [by_id[pk] for pk in page.object_list if pk in by_id]
+    query_string = request.GET.copy()
+    query_string.pop("page", None)
+    if params["query"] and "q" not in query_string:
+        query_string["q"] = params["query"]
+    years = Conference.objects.filter(is_published=True).exclude(start_date=None).aggregate(
+        first=Min("start_date__year"), last=Max("start_date__year"))
+    return render(request, "archive/search.html", {
+        **params,
+        "searched": searched,
+        "page": page,
+        "query_string": query_string.urlencode(),
+        "authors": matching_authors(params["query"]) if params["query"] and (not page or page.number == 1) else [],
+        "conferences": Conference.objects.filter(is_published=True).order_by("-number"),
+        "years": range(years["last"] or date.today().year, (years["first"] or 1993) - 1, -1),
+        "sorts": [("relevance", "Relevance"), ("newest", "Newest first"), ("oldest", "Oldest first")],
+    })
+
+
+def _initial(name):
+    folded = fold(name)
+    return folded[0].upper() if folded[:1].isalpha() else ""
+
+
+def author_list(request):
+    people = AuthorPerson.objects.annotate(paper_count=Count("authorships__paper", distinct=True)).filter(
+        paper_count__gt=0)
+    query = (request.GET.get("q") or "").strip()[:100]
+    letter = (request.GET.get("letter") or "").strip()[:1].upper()
+    if query:
+        people = matching_authors(query, limit=500)
+    elif letter:
+        # Letters are compared without accents, so Ø and Ö are listed under O.
+        people = sorted((p for p in people if _initial(p.last_name) == letter), key=lambda p: fold(p.last_name))
+    else:
+        people = people.order_by("-paper_count", "last_name")[:60]
+    letters = sorted({_initial(name) for name in AuthorPerson.objects.values_list("last_name", flat=True)} - {""})
+    return render(request, "archive/author_list.html", {
+        "people": people, "query": query, "letter": letter, "letters": letters,
+        "person_count": AuthorPerson.objects.filter(authorships__isnull=False).distinct().count(),
+    })
+
+
+def author_detail(request, pk):
+    person = get_object_or_404(AuthorPerson, pk=pk)
+    papers = list(_papers().filter(authors__person=person, conference__is_published=True).distinct().order_by(
+        "-conference__number", "first_page"))
+    coauthors = (
+        AuthorPerson.objects.filter(authorships__paper__in=[p.pk for p in papers]).exclude(pk=person.pk)
+        .annotate(joint=Count("authorships__paper", distinct=True)).order_by("-joint", "last_name")[:12]
+    )
+    names = (Author.objects.filter(person=person).values("first_name", "last_name")
+             .annotate(n=Count("pk")).order_by("-n"))
+    variants = [f"{n['first_name']} {n['last_name']}".strip() for n in names]
+    years = [p.year for p in papers if p.year]
+    return render(request, "archive/author_detail.html", {
+        "person": person,
+        "papers": papers,
+        "coauthors": coauthors,
+        "other_names": [v for v in variants if v != person.full_name],
+        "first_year": min(years) if years else None,
+        "last_year": max(years) if years else None,
+        "conference_count": len({p.conference_id for p in papers}),
+    })
 
 
 def find_by_conftool_id(request, conftool_id=None):
@@ -134,7 +214,13 @@ def export_conference(request, pk, fmt):
 
 
 def export_search(request, fmt):
-    return _export(_search((request.GET.get("query") or request.GET.get("q") or "").strip()), "IGLC-search", fmt)
+    params = _search_params(request)
+    if not (params["query"] or params["year_from"] or params["year_to"] or params["conference"]):
+        return HttpResponseBadRequest("Nothing to export: give a search.")
+    ids = list(search_papers(**params).values_list("pk", flat=True)[:5000])
+    order = {pk: i for i, pk in enumerate(ids)}
+    papers = sorted(_papers().filter(pk__in=ids), key=lambda p: order[p.pk])
+    return _export(papers, "IGLC-search", fmt)
 
 
 def export_complete(request, fmt):

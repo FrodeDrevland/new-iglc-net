@@ -225,3 +225,29 @@ aside .facts dt { font-size: .82rem; text-transform: uppercase; letter-spacing: 
 .admin-bar-logout button { background: none; border: 0; color: #cfd6e0; font: inherit; cursor: pointer; padding: 0; }
 .admin-bar-logout button:hover { color: var(--white); text-decoration: underline; }
 .cite .copy { padding: .25rem .75rem; font-size: .85rem; }
+
+/* Search and author pages */
+.search-filters { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-top: .75rem; font-size: .92rem; }
+.search-filters label { display: inline-flex; align-items: center; gap: .35rem; font-weight: 400; margin: 0; }
+.search-filters select { font: inherit; padding: .3rem .4rem; border: 1px solid var(--line); border-radius: 4px; background: #fff; max-width: 12rem; }
+.search-help { font-size: .88rem; color: var(--muted); margin-top: .6rem; }
+.result-count { margin-top: 1.5rem; }
+mark { background: #fbe7d3; color: inherit; padding: 0 .1em; border-radius: 2px; }
+.snippet { font-size: .9rem; color: var(--muted); margin: .25rem 0 0; line-height: 1.45; }
+.pager { display: flex; gap: 1.25rem; align-items: center; justify-content: center; margin: 1.5rem 0; }
+.author-hits { margin-top: 1.5rem; padding: .75rem 1rem; border-left: 3px solid var(--orange); background: var(--soft); }
+.author-hits h2 { font-size: 1rem; margin: 0 0 .4rem; }
+.author-hits ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem 1.25rem; }
+.author-hits span, .author-list span, .coauthors span { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.letters { display: flex; flex-wrap: wrap; gap: .15rem; margin-top: 1rem; }
+.letters a { display: inline-block; min-width: 1.9rem; text-align: center; padding: .25rem 0; text-decoration: none; border-radius: 4px; }
+.letters a:hover, .letters a[aria-current] { background: var(--blue); color: #fff; }
+.list-heading { font-size: 1.15rem; margin-top: 1.75rem; }
+.author-list { list-style: none; padding: 0; columns: 3 14rem; column-gap: 2rem; }
+.author-list li { padding: .2rem 0; break-inside: avoid; }
+.author-layout { display: grid; grid-template-columns: minmax(0, 1fr) 15rem; gap: 2.5rem; margin-top: 1.5rem; }
+.coauthors h2 { font-size: 1rem; margin: .6rem 0 .5rem; }
+.coauthors ul { list-style: none; padding: 0; margin: 0; }
+.coauthors li { padding: .25rem 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: .5rem; }
+.orcid, .also { color: var(--muted); font-size: .92rem; margin: .25rem 0; }
+@media (max-width: 50rem) { .author-layout { grid-template-columns: 1fr; } }

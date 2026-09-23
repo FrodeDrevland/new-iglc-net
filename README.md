@@ -12,7 +12,7 @@ Phase 1 (rebuild the foundation) is under way. See `todo.md`.
 
 What works so far:
 
-- The proceedings archive: conference list, conference pages, paper pages with Google Scholar metadata, PDF and presentation links, search, and BibTeX and RIS exports.
+- The proceedings archive: conference list, conference pages, paper pages with Google Scholar metadata, PDF and presentation links, ranked search with filters, author pages, and BibTeX and RIS exports. After importing papers, run `python manage.py group_authors` to build the author pages.
 - Every old URL pattern redirects to its new address, and paper and conference URLs keep their paths (`docs/url-inventory.md`).
 - Django admin for the archive at `/manage/`, and Wagtail for content pages at `/cms/`.
 - A script to inventory the live site and the Crossref-registered URLs, and to check the new site against them (`tools/url_inventory.py`).

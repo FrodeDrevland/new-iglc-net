@@ -48,6 +48,10 @@ class Command(BaseCommand):
                 for sql in connection.ops.sequence_reset_sql(no_style(), [model for model, _ in MODELS]):
                     cursor.execute(sql)
 
+            from apps.archive.signals import refresh_all_authors_text
+
+            refresh_all_authors_text()
+
             problems = [
                 f"{model.__name__}: expected {len(getattr(data, key))}, found {model.objects.count()}"
                 for model, key in MODELS if model.objects.count() != len(getattr(data, key))

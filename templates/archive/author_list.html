@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{% if letter %}{{ letter }} | {% endif %}Authors{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="kicker">Archive</p>
+  <h1>Authors</h1>
+  <p class="lead">{{ person_count|floatformat:"0g" }} people have written for the IGLC proceedings.</p>
+  <form class="search-form" action="{% url 'archive:authors' %}" method="get" role="search">
+    <label for="q">Find an author</label>
+    <div class="search-row">
+      <input id="q" name="q" type="search" value="{{ query }}">
+      <button class="button" type="submit">Find</button>
+    </div>
+  </form>
+  <nav class="letters" aria-label="By last name">{% for l in letters %}<a href="?letter={{ l }}"{% if l == letter %} aria-current="page"{% endif %}>{{ l }}</a>{% endfor %}</nav>
+</div>
+<h2 class="list-heading">{% if query %}Authors matching &ldquo;{{ query }}&rdquo;{% elif letter %}Last names starting with {{ letter }}{% else %}Most published{% endif %}</h2>
+<ul class="author-list">
+  {% for person in people %}
+  <li><a href="{{ person.get_absolute_url }}">{{ person.last_name }}{% if person.first_name %}, {{ person.first_name }}{% endif %}</a> <span>{{ person.paper_count }}</span></li>
+  {% empty %}
+  <li>No authors found.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

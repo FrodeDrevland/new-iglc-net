@@ -20,8 +20,9 @@
 - [x] Full proceedings PDFs and ZIP downloads on conference pages (`link_blob_files`)
 - [ ] Run `link_blob_files` and `link_full_proceedings` (docs/content-files.md), locally and on the preview
 - [ ] Crossref deposit XML export in the new site, needed by July 2027 (IGLC 35 deposits); until then the old admin is used
-- [ ] Postgres full-text search for the archive
-- [ ] Author pages (AuthorPerson) with ORCID
+- [x] Search: Postgres full-text search with ranking, year and conference filters, highlighting, paging
+- [x] Author pages (AuthorPerson) with ORCID, co-authors; `group_authors` command and admin merge
+- [ ] Review author grouping in the admin (merge "G. Ballard" style variants)
 - [x] CMS content ported to Wagtail pages (`import_legacy_pages`)
 - [x] Links page generated from the link database (`/links/`)
 - [ ] Review the imported pages; some are out of date (IGLC33 templates, the 34th conference page)

@@ -126,6 +126,13 @@ class AuthorPerson(models.Model):
     def __str__(self):
         return f"{self.last_name}, {self.first_name}".strip(", ")
 
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
+
+    def get_absolute_url(self):
+        return reverse("archive:author", args=[self.pk])
+
 
 class Paper(EditTracking):
     class Status(models.IntegerChoices):
@@ -151,6 +158,10 @@ class Paper(EditTracking):
     a3_url = models.URLField("A3 URL", max_length=1000, blank=True)
     presentation_url = models.URLField(max_length=1000, blank=True)
     status = models.IntegerField(choices=Status.choices, default=Status.NEW)
+    authors_text = models.TextField(
+        blank=True, editable=False,
+        help_text="All author names, kept up to date automatically, used by search.",
+    )
 
     class Meta:
         ordering = ["conference", models.F("first_page").asc(nulls_last=True), "title"]
@@ -195,6 +206,11 @@ class Paper(EditTracking):
         if len(names) == 1:
             return names[0]
         return f"{', '.join(names[:-1])} and {names[-1]}"
+
+    def refresh_authors_text(self, save=True):
+        self.authors_text = " ".join(f"{a.first_name} {a.last_name}" for a in self.authors.all())
+        if save:
+            Paper.objects.filter(pk=self.pk).update(authors_text=self.authors_text)
 
     def file_name(self):
         """Friendly PDF file name, for example 'Smith et al. 2024 - Title'."""

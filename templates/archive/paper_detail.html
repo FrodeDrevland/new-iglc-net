@@ -23,7 +23,7 @@
     <p class="kicker">IGLC {{ paper.conference.number }}{% if paper.conference.location %} &middot; {{ paper.conference.location }}{% endif %}{% if paper.year %} &middot; {{ paper.year }}{% endif %}</p>
     <h1>{{ paper.title }}</h1>
     <ul class="authors">
-      {% for author in paper.authors.all %}<li>{{ author.first_name }} {{ author.last_name }}{% if author.title_and_contact %}<sup>{{ forloop.counter }}</sup>{% endif %}</li>{% endfor %}
+      {% for author in paper.authors.all %}<li>{% if author.person_id %}<a href="{% url 'archive:author' author.person_id %}">{{ author.first_name }} {{ author.last_name }}</a>{% else %}{{ author.first_name }} {{ author.last_name }}{% endif %}{% if author.title_and_contact %}<sup>{{ forloop.counter }}</sup>{% endif %}</li>{% endfor %}
     </ul>
     <ol class="affiliations">
       {% for author in paper.authors.all %}{% if author.title_and_contact %}<li value="{{ forloop.counter }}">{{ author.title_and_contact|linebreaksbr }}</li>{% endif %}{% endfor %}

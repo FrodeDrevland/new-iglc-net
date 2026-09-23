@@ -51,7 +51,7 @@ class PaperPagesTests(ArchiveTestCase):
 
     def test_old_search_form_post(self):
         response = self.client.post("/papers/search", {"query": "takt"})
-        self.assertContains(response, "Takt Planning in Practice")
+        self.assertContains(response, "<mark>Takt</mark> Planning in Practice")
 
     def test_exports(self):
         bib = self.client.get("/papers/exportbibtex/2150").content.decode()
@@ -224,3 +224,105 @@ class FullProceedingsTests(ArchiveTestCase):
         files = list(self.conference.proceedings_files.all())
         self.assertEqual([(f.label, f.url) for f in files],
                          [("Full proceedings", "https://store.example.net/content/Proceedings/IGLC-2022%20Proceedings.pdf")])
+
+
+class SearchTests(ArchiveTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.other = Paper.objects.create(
+            pk=2151, conference=cls.conference, title="Flow in Design Management",
+            abstract="We studied how takt time changes design work.", keywords="design", first_page=30,
+        )
+        Author.objects.create(paper=cls.other, first_name="Dee", last_name="Brown", order=1)
+
+    def test_authors_text_follows_authors(self):
+        self.paper.refresh_from_db()
+        self.assertEqual(self.paper.authors_text, "Ann Smith Bo Jones Cy Lee")
+        Author.objects.filter(paper=self.paper, last_name="Lee").delete()
+        self.paper.refresh_from_db()
+        self.assertEqual(self.paper.authors_text, "Ann Smith Bo Jones")
+
+    def test_all_words_must_match_and_title_ranks_first(self):
+        from .search import search_papers
+
+        self.assertEqual(list(search_papers("takt").values_list("pk", flat=True)), [2150, 2151])
+        self.assertEqual(list(search_papers("takt design").values_list("pk", flat=True)), [2151])
+        self.assertEqual(list(search_papers("Brown takt").values_list("pk", flat=True)), [2151])
+
+    def test_filters(self):
+        response = self.client.get("/papers/search", {"q": "takt", "from": 2023})
+        self.assertContains(response, "<strong>0</strong> papers found")
+        response = self.client.get("/papers/search", {"conference": 30})
+        self.assertContains(response, "<strong>2</strong> papers found")
+
+    def test_highlight_escapes(self):
+        from .templatetags.archive_tags import highlight, snippet
+
+        self.assertEqual(highlight("<b>Takt</b> planning", "plan"), "&lt;b&gt;Takt&lt;/b&gt; <mark>plan</mark>ning")
+        self.assertIn("<mark>takt</mark>", snippet("x " * 300 + "takt time " + "y " * 300, "takt"))
+
+    def test_search_page_shows_snippet_and_export_keeps_filters(self):
+        response = self.client.get("/papers/search", {"q": "takt", "sort": "oldest"})
+        self.assertContains(response, "<mark>takt</mark> time")
+        self.assertContains(response, "exportsearchbibtex?q=takt&amp;sort=oldest")
+        bib = self.client.get("/papers/exportsearchbibtex", {"q": "design takt"}).content.decode()
+        self.assertIn("Flow in Design Management", bib)
+        self.assertNotIn("Takt Planning in Practice", bib)
+
+    def test_pagination(self):
+        for i in range(30):
+            Paper.objects.create(conference=self.conference, title=f"Lean paper {i}", first_page=100 + i)
+        response = self.client.get("/papers/search", {"q": "lean", "page": 2})
+        self.assertContains(response, "Page 2 of 2")
+
+
+class AuthorPageTests(ArchiveTestCase):
+    def setUp(self):
+        from django.core.management import call_command
+
+        second = Paper.objects.create(conference=self.conference, title="Second Paper", first_page=50)
+        Author.objects.create(paper=second, first_name="ann", last_name="Smith", order=1,
+                              title_and_contact="Uni X, ann@example.org, ORCID 0000-0002-1825-0097")
+        Author.objects.create(paper=second, first_name="Bo", last_name="Jones", order=2)
+        call_command("group_authors", stdout=__import__("io").StringIO())
+
+    def test_group_authors(self):
+        from .models import AuthorPerson
+
+        smith = AuthorPerson.objects.get(last_name="Smith")
+        self.assertEqual(smith.authorships.count(), 2)
+        self.assertEqual(smith.orcid, "0000-0002-1825-0097")
+        self.assertEqual(AuthorPerson.objects.count(), 3)
+
+    def test_author_page(self):
+        from .models import AuthorPerson
+
+        smith = AuthorPerson.objects.get(last_name="Smith")
+        response = self.client.get(f"/authors/{smith.pk}")
+        self.assertContains(response, "Takt Planning in Practice")
+        self.assertContains(response, "Second Paper")
+        self.assertContains(response, "https://orcid.org/0000-0002-1825-0097")
+        self.assertContains(response, "Bo Jones</a> <span title=\"joint papers\">2</span>")
+        self.assertContains(self.client.get("/papers/details/2150"), f'href="/authors/{smith.pk}"')
+
+    def test_author_index_and_search_hint(self):
+        self.assertContains(self.client.get("/authors/"), "Smith, Ann")
+        self.assertContains(self.client.get("/authors/", {"letter": "J"}), "Jones, Bo")
+        self.assertContains(self.client.get("/papers/search", {"q": "jones"}), 'class="author-hits"')
+
+    def test_old_author_admin_paths(self):
+        self.assertEqual(legacy_target("/Authors/CreateOrAssignAuthorPersons", {}), "/manage/")
+        self.assertIsNone(legacy_target("/authors/12", {}))
+
+    def test_merge_action(self):
+        from django.contrib.auth.models import User
+
+        from .models import AuthorPerson
+
+        User.objects.create_superuser("admin", "a@example.org", "pw")
+        self.client.login(username="admin", password="pw")
+        ids = list(AuthorPerson.objects.filter(last_name__in=["Smith", "Lee"]).values_list("pk", flat=True))
+        self.client.post("/manage/archive/authorperson/", {"action": "merge_people", "_selected_action": ids})
+        self.assertEqual(AuthorPerson.objects.count(), 2)
+        self.assertEqual(AuthorPerson.objects.get(last_name="Smith").authorships.count(), 3)
