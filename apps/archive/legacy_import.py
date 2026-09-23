@@ -143,6 +143,9 @@ def load(path) -> ImportData:
             "title_and_contact": text(a["TitleAndContact"]), "order": a["AuthorNumber"],
         })
 
+    renumber(data.authors, "paper_id", "Author", data.notes)
+    renumber(data.editors, "conference_id", "Editor", data.notes)
+
     for c in rows["LinkCategories"]:
         data.link_categories.append({
             "pk": c["LinkCategoryID"], "name": text(c["Name"]), "description": text(c["Description"]),
@@ -154,6 +157,27 @@ def load(path) -> ImportData:
             "url": text(link["Url"]), "description": text(link["Description"]), "sort_order": link["SortOrder"],
         })
     return data
+
+
+def renumber(rows: list[dict], parent_key: str, label: str, notes: list[str]) -> None:
+    """Number authors (or editors) 1, 2, 3 ... within each paper (or conference), in their old order.
+
+    The old data has missing and negative numbers (one author numbered -1 before 2 and 3);
+    rows without a number keep their place after the numbered ones, in ID order.
+    """
+    groups: dict[int, list[dict]] = {}
+    for row in rows:
+        groups.setdefault(row[parent_key], []).append(row)
+    changed = 0
+    for group in groups.values():
+        group.sort(key=lambda r: (r["order"] is None, r["order"] or 0, r["pk"]))
+        for position, row in enumerate(group, 1):
+            if row["order"] is not None and row["order"] < 1:
+                notes.append(f"{label} {row['pk']}: number {row['order']} changed to {position}")
+            changed += row["order"] != position
+            row["order"] = position
+    if changed:
+        notes.append(f"{label}s renumbered 1, 2, 3 ... per {parent_key.removesuffix('_id')}: {changed} numbers changed")
 
 
 def summary(data: ImportData) -> str:

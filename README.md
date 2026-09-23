@@ -19,19 +19,17 @@ What works so far:
 
 ## Run it locally (Windows, PowerShell)
 
-Requires Python 3.12 (3.10 or later works).
+Requires Python 3.10 or later. Calling the virtual environment's own `python` avoids mixing up several Python installations.
 
 ```powershell
-py -3.12 -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
 copy .env.example .env
-python manage.py makemigrations archive pages   # first time only; commit the new migration files
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py import_legacy inventory\<export>.bacpac   # the real archive (or load_demo_data for fictional data)
-python manage.py test apps
-python manage.py runserver
+.venv\Scripts\python manage.py migrate
+.venv\Scripts\python manage.py test apps
+.venv\Scripts\python manage.py import_legacy inventory\iglc_db-2026-9-23-18-7.bacpac --replace   # or load_demo_data
+.venv\Scripts\python manage.py createsuperuser
+.venv\Scripts\python manage.py runserver
 ```
 
 Then open http://localhost:8000, the archive admin at http://localhost:8000/manage/ and the CMS at http://localhost:8000/cms/.
