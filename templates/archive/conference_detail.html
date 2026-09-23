@@ -20,8 +20,35 @@
 </section>
 {% endblock %}
 {% block content %}
-<h2 style="margin-top:0">{{ papers|length }} paper{{ papers|length|pluralize }}</h2>
-<ol class="paper-list">
+<div class="list-head">
+  <h2>{{ papers|length }} paper{{ papers|length|pluralize }}</h2>
+  <div class="filter">
+    <label for="filter" class="visually-hidden">Filter the list</label>
+    <input id="filter" type="search" placeholder="Filter by title or author" autocomplete="off">
+    <span id="filter-count" class="muted small" role="status"></span>
+  </div>
+</div>
+<ol class="paper-list" id="papers">
   {% for paper in papers %}{% include "archive/_paper_item.html" %}{% endfor %}
 </ol>
+{% endblock %}
+{% block scripts %}
+<script>
+  (function () {
+    var input = document.getElementById("filter");
+    var rows = Array.prototype.slice.call(document.querySelectorAll("#papers > li"));
+    var count = document.getElementById("filter-count");
+    var texts = rows.map(function (row) { return row.textContent.toLowerCase(); });
+    input.addEventListener("input", function () {
+      var words = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+      var shown = 0;
+      rows.forEach(function (row, i) {
+        var match = words.every(function (w) { return texts[i].indexOf(w) !== -1; });
+        row.hidden = !match;
+        shown += match;
+      });
+      count.textContent = words.length ? shown + " of " + rows.length + " shown" : "";
+    });
+  })();
+</script>
 {% endblock %}

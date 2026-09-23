@@ -123,12 +123,23 @@ main { padding-bottom: 4rem; }
 
 /* Paper and search lists */
 .paper-list { list-style: none; padding: 0; margin: 0; }
-.paper-list li { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: 1rem; padding: .9rem 0; border-bottom: 1px solid var(--line); }
+.paper-list li { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto; gap: 1rem; padding: .9rem 0; border-bottom: 1px solid var(--line); }
+.paper-list li[hidden] { display: none; }
+.paper-list .files { display: flex; gap: .4rem; align-items: flex-start; padding-top: .1rem; }
+.paper-list .files a { font-size: .8rem; font-weight: 700; letter-spacing: .04em; padding: .2rem .5rem; border: 1px solid var(--line); border-radius: 4px; text-decoration: none; }
+.paper-list .files a:hover { border-color: var(--blue); background: var(--blue-tint); }
+.paper-no { font-weight: 700; color: var(--orange-text); margin-right: .6rem; }
+.list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; margin-bottom: .5rem; }
+.list-head h2 { margin: 0; }
+.filter { display: flex; align-items: center; gap: .75rem; flex: 1; max-width: 30rem; }
+.filter input { flex: 1; min-width: 0; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+.filter input:focus { border-color: var(--blue); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .paper-list .pp { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; padding-top: .2rem; }
 .paper-list .title { font-weight: 600; text-decoration: none; }
 .paper-list .title:hover { text-decoration: underline; }
 .paper-list .meta { font-size: .92rem; color: var(--muted); margin-top: .15rem; }
-@media (max-width: 36rem) { .paper-list li { grid-template-columns: 1fr; gap: .1rem; } }
+@media (max-width: 36rem) { .paper-list li { grid-template-columns: 1fr; gap: .1rem; } .paper-list .files { padding-top: .4rem; } }
 
 /* Paper page */
 .paper-layout { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: 3rem; align-items: start; }

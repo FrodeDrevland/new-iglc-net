@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.conf import settings
 from django.db.models import Count, Prefetch, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
@@ -37,7 +39,23 @@ def conference_list(request):
 def conference_detail(request, pk):
     conference = get_object_or_404(Conference.objects.prefetch_related("editors", "volumes"), pk=pk)
     papers = _papers().filter(conference=conference)
-    return render(request, "archive/conference_detail.html", {"conference": conference, "papers": papers})
+    return render(request, "archive/conference_detail.html", {
+        "conference": conference,
+        "papers": papers,
+        "show_paper_numbers": _show_paper_numbers(conference),
+    })
+
+
+def _show_paper_numbers(conference) -> bool:
+    """During the conference and one month after, show each paper's number (the end of its DOI),
+    which the programme uses to refer to papers. As on the old site."""
+    end = conference.end_date
+    if not end:
+        return False
+    month, year = (end.month % 12) + 1, end.year + (end.month == 12)
+    day = min(end.day, [31, 29 if year % 4 == 0 and (year % 100 or year % 400 == 0) else 28,
+                        31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+    return date.today() < end.replace(year=year, month=month, day=day)
 
 
 def paper_detail(request, pk):
