@@ -24,6 +24,7 @@
 - [ ] Review the imported pages; some are out of date (IGLC33 templates, the 34th conference page)
 - [ ] New visual design
 - [x] Preview deployment files for Unraid behind SWAG (`docs/deploy-unraid.md`)
-- [ ] Deploy the preview at https://iglc.drevland.net
+- [x] Deploy the preview at https://iglc.drevland.net
+- [ ] Mailing list sign-up form (Sender.net) does not appear on the preview; check the form's allowed domains in Sender, or replace it in phase 4
 - [ ] Production hosting decision (IGLC-controlled)
 - [ ] Working version to show before switch-over
