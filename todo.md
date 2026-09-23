@@ -8,8 +8,10 @@
 - [x] Old-URL redirects and exports
 - [ ] First local run: `makemigrations`, `migrate`, `test`; commit the migrations
 - [ ] Repository on GitHub
-- [ ] Get a copy of the production database (SQL Server on Azure) for the migration script
-- [ ] Repeatable migration script from SQL Server to Postgres, keeping IDs, with automatic checks
+- [x] Get a copy of the production database (.bacpac in inventory/, not in Git)
+- [x] Repeatable import from the .bacpac, keeping IDs, with count checks (`import_legacy`)
+- [ ] Decide what to do with the 4,760 old user accounts (only 1 admin and 26 punchers have roles; none are imported)
+- [ ] Fix page ranges of papers 1647 and 1978 (first page after last page)
 - [ ] Full proceedings PDFs and ZIP downloads on conference pages (blob containers `proceedings` and `papers-zipped`)
 - [ ] Postgres full-text search for the archive
 - [ ] Author pages (AuthorPerson) with ORCID

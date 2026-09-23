@@ -29,7 +29,7 @@ copy .env.example .env
 python manage.py makemigrations archive pages   # first time only; commit the new migration files
 python manage.py migrate
 python manage.py createsuperuser
-python manage.py load_demo_data                 # fictional conferences 901 and 902
+python manage.py import_legacy inventory\<export>.bacpac   # the real archive (or load_demo_data for fictional data)
 python manage.py test apps
 python manage.py runserver
 ```
