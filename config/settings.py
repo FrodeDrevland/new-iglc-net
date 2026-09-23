@@ -5,6 +5,7 @@ A `.env` file in the project root is read at start-up (see `.env.example`).
 
 import os
 import sys
+from email.utils import parseaddr
 from pathlib import Path
 
 import dj_database_url
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     "apps.archive",
     "apps.pages",
     "apps.governance",
+    "apps.core",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -69,7 +71,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "apps.core.middleware.HealthCheckMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "apps.core.middleware.HostRedirectMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "apps.archive.legacy.LegacyUrlMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -127,6 +131,20 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
+# In production, uploaded images and documents go to a blob container (App Service does not
+# keep files written in the container). The container allows anonymous read of blobs, like
+# the ones holding the papers.
+AZURE_STORAGE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
+if AZURE_STORAGE_CONNECTION_STRING:
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.azure_storage.AzureStorage",
+        "OPTIONS": {
+            "connection_string": AZURE_STORAGE_CONNECTION_STRING,
+            "azure_container": os.environ.get("AZURE_MEDIA_CONTAINER", "media"),
+            "expiration_secs": None,
+            "overwrite_files": False,
+        },
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -148,6 +166,38 @@ LEGACY_CONTENT_URL = os.environ.get(
     "LEGACY_CONTENT_URL", "https://iglcstorage.blob.core.windows.net/content"
 ).rstrip("/")
 
+# Whole host names to redirect, e.g. "iglc.net=www.iglc.net".
+HOST_REDIRECTS = dict(item.split("=", 1) for item in env_list("HOST_REDIRECTS"))
+
+# Errors and warnings go to the console, which App Service and Docker keep as the log.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"plain": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "plain"},
+        "mail_admins": {"class": "django.utils.log.AdminEmailHandler", "level": "ERROR"},
+    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {
+        "django.request": {"handlers": ["console", "mail_admins"], "level": "ERROR", "propagate": False},
+    },
+}
+
+# Email (password resets, error reports). Without EMAIL_HOST, email is printed to the log.
+if os.environ.get("EMAIL_HOST"):
+    EMAIL_HOST = os.environ["EMAIL_HOST"]
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "IGLC website <webmaster@iglc.net>")
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+# Who gets error reports: "Name <email>, Name <email>"
+ADMINS = [parseaddr(item) for item in env_list("DJANGO_ADMINS")]
+
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     # Not while running the tests, whose client talks plain http.
@@ -155,3 +205,4 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "0"))
+    SECURE_REDIRECT_EXEMPT = [r"^healthz$"]

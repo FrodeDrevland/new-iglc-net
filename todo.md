@@ -39,3 +39,13 @@
 - [x] Current officers and committee members loaded (`load_committee_members`, data in apps/governance/data/members.csv)
 - [ ] Control Committee: second member and the two spares
 - [ ] Exact ABM dates for 2029 (placeholder 1 July)
+
+## Production on Azure
+
+- [x] Container start script, health check, apex-to-www redirect, blob storage for uploads, logging
+- [x] GitHub Actions: tests on PostgreSQL, deploy to App Service on push to main
+- [x] docs/deploy-azure.md, docs/switch-over.md, docs/handover.md
+- [ ] Create the Azure resources (deploy-azure.md steps 1-6) and copy the data (step 7)
+- [ ] Fill in the unknowns in docs/handover.md (registrar, DNS, Crossref, Sender.net)
+- [ ] Email for password resets and error reports (SMTP settings)
+- [ ] Switch-over (docs/switch-over.md)
