@@ -47,6 +47,7 @@ SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
 INSTALLED_APPS = [
     "apps.archive",
     "apps.pages",
+    "apps.governance",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",

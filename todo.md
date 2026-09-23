@@ -32,3 +32,8 @@
 - [ ] Mailing list sign-up form (Sender.net) does not appear on the preview; check the form's allowed domains in Sender, or replace it in phase 4
 - [ ] Production hosting decision (IGLC-controlled)
 - [ ] Working version to show before switch-over
+
+## Governance (pulled forward from phase 4)
+
+- [x] Committees and officers page at /about/committees/, managed under Manage → Governance
+- [ ] Enter the current officers, Standardisation Committee and Control Committee members

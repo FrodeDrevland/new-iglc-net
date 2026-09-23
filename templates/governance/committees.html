@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Committees and officers{% endblock %}
+{% block admin_edit %}<a class="admin-edit" href="{% url 'admin:governance_committee_changelist' %}">Edit committees</a>{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="kicker"><a href="/about/">About</a></p>
+  <h1>Committees and officers</h1>
+  <p class="lead">The people who run the IGLC between conferences, elected by the Annual Business Meeting under the <a href="/charter-and-operating-procedures/">Charter and Operating Procedures</a>.</p>
+</div>
+{% for group in groups %}
+<section class="committee" id="{{ group.committee.slug }}">
+  <h2>{{ group.committee.name }}</h2>
+  {% if group.committee.description %}<div class="committee-intro">{{ group.committee.description|linebreaks }}{% if group.committee.charter_section %}<p class="muted small">Charter {{ group.committee.charter_section }}</p>{% endif %}</div>{% endif %}
+  {% if group.current %}
+  <table class="members">
+    <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Affiliation</th><th scope="col">Term</th></tr></thead>
+    <tbody>
+    {% for seat in group.current %}
+    <tr>
+      <td class="name">{% if seat.person_id %}<a href="{{ seat.person.get_absolute_url }}">{{ seat.full_name }}</a>{% else %}{{ seat.full_name }}{% endif %}</td>
+      <td>{% if seat.is_chair %}Chair, {{ seat.get_role_display }}{% else %}{{ seat.get_role_display }}{% endif %}{% if seat.note %} <span class="muted">({{ seat.note }})</span>{% endif %}</td>
+      <td>{{ seat.affiliation }}{% if seat.affiliation and seat.country %}, {% endif %}{{ seat.country }}</td>
+      <td class="term">{{ seat.term }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">The members will be listed here soon.</p>
+  {% endif %}
+  {% if group.past %}
+  <details class="past-members">
+    <summary>Former members</summary>
+    <ul>{% for seat in group.past %}<li>{{ seat.full_name }}, {{ seat.get_role_display|lower }}, {{ seat.term }}</li>{% endfor %}</ul>
+  </details>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

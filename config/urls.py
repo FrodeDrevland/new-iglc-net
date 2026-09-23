@@ -25,6 +25,7 @@ urlpatterns = [
     path("documents/", include(wagtaildocs_urls)),
     path("", archive_views.home, name="home"),
     path("", include("apps.archive.urls")),
+    path("", include("apps.governance.urls")),
 ]
 
 if settings.DEBUG:
