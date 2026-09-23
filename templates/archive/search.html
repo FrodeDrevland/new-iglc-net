@@ -1,18 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Search{% endblock %}
+{% block title %}{% if query %}{{ query }} | {% endif %}Search{% endblock %}
 {% block content %}
-<h1>Search papers</h1>
-<form class="search" action="{% url 'archive:search' %}" method="get" role="search">
-  <label for="q">Title, abstract, keyword or author</label>
-  <div class="search-row">
-    <input id="q" name="q" type="search" value="{{ query }}">
-    <button type="submit">Search</button>
-  </div>
-</form>
+<div class="page-head">
+  <p class="kicker">Archive</p>
+  <h1>Search papers</h1>
+  <form class="search-form" action="{% url 'archive:search' %}" method="get" role="search">
+    <label for="q">Title, abstract, keyword or author</label>
+    <div class="search-row">
+      <input id="q" name="q" type="search" value="{{ query }}">
+      <button class="button" type="submit">Search</button>
+    </div>
+  </form>
+</div>
 {% if query %}
-  <p>{{ papers|length }} paper{{ papers|length|pluralize }} found for &ldquo;{{ query }}&rdquo;.
+  <p style="margin-top:1.5rem"><strong>{{ papers|length }}</strong> paper{{ papers|length|pluralize }} found for &ldquo;{{ query }}&rdquo;.
   {% if papers %}Export as <a href="{% url 'archive:export_search_bibtex' %}?query={{ query|urlencode }}" rel="nofollow">BibTeX</a> or <a href="{% url 'archive:export_search_ris' %}?query={{ query|urlencode }}" rel="nofollow">RIS</a>.{% endif %}</p>
-  <ol class="papers">
+  <ol class="paper-list">
     {% for paper in papers %}{% include "archive/_paper_item.html" with show_conference=True %}{% endfor %}
   </ol>
 {% endif %}

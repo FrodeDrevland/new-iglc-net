@@ -16,16 +16,21 @@ def _papers():
 
 
 def home(request):
-    conferences = Conference.objects.filter(is_published=True).annotate(paper_count=Count("papers"))
+    from wagtail.models import Page
+
+    conferences = Conference.objects.filter(is_published=True).annotate(paper_count=Count("papers")).order_by("-number")
+    first = Conference.objects.exclude(start_date=None).order_by("start_date").first()
     return render(request, "home.html", {
         "latest_conferences": conferences[:6],
         "paper_count": Paper.objects.filter(conference__is_published=True).count(),
-        "conference_count": conferences.count(),
+        "conference_count": Conference.objects.count(),
+        "first_year": first.year if first else None,
+        "conference_page": Page.objects.live().filter(slug="active-conference").first(),
     })
 
 
 def conference_list(request):
-    conferences = Conference.objects.filter(is_published=True).annotate(paper_count=Count("papers"))
+    conferences = Conference.objects.filter(is_published=True).annotate(paper_count=Count("papers")).order_by("-number")
     return render(request, "archive/conference_list.html", {"conferences": conferences})
 
 
@@ -38,7 +43,8 @@ def conference_detail(request, pk):
 def paper_detail(request, pk):
     # Deliberately not filtered on is_published: DOIs must always resolve.
     paper = get_object_or_404(_papers(), pk=pk)
-    return render(request, "archive/paper_detail.html", {"paper": paper})
+    keywords = [k.strip() for k in paper.keywords.replace(";", ",").split(",") if k.strip()]
+    return render(request, "archive/paper_detail.html", {"paper": paper, "keywords": keywords})
 
 
 def paper_pdf(request, pk):

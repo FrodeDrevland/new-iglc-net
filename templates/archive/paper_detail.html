@@ -12,21 +12,58 @@
   <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ paper.get_absolute_url }}">
 {% endblock %}
 {% block content %}
-<p class="crumbs"><a href="{% url 'archive:conference_list' %}">Papers</a> / <a href="{{ paper.conference.get_absolute_url }}">IGLC {{ paper.conference.number }}</a></p>
-<article>
-  <h1>{{ paper.title }}</h1>
-  <ul class="authors">
-    {% for author in paper.authors.all %}<li><strong>{{ author.first_name }} {{ author.last_name }}</strong>{% if author.title_and_contact %}<div class="muted">{{ author.title_and_contact|linebreaksbr }}</div>{% endif %}</li>{% endfor %}
-  </ul>
-  <p class="actions">
-    {% if paper.full_text_url %}<a class="button" href="{% url 'archive:paper_pdf' paper.pk %}">Download PDF</a>{% endif %}
-    {% if paper.presentation_url %}<a href="{% url 'archive:paper_presentation' paper.pk %}">Presentation</a>{% endif %}
-    <a href="{% url 'archive:export_paper_bibtex' paper.pk %}" rel="nofollow">BibTeX</a>
-    <a href="{% url 'archive:export_paper_ris' paper.pk %}" rel="nofollow">RIS</a>
-  </p>
-  {% if paper.abstract %}<h2>Abstract</h2>{{ paper.abstract|linebreaks }}{% endif %}
-  {% if paper.keywords %}<h2>Keywords</h2><p>{{ paper.keywords }}</p>{% endif %}
-  <h2>Cite this paper</h2>
-  <p class="cite">{{ paper.full_author_string }} ({{ paper.year }}). {{ paper.title }}. <em>{{ paper.conference.proceedings_title }}</em>{% if paper.pages %}, pp. {{ paper.pages }}{% endif %}.{% if paper.doi %} <a href="{{ paper.doi_url }}">{{ paper.doi_url }}</a>{% endif %}</p>
-</article>
+<div class="page-head">
+  <p class="crumbs"><a href="{% url 'archive:conference_list' %}">Proceedings</a> / <a href="{{ paper.conference.get_absolute_url }}">IGLC {{ paper.conference.number }}</a></p>
+</div>
+<div class="paper-layout">
+  <article>
+    <p class="kicker">IGLC {{ paper.conference.number }}{% if paper.conference.location %} &middot; {{ paper.conference.location }}{% endif %}{% if paper.year %} &middot; {{ paper.year }}{% endif %}</p>
+    <h1>{{ paper.title }}</h1>
+    <ul class="authors">
+      {% for author in paper.authors.all %}<li>{{ author.first_name }} {{ author.last_name }}</li>{% endfor %}
+    </ul>
+    {% if paper.authors.all.0.title_and_contact %}
+    <details class="affiliations">
+      <summary>Affiliations</summary>
+      <ol>{% for author in paper.authors.all %}{% if author.title_and_contact %}<li><strong>{{ author.first_name }} {{ author.last_name }}:</strong> {{ author.title_and_contact|linebreaksbr }}</li>{% endif %}{% endfor %}</ol>
+    </details>
+    {% endif %}
+
+    {% if paper.abstract %}<h2>Abstract</h2><div class="abstract">{{ paper.abstract|linebreaks }}</div>{% endif %}
+
+    {% if paper.keywords %}
+    <h2>Keywords</h2>
+    <ul class="chips">{% for keyword in keywords %}<li>{{ keyword }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <h2>Cite this paper</h2>
+    <div class="cite">
+      <p id="citation">{{ paper.full_author_string }} ({{ paper.year }}). {{ paper.title }}. <em>{{ paper.conference.proceedings_title }}</em>{% if paper.pages %}, pp. {{ paper.pages }}{% endif %}.{% if paper.doi %} {{ paper.doi_url }}{% endif %}</p>
+      <button class="button secondary" type="button" id="copy-citation">Copy citation</button><span class="copy-status" id="copy-status" role="status"></span>
+    </div>
+  </article>
+  <aside>
+    <div class="panel">
+      {% if paper.full_text_url %}<a class="button block" href="{% url 'archive:paper_pdf' paper.pk %}">Download PDF</a>{% endif %}
+      {% if paper.presentation_url %}<a class="button secondary block" style="margin-top:.5rem" href="{% url 'archive:paper_presentation' paper.pk %}">Presentation</a>{% endif %}
+      <dl class="facts">
+        <dt>Published in</dt><dd><a href="{{ paper.conference.get_absolute_url }}">IGLC {{ paper.conference.number }}</a>{% if paper.year %}, {{ paper.year }}{% endif %}</dd>
+        {% if paper.pages %}<dt>Pages</dt><dd>{{ paper.pages }}</dd>{% endif %}
+        {% if paper.doi %}<dt>DOI</dt><dd><a href="{{ paper.doi_url }}">{{ paper.doi }}</a></dd>{% endif %}
+        <dt>Export</dt><dd><a href="{% url 'archive:export_paper_bibtex' paper.pk %}" rel="nofollow">BibTeX</a> &middot; <a href="{% url 'archive:export_paper_ris' paper.pk %}" rel="nofollow">RIS</a></dd>
+        <dt>Copyright</dt><dd>Proceedings editors (<a href="/copyright/">policy</a>)</dd>
+      </dl>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.getElementById("copy-citation").addEventListener("click", function () {
+    var text = document.getElementById("citation").innerText;
+    var status = document.getElementById("copy-status");
+    navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied"; },
+                                              function () { status.textContent = "Select the text to copy it"; });
+  });
+</script>
 {% endblock %}

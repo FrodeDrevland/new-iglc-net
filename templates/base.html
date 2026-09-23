@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}IGLC{% endblock %} | International Group for Lean Construction</title>
-  <meta name="description" content="{% block description %}The International Group for Lean Construction: a network of researchers from practice and academia in architecture, engineering and construction.{% endblock %}">
+  <meta name="description" content="{% block description %}The International Group for Lean Construction: a network of researchers from practice and academia in architecture, engineering and construction, since 1993.{% endblock %}">
+  <link rel="icon" href="{% static 'img/iglc-logo.png' %}">
   {% block meta %}{% endblock %}
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
 </head>
@@ -12,25 +13,57 @@
   <a class="skip" href="#main">Skip to content</a>
   <header class="site-header">
     <div class="wrap">
-      <a class="brand" href="{% url 'home' %}">IGLC</a>
-      <nav aria-label="Main">
-        <a href="{% url 'archive:conference_list' %}">Papers</a>
-        <a href="{% url 'archive:search' %}">Search</a>
-        <a href="/for-authors/">For authors</a>
-        <a href="/active-conference/">Conference</a>
-        <a href="/about/">About</a>
-      </nav>
+      <a class="brand" href="{% url 'home' %}">
+        <img src="{% static 'img/iglc-logo.png' %}" alt="" width="44" height="40">
+        <span class="brand-name"><strong>IGLC</strong><span>International Group for Lean Construction</span></span>
+      </a>
+      {% include "_nav.html" with class="main-nav desktop" %}
+      <details class="menu">
+        <summary aria-label="Menu">Menu</summary>
+        {% include "_nav.html" with class="main-nav" %}
+      </details>
     </div>
   </header>
-  <main id="main" class="wrap">
-    {% block content %}{% endblock %}
+  <main id="main">
+    {% block hero %}{% endblock %}
+    <div class="wrap">
+      {% block content %}{% endblock %}
+    </div>
   </main>
   <footer class="site-footer">
     <div class="wrap">
-      <p>International Group for Lean Construction, founded 1993.</p>
-      <p>Content on iglc.net is licensed under
-        <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/">CC BY-NC-SA 3.0</a>.</p>
+      <div class="footer-grid">
+        <section>
+          <h2>IGLC</h2>
+          <p>The International Group for Lean Construction is an international network of researchers from practice and academia in architecture, engineering and construction, founded in 1993.</p>
+          <p><a href="/about/">About the IGLC</a> &middot; <a href="/charter-and-operating-procedures/">Charter</a> &middot; <a href="/contact/">Contact</a></p>
+        </section>
+        <section>
+          <h2>Explore</h2>
+          <ul>
+            <li><a href="{% url 'archive:conference_list' %}">Proceedings</a></li>
+            <li><a href="{% url 'archive:search' %}">Search papers</a></li>
+            <li><a href="/proceedings/">Full proceedings (PDF)</a></li>
+            <li><a href="{% url 'archive:links' %}">Links</a></li>
+            <li><a href="/community/mailing-list/">Mailing list</a></li>
+          </ul>
+        </section>
+        <section>
+          <h2>For authors</h2>
+          <ul>
+            <li><a href="/for-authors/templates/">Templates</a></li>
+            <li><a href="/for-authors/paper-submission-and-review-process/">Submission and review</a></li>
+            <li><a href="/for-authors/referencing/">Referencing</a></li>
+            <li><a href="/for-authors/ethics-and-malpractice-statement/">Ethics statement</a></li>
+          </ul>
+        </section>
+      </div>
+      <div class="footer-bottom">
+        <span>Proceedings ISSN 2309-0979 (print) &middot; 2789-0015 (online) &middot; DOI prefix 10.24928</span>
+        <span><a href="/copyright/">Copyright</a></span>
+      </div>
     </div>
   </footer>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

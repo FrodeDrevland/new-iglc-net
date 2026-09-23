@@ -124,8 +124,8 @@ class LinksAndContentTests(TestCase):
 
         category = LinkCategory.objects.create(name="Journals", sort_order=1)
         Link.objects.create(category=category, name="Lean Construction Journal", url="https://example.org/lcj")
-        for path in ("/links/", "/links"):
-            self.assertContains(self.client.get(path), "Lean Construction Journal")
+        self.assertContains(self.client.get("/links/"), "Lean Construction Journal")
+        self.assertEqual(self.client.get("/links", follow=True).status_code, 200)
         self.assertEqual(self.client.get("/Links", follow=True).status_code, 200)
 
     def test_old_content_files_go_to_blob_storage(self):

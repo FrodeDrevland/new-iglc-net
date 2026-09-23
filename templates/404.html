@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Page not found{% endblock %}
 {% block content %}
-<h1>Page not found</h1>
-<p>The page you asked for does not exist. Try <a href="{% url 'archive:search' %}">searching the papers</a> or go to the <a href="{% url 'home' %}">home page</a>.</p>
+<div class="page-head">
+  <p class="kicker">Error 404</p>
+  <h1>Page not found</h1>
+  <p class="lead">The page you asked for does not exist, or has moved.</p>
+</div>
+<form class="search-form" action="{% url 'archive:search' %}" method="get" role="search">
+  <label for="q">Search the proceedings</label>
+  <div class="search-row"><input id="q" name="q" type="search"><button class="button" type="submit">Search</button></div>
+</form>
+<p style="margin-top:1.5rem"><a href="{% url 'home' %}">Go to the home page</a></p>
 {% endblock %}

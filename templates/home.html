@@ -1,29 +1,58 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block title %}Home{% endblock %}
-{% block content %}
+{% block hero %}
 <section class="hero">
-  <h1>International Group for Lean Construction</h1>
-  <p class="lead">A network of researchers from practice and academia in architecture, engineering and construction, working to renew how the built environment is designed, built and managed.</p>
-  <form class="search" action="{% url 'archive:search' %}" method="get" role="search">
-    <label for="q">Search {{ paper_count }} papers from {{ conference_count }} conferences</label>
-    <div class="search-row">
-      <input id="q" name="q" type="search" placeholder="Title, author or keyword">
-      <button type="submit">Search</button>
+  <div class="wrap">
+    <p class="kicker" style="color:#f0a867">International Group for Lean Construction</p>
+    <h1>Research on lean construction since 1993</h1>
+    <p class="lead">An international network of researchers from practice and academia, working to renew how the built environment is designed, built and managed.</p>
+    <form class="search-form" action="{% url 'archive:search' %}" method="get" role="search">
+      <label for="q">Search the proceedings</label>
+      <div class="search-row">
+        <input id="q" name="q" type="search" placeholder="Title, author or keyword">
+        <button class="button" type="submit">Search</button>
+      </div>
+    </form>
+    <ul class="stats">
+      <li><strong>{{ paper_count|intcomma }}</strong><span>papers</span></li>
+      <li><strong>{{ conference_count }}</strong><span>annual conferences</span></li>
+      {% if first_year %}<li><strong>{{ first_year }}</strong><span>first conference</span></li>{% endif %}
+    </ul>
+  </div>
+</section>
+{% endblock %}
+{% block content %}
+<div class="home-grid">
+  <section>
+    <div class="section-head">
+      <h2>Latest proceedings</h2>
+      <a href="{% url 'archive:conference_list' %}">All proceedings</a>
     </div>
-  </form>
-</section>
-
-<section>
-  <h2>Latest proceedings</h2>
-  <ul class="cards">
-    {% for conference in latest_conferences %}
-    <li><a href="{{ conference.get_absolute_url }}"><strong>IGLC {{ conference.number }}</strong>
-      <span>{{ conference.location }}{% if conference.year %}, {{ conference.year }}{% endif %}</span>
-      <span class="muted">{{ conference.paper_count }} papers</span></a></li>
-    {% empty %}
-    <li>No proceedings published yet.</li>
-    {% endfor %}
-  </ul>
-  <p><a href="{% url 'archive:conference_list' %}">All proceedings</a></p>
-</section>
+    <ul class="cards">
+      {% for conference in latest_conferences %}
+      <li>{% include "archive/_conference_card.html" %}</li>
+      {% empty %}
+      <li>No proceedings published yet.</li>
+      {% endfor %}
+    </ul>
+  </section>
+  <aside>
+    <h2>Get involved</h2>
+    <div class="panel">
+      <h3>{{ conference_page.title|default:"Annual conference" }}</h3>
+      <p>The annual conference is the main activity of the IGLC. Its location rotates between the continents.</p>
+      <a class="button block" href="/active-conference/">About the conference</a>
+    </div>
+    <div class="panel">
+      <h3>For authors</h3>
+      <ul class="link-list">
+        <li><a href="/for-authors/templates/">Paper templates</a></li>
+        <li><a href="/for-authors/paper-submission-and-review-process/">Submission and review</a></li>
+        <li><a href="/for-authors/formatting-requirements/">Formatting requirements</a></li>
+        <li><a href="/community/mailing-list/">Join the mailing list</a></li>
+      </ul>
+    </div>
+  </aside>
+</div>
 {% endblock %}

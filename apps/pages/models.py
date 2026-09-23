@@ -33,3 +33,15 @@ class StandardPage(Page):
     ]
 
     template = "pages/standard_page.html"
+
+    def get_context(self, request, *args, **kwargs):
+        """The section this page belongs to, for the side menu: the page itself if it has
+        sub-pages (for example For authors), otherwise its parent if that is not the home page."""
+        context = super().get_context(request, *args, **kwargs)
+        children = self.get_children().live()
+        section = self if children.exists() else self.get_parent().specific
+        if section.depth <= 2:
+            section = None
+        context["section"] = section
+        context["section_pages"] = section.get_children().live() if section else []
+        return context

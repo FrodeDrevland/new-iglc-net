@@ -19,7 +19,7 @@ The full plan: https://claude.ai/code/artifact/4eba9a7d-936c-4caa-affb-cbefeb7f4
 - Never break existing URLs: /papers/details/{id} and /papers/conference/{id} (with /pdf and /presentation), case-insensitive. DOIs point to them.
 - Keep existing database IDs for papers, authors and conferences when migrating.
 - Use permissively licensed libraries only (pypdf, pikepdf, pdfplumber, Typst, WeasyPrint). No AGPL (PyMuPDF, iText).
-- Content licence: CC BY-NC-SA 3.0 or stricter (charter section 11.4).
+- Copyright: papers' copyright is transferred to the proceedings editors; papers may be freely distributed in their original form (see /copyright/ and /for-authors/copyright-policy/). Do not label papers with a Creative Commons licence. Charter section 11.4 (CC BY-NC-SA 3.0 or stricter) covers IGLC's own intellectual property; how it applies to site content is for the IGLC to decide.
 - The member register must never be shared; restrict and log access.
 
 ## Writing conventions

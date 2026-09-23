@@ -1,0 +1,9 @@
+<nav class="{{ class }}" aria-label="Main">
+  <ul>
+    <li><a href="{% url 'archive:conference_list' %}"{% if nav_section == "papers" %} aria-current="page"{% endif %}>Proceedings</a></li>
+    <li><a href="/for-authors/"{% if nav_section == "for-authors" %} aria-current="page"{% endif %}>For authors</a></li>
+    <li><a href="/active-conference/"{% if nav_section == "active-conference" %} aria-current="page"{% endif %}>Conference</a></li>
+    <li><a href="/about/"{% if nav_section == "about" %} aria-current="page"{% endif %}>About</a></li>
+    <li><a href="{% url 'archive:search' %}">Search</a></li>
+  </ul>
+</nav>
