@@ -4,13 +4,31 @@ A password-protected preview of the new site, for showing it to the IGLC before 
 It runs as two containers (`iglc-web` and `iglc-db`) behind SWAG. Paper PDFs stay in Azure blob storage.
 This is a preview, not the production home of iglc.net.
 
-## 1. Copy the project to the server
+## 1. Get the code onto the server
 
-Copy the project folder to `/mnt/user/appdata/iglc/src` (for example through the `appdata` share,
-`\\<server>\appdata\iglc\src`). Leave out `.venv`, `db.sqlite3` and `inventory`.
-Once the code is on GitHub, `git clone` there instead.
+The code is in the private repository https://github.com/FrodeDrevland/new-iglc-net. The server reads it
+with a deploy key: read-only access to this one repository.
 
-Put the database export in `/mnt/user/appdata/iglc/import/`:
+In the Unraid terminal:
+
+```sh
+mkdir -p /mnt/user/appdata/iglc/import
+ssh-keygen -t ed25519 -f /mnt/user/appdata/iglc/deploy_key -N "" -C "unraid iglc preview"
+cat /mnt/user/appdata/iglc/deploy_key.pub
+```
+
+On GitHub, open the repository's **Settings > Deploy keys > Add deploy key**, paste the key and leave
+"Allow write access" unticked. Then:
+
+```sh
+export GIT_SSH_COMMAND="ssh -i /mnt/user/appdata/iglc/deploy_key -o IdentitiesOnly=yes"
+git clone git@github.com:FrodeDrevland/new-iglc-net.git /mnt/user/appdata/iglc/src
+cd /mnt/user/appdata/iglc/src
+git config core.sshCommand "$GIT_SSH_COMMAND"
+```
+
+The database export is not in the repository. Copy it to `/mnt/user/appdata/iglc/import/`
+(for example through the `appdata` share, `\\<server>\appdata\iglc\import`):
 `iglc_db-2026-9-23-18-7.bacpac`.
 
 ## 2. Settings
@@ -54,7 +72,7 @@ The site admin is at `/manage/` and the CMS at `/cms/`, with the account from `c
 
 ## Updating
 
-Copy the new code over `src` (or `git pull`), then run the `up -d --build` command again.
+In `/mnt/user/appdata/iglc/src`, run `git pull`, then the `up -d --build` command again.
 
 ## Backups
 
