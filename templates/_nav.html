@@ -1,9 +1,35 @@
+{% comment %}Same structure as the old site's menu. Groups open on hover or keyboard focus; on phones everything is listed.{% endcomment %}
 <nav class="{{ class }}" aria-label="Main">
   <ul>
-    <li><a href="{% url 'archive:conference_list' %}"{% if nav_section == "papers" %} aria-current="page"{% endif %}>Proceedings</a></li>
-    <li><a href="/for-authors/"{% if nav_section == "for-authors" %} aria-current="page"{% endif %}>For authors</a></li>
-    <li><a href="/active-conference/"{% if nav_section == "active-conference" %} aria-current="page"{% endif %}>Conference</a></li>
-    <li><a href="/about/"{% if nav_section == "about" %} aria-current="page"{% endif %}>About</a></li>
-    <li><a href="{% url 'archive:search' %}">Search</a></li>
+    <li><a href="{% url 'home' %}"{% if nav_section == "" %} aria-current="page"{% endif %}>Home</a></li>
+    <li class="has-sub{% if nav_section == 'active-conference' %} current{% endif %}">
+      <a href="/active-conference/">Active conference</a>
+      <ul>
+        <li><a href="/active-conference/">Location, dates and organisers</a></li>
+        <li><a href="/active-conference/call-for-papers/">Call for papers</a></li>
+        <li><a href="https://www.iglc-conference.com/">Conference website</a></li>
+        <li><a href="/active-conference/following-conference/">Following conference</a></li>
+      </ul>
+    </li>
+    <li class="{% if nav_section == 'papers' %}current{% endif %}"><a href="{% url 'archive:conference_list' %}">Proceedings</a></li>
+    <li class="{% if nav_section == 'for-authors' %}current{% endif %}"><a href="/for-authors/">For authors</a></li>
+    <li class="has-sub{% if nav_section == 'community' or nav_section == 'links' %} current{% endif %}">
+      <a href="/community/">Community</a>
+      <ul>
+        <li><a href="{% url 'archive:links' %}">Links</a></li>
+        <li><a href="/community/coaching/">Coaching</a></li>
+        <li><a href="/community/mailing-list/">Mailing list</a></li>
+      </ul>
+    </li>
+    <li class="has-sub align-right{% if nav_section in about_sections %} current{% endif %}">
+      <a href="/about/">About</a>
+      <ul>
+        <li><a href="/about/">About the IGLC</a></li>
+        <li><a href="/charter-and-operating-procedures/">Charter and operating procedures</a></li>
+        <li><a href="/standards/">Standards</a></li>
+        <li><a href="/contact/">Contact</a></li>
+      </ul>
+    </li>
+    <li class="{% if nav_section == 'papers' and request.path == '/papers/search' %}current{% endif %}"><a href="{% url 'archive:search' %}">Search</a></li>
   </ul>
 </nav>
