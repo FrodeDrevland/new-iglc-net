@@ -32,6 +32,10 @@ class Conference(EditTracking):
     publication_location = models.CharField(max_length=300, blank=True)
     issn = models.CharField("ISSN", max_length=20, blank=True)
     is_published = models.BooleanField("published on website", default=False)
+    papers_zip_url = models.URLField(
+        "ZIP of all papers", max_length=1000, blank=True,
+        help_text="Link to a ZIP file with every paper, shown on the conference page.",
+    )
 
     class Meta:
         ordering = ["-number"]
@@ -50,6 +54,21 @@ class Conference(EditTracking):
 
     def get_absolute_url(self):
         return reverse("archive:conference", args=[self.pk])
+
+
+class ProceedingsFile(models.Model):
+    """A full proceedings PDF for a conference, possibly one of several volumes."""
+
+    conference = models.ForeignKey(Conference, on_delete=models.CASCADE, related_name="proceedings_files")
+    label = models.CharField(max_length=100, help_text="For example 'Full proceedings' or 'Volume 1'.")
+    url = models.URLField(max_length=1000)
+    order = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ["conference", "order"]
+
+    def __str__(self):
+        return f"{self.conference}: {self.label}"
 
 
 class ConferenceTrack(models.Model):

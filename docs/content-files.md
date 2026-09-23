@@ -34,3 +34,23 @@ foreach ($folder in "Proceedings", "Documents", "Images") {
 ```
 
 The `/Content/...` URLs should now pass; only the links that were already broken on the old site should fail.
+
+## Full proceedings and ZIPs on conference pages
+
+The old conference pages looked up two other blob containers on every visit: `proceedings`
+(files named `Proceedings-IGLC<number>...pdf`) and `papers-zipped` (`IGLC<number>_Papers.zip`).
+The new site stores these links on each conference instead. To fill them in, list the files and load the list:
+
+```powershell
+$key = az storage account keys list --account-name iglcstorage --query "[0].value" -o tsv
+$files = foreach ($c in "proceedings", "papers-zipped") {
+    az storage blob list --account-name iglcstorage --account-key $key --container-name $c --query "[].name" -o tsv |
+        ForEach-Object { "https://iglcstorage.blob.core.windows.net/$c/$_" }
+}
+$files | Set-Content inventory\blob-files.txt
+.venv\Scripts\python manage.py link_blob_files inventory\blob-files.txt
+```
+
+On the preview server, copy `blob-files.txt` to `/mnt/user/appdata/iglc/import/` and run
+`docker exec iglc-web python manage.py link_blob_files /import/blob-files.txt`.
+The links can also be edited by hand on each conference in the archive admin.

@@ -5,7 +5,9 @@
   <meta name="citation_title" content="{{ paper.title }}">
   {% for author in paper.authors.all %}<meta name="citation_author" content="{{ author.last_name }}, {{ author.first_name }}">
   {% endfor %}{% if paper.year %}<meta name="citation_publication_date" content="{{ paper.year }}">{% endif %}
-  {% if paper.conference.proceedings_title %}<meta name="citation_conference_title" content="{{ paper.conference.proceedings_title }}">{% endif %}
+  {% with ct=paper.conference.conference_title|default:paper.conference.proceedings_title %}{% if ct %}<meta name="citation_conference_title" content="{{ ct }}">{% endif %}{% endwith %}
+  {% if paper.volume.isbn %}<meta name="citation_isbn" content="{{ paper.volume.isbn }}">{% endif %}
+  {% if paper.conference.issn %}<meta name="citation_issn" content="{{ paper.conference.issn }}">{% endif %}
   {% if paper.first_page %}<meta name="citation_firstpage" content="{{ paper.first_page }}"><meta name="citation_lastpage" content="{{ paper.last_page }}">{% endif %}
   {% if paper.doi %}<meta name="citation_doi" content="{{ paper.doi }}">{% endif %}
   {% if paper.full_text_url %}<meta name="citation_pdf_url" content="{{ request.scheme }}://{{ request.get_host }}{% url 'archive:paper_pdf' paper.pk %}">{% endif %}
@@ -21,14 +23,12 @@
     <p class="kicker">IGLC {{ paper.conference.number }}{% if paper.conference.location %} &middot; {{ paper.conference.location }}{% endif %}{% if paper.year %} &middot; {{ paper.year }}{% endif %}</p>
     <h1>{{ paper.title }}</h1>
     <ul class="authors">
-      {% for author in paper.authors.all %}<li>{{ author.first_name }} {{ author.last_name }}</li>{% endfor %}
+      {% for author in paper.authors.all %}<li>{{ author.first_name }} {{ author.last_name }}{% if author.title_and_contact %}<sup>{{ forloop.counter }}</sup>{% endif %}</li>{% endfor %}
     </ul>
-    {% if paper.authors.all.0.title_and_contact %}
-    <details class="affiliations">
-      <summary>Affiliations</summary>
-      <ol>{% for author in paper.authors.all %}{% if author.title_and_contact %}<li><strong>{{ author.first_name }} {{ author.last_name }}:</strong> {{ author.title_and_contact|linebreaksbr }}</li>{% endif %}{% endfor %}</ol>
-    </details>
-    {% endif %}
+    <ol class="affiliations">
+      {% for author in paper.authors.all %}{% if author.title_and_contact %}<li value="{{ forloop.counter }}">{{ author.title_and_contact|linebreaksbr }}</li>{% endif %}{% endfor %}
+    </ol>
+    {% if paper.doi %}<p class="doi-line"><a href="{{ paper.doi_url }}">{{ paper.doi_url }}</a></p>{% endif %}
 
     {% if paper.abstract %}<h2>Abstract</h2><div class="abstract">{{ paper.abstract|linebreaks }}</div>{% endif %}
 
@@ -39,14 +39,19 @@
 
     <h2>Cite this paper</h2>
     <div class="cite">
-      <p id="citation">{{ paper.full_author_string }} ({{ paper.year }}). {{ paper.title }}. <em>{{ paper.conference.proceedings_title }}</em>{% if paper.pages %}, pp. {{ paper.pages }}{% endif %}.{% if paper.doi %} {{ paper.doi_url }}{% endif %}</p>
-      <button class="button secondary" type="button" id="copy-citation">Copy citation</button><span class="copy-status" id="copy-status" role="status"></span>
+      <h3>APA 7th edition</h3>
+      <p id="cite-apa">{{ apa.before }} <em>{{ apa.italic }}</em>{{ apa.after }}{% if apa.doi_url %} <a href="{{ apa.doi_url }}">{{ apa.doi_url }}</a>{% endif %}</p>
+      <button class="button secondary copy" type="button" data-copy="cite-apa">Copy</button><span class="copy-status" role="status"></span>
+      <h3>Shortened reference for IGLC papers</h3>
+      <p id="cite-short">{{ short.before }} <em>{{ short.italic }}</em>{{ short.after }}{% if short.doi_url %} <a href="{{ short.doi_url }}">{{ short.doi_url }}</a>{% endif %}</p>
+      <button class="button secondary copy" type="button" data-copy="cite-short">Copy</button><span class="copy-status" role="status"></span>
     </div>
   </article>
   <aside>
     <div class="panel">
       {% if paper.full_text_url %}<a class="button block" href="{% url 'archive:paper_pdf' paper.pk %}">Download PDF</a>{% endif %}
       {% if paper.presentation_url %}<a class="button secondary block" style="margin-top:.5rem" href="{% url 'archive:paper_presentation' paper.pk %}">Presentation</a>{% endif %}
+      {% if paper.a3_url %}<a class="button secondary block" style="margin-top:.5rem" href="{{ paper.a3_url }}">A3</a>{% endif %}
       <dl class="facts">
         <dt>Published in</dt><dd><a href="{{ paper.conference.get_absolute_url }}">IGLC {{ paper.conference.number }}</a>{% if paper.year %}, {{ paper.year }}{% endif %}</dd>
         {% if paper.pages %}<dt>Pages</dt><dd>{{ paper.pages }}</dd>{% endif %}
@@ -61,11 +66,18 @@
 {% endblock %}
 {% block scripts %}
 <script>
-  document.getElementById("copy-citation").addEventListener("click", function () {
-    var text = document.getElementById("citation").innerText;
-    var status = document.getElementById("copy-status");
-    navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied"; },
-                                              function () { status.textContent = "Select the text to copy it"; });
+  document.querySelectorAll("button.copy").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var source = document.getElementById(button.dataset.copy);
+      var status = button.nextElementSibling;
+      var html = new Blob([source.innerHTML], { type: "text/html" });
+      var text = new Blob([source.innerText], { type: "text/plain" });
+      var copied = window.ClipboardItem
+        ? navigator.clipboard.write([new ClipboardItem({ "text/html": html, "text/plain": text })])
+        : navigator.clipboard.writeText(source.innerText);
+      copied.then(function () { status.textContent = "Copied"; },
+                  function () { status.textContent = "Select the text to copy it"; });
+    });
   });
 </script>
 {% endblock %}

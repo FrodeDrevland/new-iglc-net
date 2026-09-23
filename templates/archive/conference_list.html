@@ -5,8 +5,11 @@
   <p class="kicker">Archive</p>
   <h1>Proceedings</h1>
   <p class="lead">Every paper from every IGLC annual conference since 1993, free to read.</p>
+  <form class="search-form" action="{% url 'archive:search' %}" method="get" role="search" style="margin-top:1.25rem">
+    <label for="q">Search all papers</label>
+    <div class="search-row"><input id="q" name="q" type="search" placeholder="Title, author or keyword"><button class="button" type="submit">Search</button></div>
+  </form>
   <div class="actions">
-    <a class="button secondary" href="{% url 'archive:search' %}">Search papers</a>
     <a class="button secondary" href="/proceedings/">Full proceedings (PDF)</a>
     <a class="button secondary" href="{% url 'archive:export_complete_bibtex' %}" rel="nofollow">Download all as BibTeX</a>
     <a class="button secondary" href="{% url 'archive:export_complete_ris' %}" rel="nofollow">Download all as RIS</a>

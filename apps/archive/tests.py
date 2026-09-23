@@ -155,3 +155,48 @@ class LinksAndContentTests(TestCase):
             self.assertEqual(response["Location"], "https://store.example.net/content/Proceedings/IGLC-2015-Proceedings.pdf")
             response = self.client.get("/Content/Documents/IGLC33 Paper Template.docx")
             self.assertEqual(response["Location"], "https://store.example.net/content/Documents/IGLC33%20Paper%20Template.docx")
+
+
+class CitationTests(ArchiveTestCase):
+    def test_initials(self):
+        from .citations import initials
+
+        self.assertEqual(initials("Jean-Pierre da Silva"), "J.-P. S.")
+        self.assertEqual(initials("Iris D."), "I. D.")
+        self.assertEqual(initials(""), "")
+
+    def test_apa7_and_short(self):
+        from .citations import apa7, as_text, iglc_short
+
+        apa = as_text(apa7(self.paper))
+        self.assertEqual(
+            apa,
+            "Smith, A., Jones, B., & Lee, C. (2022). Takt Planning in Practice. In E. Example (Ed.), "
+            "Proceedings of the 30th Annual Conference of the IGLC (pp. 10–21). "
+            "https://doi.org/10.24928/2022/0123",
+        )
+        self.assertEqual(
+            as_text(iglc_short(self.paper)),
+            "Smith, A., Jones, B., & Lee, C. (2022). Takt Planning in Practice. IGLC30. https://doi.org/10.24928/2022/0123",
+        )
+        self.assertContains(self.client.get("/papers/details/2150"), "Shortened reference for IGLC papers")
+
+
+class BlobFileTests(ArchiveTestCase):
+    def test_link_blob_files(self):
+        import tempfile
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        base = "https://store.example.net"
+        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
+            f.write(f"{base}/papers-zipped/IGLC30_Papers.zip\n"
+                    f"{base}/proceedings/Proceedings-IGLC30-Vol1.pdf\n"
+                    f"{base}/proceedings/Proceedings-IGLC30-Vol2.pdf\n"
+                    f"{base}/proceedings/Proceedings-IGLC3-old.pdf\n")
+        call_command("link_blob_files", f.name, stdout=StringIO())
+        response = self.client.get("/papers/conference/25")
+        self.assertContains(response, "All papers (ZIP)")
+        self.assertContains(response, "Volume 2 (PDF)")
+        self.assertEqual(self.conference.proceedings_files.count(), 2)

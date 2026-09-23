@@ -6,7 +6,7 @@ from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
-from . import exports
+from . import citations, exports
 from .models import Author, Conference, LinkCategory, Paper
 
 
@@ -37,7 +37,8 @@ def conference_list(request):
 
 
 def conference_detail(request, pk):
-    conference = get_object_or_404(Conference.objects.prefetch_related("editors", "volumes"), pk=pk)
+    conference = get_object_or_404(
+        Conference.objects.prefetch_related("editors", "volumes", "proceedings_files"), pk=pk)
     papers = _papers().filter(conference=conference)
     return render(request, "archive/conference_detail.html", {
         "conference": conference,
@@ -62,7 +63,12 @@ def paper_detail(request, pk):
     # Deliberately not filtered on is_published: DOIs must always resolve.
     paper = get_object_or_404(_papers(), pk=pk)
     keywords = [k.strip() for k in paper.keywords.replace(";", ",").split(",") if k.strip()]
-    return render(request, "archive/paper_detail.html", {"paper": paper, "keywords": keywords})
+    return render(request, "archive/paper_detail.html", {
+        "paper": paper,
+        "keywords": keywords,
+        "apa": citations.apa7(paper),
+        "short": citations.iglc_short(paper),
+    })
 
 
 def paper_pdf(request, pk):

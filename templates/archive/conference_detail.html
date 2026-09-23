@@ -14,6 +14,8 @@
       {% for volume in conference.volumes.all %}{% if volume.isbn %}<dt>ISBN{% if conference.volumes.all|length > 1 %}, vol. {{ volume.number }}{% endif %}</dt><dd>{{ volume.isbn }}</dd>{% endif %}{% endfor %}
     </dl>
     <div class="actions">
+      {% for file in conference.proceedings_files.all %}<a class="button" href="{{ file.url }}">{{ file.label }} (PDF)</a>{% endfor %}
+      {% if conference.papers_zip_url %}<a class="button secondary" href="{{ conference.papers_zip_url }}">All papers (ZIP)</a>{% endif %}
       <a class="button secondary" href="{% url 'archive:export_conference_bibtex' conference.pk %}" rel="nofollow">BibTeX</a>
       <a class="button secondary" href="{% url 'archive:export_conference_ris' conference.pk %}" rel="nofollow">RIS</a>
     </div>

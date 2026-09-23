@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from .models import Author, AuthorPerson, Conference, ConferenceTrack, Editor, Link, LinkCategory, Paper, Volume
+from .models import (
+    Author, AuthorPerson, Conference, ConferenceTrack, Editor, Link, LinkCategory, Paper, ProceedingsFile, Volume,
+)
 
 
 class TrackedAdmin(admin.ModelAdmin):
@@ -15,6 +17,11 @@ class TrackedAdmin(admin.ModelAdmin):
 
 class EditorInline(admin.TabularInline):
     model = Editor
+    extra = 0
+
+
+class ProceedingsFileInline(admin.TabularInline):
+    model = ProceedingsFile
     extra = 0
 
 
@@ -34,7 +41,7 @@ class ConferenceAdmin(TrackedAdmin):
     list_display = ("number", "city", "country", "start_date", "is_published")
     list_filter = ("is_published",)
     search_fields = ("city", "country", "conference_title", "proceedings_title")
-    inlines = [EditorInline, VolumeInline, TrackInline]
+    inlines = [EditorInline, VolumeInline, ProceedingsFileInline, TrackInline]
 
 
 class AuthorInline(admin.TabularInline):
