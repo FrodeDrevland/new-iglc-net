@@ -92,13 +92,15 @@ main { padding-bottom: 4rem; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 .section-head a { font-weight: 600; white-space: nowrap; }
 
-/* Cards */
-.cards { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); gap: .9rem; }
-.conf-card { display: flex; flex-direction: column; gap: .15rem; height: 100%; padding: 1rem 1.1rem; border: 1px solid var(--line); border-left: 4px solid var(--orange); border-radius: var(--radius); text-decoration: none; color: var(--ink); background: var(--white); transition: border-color .15s, box-shadow .15s; }
-.conf-card:hover { border-color: var(--blue); border-left-color: var(--orange); box-shadow: 0 4px 14px rgb(31 54 87 / .1); color: var(--ink); }
-.conf-card .num { font-family: var(--serif); font-size: 1.45rem; font-weight: 700; color: var(--blue-dark); }
-.conf-card .where { font-weight: 500; }
-.conf-card .count { margin-top: auto; padding-top: .4rem; font-size: .9rem; color: var(--muted); }
+/* Conference list */
+.conf-table { width: 100%; max-width: 48rem; border-collapse: collapse; font-size: 1.05rem; }
+.conf-table th { text-align: left; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: .5rem .75rem; border-bottom: 2px solid var(--line); }
+.conf-table td { padding: .6rem .75rem; border-bottom: 1px solid var(--line); }
+.conf-table td:first-child a { font-weight: 600; text-decoration: none; white-space: nowrap; }
+.conf-table td:first-child a:hover { text-decoration: underline; }
+.conf-table tbody tr:hover { background: var(--soft); }
+.conf-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 36rem) { .conf-table { font-size: .95rem; } .conf-table th, .conf-table td { padding: .5rem .4rem; } }
 .panel { border: 1px solid var(--line); border-radius: var(--radius); padding: 1.25rem; background: var(--soft); }
 .panel h2, .panel h3 { margin-top: 0; }
 .panel + .panel { margin-top: 1rem; }

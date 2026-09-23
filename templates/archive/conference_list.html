@@ -12,7 +12,5 @@
     <a class="button secondary" href="{% url 'archive:export_complete_ris' %}" rel="nofollow">Download all as RIS</a>
   </div>
 </div>
-<ul class="cards" style="margin-top:2rem">
-  {% for conference in conferences %}<li>{% include "archive/_conference_card.html" %}</li>{% endfor %}
-</ul>
+<div style="margin-top:2rem">{% include "archive/_conference_table.html" %}</div>
 {% endblock %}

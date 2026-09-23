@@ -1,6 +1,0 @@
-<a class="conf-card" href="{{ conference.get_absolute_url }}">
-  <span class="num">IGLC {{ conference.number }}</span>
-  <span class="where">{{ conference.location|default:"Location not recorded" }}</span>
-  <span class="muted small">{{ conference.year|default:"" }}</span>
-  <span class="count">{{ conference.paper_count }} paper{{ conference.paper_count|pluralize }}</span>
-</a>
