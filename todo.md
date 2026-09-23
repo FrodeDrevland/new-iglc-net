@@ -5,9 +5,9 @@
 - [x] URL inventory script: crawl, Crossref and check (`tools/url_inventory.py`)
 - [x] Crawl and Crossref inventory (`inventory/`)
 - [x] Redirect `/Content/...` to blob storage
-- [ ] Upload the old Content folders to the `content` blob container (`docs/content-files.md`)
+- [x] Upload the old Content folders to the `content` blob container (`docs/content-files.md`)
 - [x] Check papers 55, 422 and 2226 (server errors on the old site) render on the new site
-- [x] `url_inventory.py check` against the local site: every paper, conference, PDF, export and Crossref URL works; 30 failures left (19 `/Content` files, the Links page, 9 links already broken on the old site)
+- [x] `url_inventory.py check` against the local site: every paper, conference, PDF, export and Crossref URL works; after the Links page and the Content upload, only the 9 links already broken on the old site fail
 - [x] Django and Wagtail skeleton with the archive app; models ported from the legacy C# classes
 - [x] Old-URL redirects and exports
 - [ ] First local run: `makemigrations`, `migrate`, `test`; commit the migrations
