@@ -1,4 +1,16 @@
 /* iglc.net: colours from the IGLC logo (blue #365a91, orange #d4772a). */
+
+/* Fonts are served from iglc.net itself (no Google requests). Made by tools/build_fonts.py;
+   SIL Open Font License, see static/fonts/*-OFL.txt. */
+@font-face { font-family: "Source Serif 4"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url("../fonts/source-serif-4-var.woff2") format("woff2"); }
+@font-face { font-family: "Source Serif 4"; font-style: italic; font-weight: 200 900; font-display: swap;
+  src: url("../fonts/source-serif-4-italic-var.woff2") format("woff2"); }
+@font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url("../fonts/source-sans-3-var.woff2") format("woff2"); }
+@font-face { font-family: "Source Sans 3"; font-style: italic; font-weight: 200 900; font-display: swap;
+  src: url("../fonts/source-sans-3-italic-var.woff2") format("woff2"); }
+
 :root {
   --blue: #365a91;
   --blue-dark: #1f3657;
@@ -11,15 +23,15 @@
   --line: #dde2ea;
   --soft: #f6f7f9;
   --white: #ffffff;
-  --serif: "Iowan Old Style", "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --radius: 8px;
   --wrap: 72rem;
 }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; font-family: var(--sans); font-size: 1.0625rem; line-height: 1.6; color: var(--ink); background: var(--white); }
+body { margin: 0; font-family: var(--sans); font-size: 1.125rem; font-optical-sizing: auto; line-height: 1.6; color: var(--ink); background: var(--white); }
 a { color: var(--blue); text-underline-offset: .15em; }
 a:hover { color: var(--blue-dark); }
 :focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }

@@ -36,6 +36,16 @@ Then open http://localhost:8000, the archive admin at http://localhost:8000/mana
 
 With Docker instead: `copy .env.example .env`, then `docker compose up`, and run the same `manage.py` commands with `docker compose exec web python manage.py ...`.
 
+## Fonts
+
+The site uses Source Serif 4 and Source Sans 3, served from `static/fonts/` rather than from Google.
+To (re)build them: download both families from fonts.google.com ("Get font" > "Download all"), then
+
+```powershell
+.venv\Scripts\python -m pip install fonttools brotli
+.venv\Scripts\python tools\build_fonts.py <Source_Serif_4.zip> <Source_Sans_3.zip>
+```
+
 ## Layout
 
 | Path | What it is |
