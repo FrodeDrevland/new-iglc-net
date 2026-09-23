@@ -29,8 +29,8 @@ STATIC_REDIRECTS = {
     "/activeconference": "/active-conference/",
     "/activeconference/index": "/active-conference/",
     "/activeconference/callforpapers": "/active-conference/call-for-papers/",
-    # The old page only forwarded visitors to the conference's own website.
-    "/activeconference/conferencewebsite": "https://www.iglc-conference.com/",
+    # The old page only forwarded visitors to the conference's own website (see CONFERENCE_WEBSITE).
+    "/activeconference/conferencewebsite": "conference-website",
     "/activeconference/followingconference": "/active-conference/following-conference/",
     "/home/important-links": "/links/",
     "/links": "/links/",
@@ -98,7 +98,8 @@ def legacy_target(path: str, query) -> str | None:
         return f"/for-authors/{_kebab(view)}/" if view and view.lower() != "about" else "/for-authors/"
 
     if key in STATIC_REDIRECTS:
-        return STATIC_REDIRECTS[key]
+        target = STATIC_REDIRECTS[key]
+        return settings.CONFERENCE_WEBSITE if target == "conference-website" else target
 
     for view in FOR_AUTHORS_VIEWS:
         if key == f"/forauthors/{view.lower()}":

@@ -133,6 +133,8 @@ WAGTAILADMIN_BASE_URL = SITE_URL
 
 # IGLC specifics
 IGLC_DOI_PREFIX = "10.24928"
+# Website of the current conference (menu link "Conference website" and the old ConferenceWebsite URL).
+CONFERENCE_WEBSITE = os.environ.get("CONFERENCE_WEBSITE", "https://www.iglc35.com/")
 # Files the old site served from /Content/ (full proceedings, standards, templates, images)
 # now live in blob storage; /Content/<path> redirects to <LEGACY_CONTENT_URL>/<path>.
 LEGACY_CONTENT_URL = os.environ.get(

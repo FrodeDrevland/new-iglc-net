@@ -23,9 +23,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--update", action="store_true", help="overwrite pages that already exist")
+        parser.add_argument("--only", nargs="+", metavar="SLUG", help="only update these pages, for example call-for-papers")
 
     @transaction.atomic
-    def handle(self, *args, update, **options):
+    def handle(self, *args, update, only=None, **options):
         site = Site.objects.filter(is_default_site=True).first()
         if site is None:
             raise CommandError("There is no default Wagtail site. Run migrate first.")
@@ -45,7 +46,7 @@ class Command(BaseCommand):
                 created += 1
             else:
                 page = existing.specific
-                if update and isinstance(page, StandardPage):
+                if update and isinstance(page, StandardPage) and (not only or entry["slug"] in only):
                     page.title, page.body = entry["title"], body
                     page.save_revision().publish()
                     updated += 1

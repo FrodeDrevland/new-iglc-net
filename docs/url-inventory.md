@@ -81,7 +81,7 @@ The old conference page also listed a ZIP of all papers (`papers-zipped` contain
 | `/ForAuthors/Templates`, `/PaperStructure`, `/EthicsAndMalpracticeStatement` | `/for-authors/templates/` and so on |
 | `/Home/ActiveConference`, `/Home/active-conference`, `/ActiveConference` | `/active-conference/` (later conference.iglc.net) |
 | `/ActiveConference/CallForPapers`, `/FollowingConference` | `/active-conference/call-for-papers/`, `/active-conference/following-conference/` |
-| `/ActiveConference/ConferenceWebsite` | `https://www.iglc-conference.com/` (the old page only forwarded there) |
+| `/ActiveConference/ConferenceWebsite` | the current conference's website, setting `CONFERENCE_WEBSITE` (the old page only forwarded there) |
 | `/Links`, `/Home/important-links`, `/Community/Links` | `/links/` |
 | `/Community/Coaching` | `/community/coaching/` |
 | `/Community/MailingList` | `/community/mailing-list/` |

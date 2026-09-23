@@ -8,6 +8,9 @@ tables, images and embedded forms become raw HTML blocks so nothing is lost.
     python tools/convert_legacy_pages.py "<path to legacy>/IGLC/Views"
 
 Then load the pages with:  python manage.py import_legacy_pages
+
+Note: pages.json has been edited by hand since the conversion (the active conference pages were
+updated for IGLC 35). Running this script again overwrites those edits.
 Standard library only.
 """
 
