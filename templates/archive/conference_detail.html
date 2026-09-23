@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}IGLC {{ conference.number }}{% endblock %}
+{% block admin_edit %}<a class="admin-edit" href="{% url 'admin:archive_conference_change' conference.pk %}">Edit this conference</a>{% endblock %}
 {% block hero %}
 <section class="conf-head">
   <div class="wrap">

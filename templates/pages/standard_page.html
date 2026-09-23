@@ -2,6 +2,7 @@
 {% load wagtailcore_tags %}
 {% block title %}{{ page.seo_title|default:page.title }}{% endblock %}
 {% block description %}{{ page.search_description|default:page.intro|default:page.title }}{% endblock %}
+{% block admin_edit %}<a class="admin-edit" href="{% url 'wagtailadmin_pages:edit' page.id %}">Edit this page</a>{% endblock %}
 {% block content %}
 <div class="page-head">
   {% if section and section.pk != page.pk %}<p class="crumbs"><a href="{% pageurl section %}">{{ section.title }}</a></p>{% endif %}

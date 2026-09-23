@@ -210,3 +210,14 @@ aside .facts dt { font-size: .82rem; text-transform: uppercase; letter-spacing: 
 .site-footer h2 { font-family: var(--sans); font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; color: var(--white); margin: 0 0 .75rem; }
 .site-footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .35rem; }
 .footer-bottom { border-top: 1px solid rgb(255 255 255 / .12); padding: 1rem 0 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1.5rem; font-size: .85rem; }
+
+/* Admin bar, shown only to staff */
+.admin-bar { background: var(--ink); color: #cfd6e0; font-size: .88rem; }
+.admin-bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1.25rem; min-height: 2.4rem; }
+.admin-bar a { color: var(--white); text-decoration: none; }
+.admin-bar a:hover { text-decoration: underline; }
+.admin-bar-label { font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; color: var(--orange); }
+.admin-bar .admin-edit { background: var(--orange); color: var(--ink); font-weight: 700; padding: .15rem .6rem; border-radius: 4px; }
+.admin-bar-logout { margin: 0 0 0 auto; }
+.admin-bar-logout button { background: none; border: 0; color: #cfd6e0; font: inherit; cursor: pointer; padding: 0; }
+.admin-bar-logout button:hover { color: var(--white); text-decoration: underline; }

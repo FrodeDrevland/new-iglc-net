@@ -11,6 +11,7 @@
   {% if paper.full_text_url %}<meta name="citation_pdf_url" content="{{ request.scheme }}://{{ request.get_host }}{% url 'archive:paper_pdf' paper.pk %}">{% endif %}
   <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ paper.get_absolute_url }}">
 {% endblock %}
+{% block admin_edit %}<a class="admin-edit" href="{% url 'admin:archive_paper_change' paper.pk %}">Edit this paper</a>{% endblock %}
 {% block content %}
 <div class="page-head">
   <p class="crumbs"><a href="{% url 'archive:conference_list' %}">Proceedings</a> / <a href="{{ paper.conference.get_absolute_url }}">IGLC {{ paper.conference.number }}</a></p>
@@ -50,6 +51,7 @@
         <dt>Published in</dt><dd><a href="{{ paper.conference.get_absolute_url }}">IGLC {{ paper.conference.number }}</a>{% if paper.year %}, {{ paper.year }}{% endif %}</dd>
         {% if paper.pages %}<dt>Pages</dt><dd>{{ paper.pages }}</dd>{% endif %}
         {% if paper.doi %}<dt>DOI</dt><dd><a href="{{ paper.doi_url }}">{{ paper.doi }}</a></dd>{% endif %}
+        {% if user.is_staff %}<dt>Admin</dt><dd><a href="{% url 'admin:archive_paper_change' paper.pk %}">Edit this paper</a></dd>{% endif %}
         <dt>Export</dt><dd><a href="{% url 'archive:export_paper_bibtex' paper.pk %}" rel="nofollow">BibTeX</a> &middot; <a href="{% url 'archive:export_paper_ris' paper.pk %}" rel="nofollow">RIS</a></dd>
         <dt>Copyright</dt><dd>Proceedings editors (<a href="/copyright/">policy</a>)</dd>
       </dl>

@@ -118,6 +118,19 @@ class LegacyImportTests(TestCase):
 
 
 
+class AdminBarTests(ArchiveTestCase):
+    def test_staff_see_edit_links(self):
+        from django.contrib.auth import get_user_model
+
+        self.assertNotContains(self.client.get("/papers/details/2150"), "Edit this paper")
+        staff = get_user_model().objects.create_user("editor", password="x", is_staff=True, is_superuser=True)
+        self.client.force_login(staff)
+        response = self.client.get("/papers/details/2150")
+        self.assertContains(response, "/manage/archive/paper/2150/change/")
+        self.assertContains(response, "/cms/")
+        self.assertContains(self.client.get("/papers/conference/25"), "/manage/archive/conference/25/change/")
+
+
 class RobotsTests(TestCase):
     def test_robots(self):
         self.assertContains(self.client.get("/robots.txt"), "Disallow: /cms/")
