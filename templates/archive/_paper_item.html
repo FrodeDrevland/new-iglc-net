@@ -2,7 +2,6 @@
   <span class="pp">{% if paper.first_page %}p. {{ paper.first_page }}{% elif show_conference %}IGLC {{ paper.conference.number }}{% endif %}</span>
   <div>
     <a class="title" href="{{ paper.get_absolute_url }}">{% if show_paper_numbers and paper.doi %}<span class="paper-no">{{ paper.doi|slice:"-3:" }}</span>{% endif %}{{ paper.title }}</a>
-    <div class="meta">{{ paper.full_author_string }}{% if show_conference %} &middot; IGLC {{ paper.conference.number }}, {{ paper.year }}{% endif %}</div>
+    <div class="meta">{{ paper.full_author_string }}{% if show_conference %} &middot; IGLC {{ paper.conference.number }}, {{ paper.year }}{% endif %}{% if paper.full_text_url %} &middot; <a href="{% url 'archive:paper_pdf' paper.pk %}" title="Download the paper">PDF</a>{% endif %}{% if paper.presentation_url %} &middot; <a href="{% url 'archive:paper_presentation' paper.pk %}" title="Download the presentation">Slides</a>{% endif %}</div>
   </div>
-  <span class="files">{% if paper.full_text_url %}<a href="{% url 'archive:paper_pdf' paper.pk %}" title="Download the paper">PDF</a>{% endif %}{% if paper.presentation_url %}<a href="{% url 'archive:paper_presentation' paper.pk %}" title="Download the presentation">Slides</a>{% endif %}</span>
 </li>
