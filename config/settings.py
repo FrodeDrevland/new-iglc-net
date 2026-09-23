@@ -132,6 +132,11 @@ WAGTAIL_SITE_NAME = "IGLC"
 WAGTAILADMIN_BASE_URL = SITE_URL
 
 # IGLC specifics
+# A preview or test copy tells search engines not to index it.
+SITE_NOINDEX = env_bool("SITE_NOINDEX", False)
+# Serve uploaded files from Django when no separate file server is set up (previews).
+SERVE_MEDIA = env_bool("SERVE_MEDIA", False)
+
 IGLC_DOI_PREFIX = "10.24928"
 # Website of the current conference (menu link "Conference website" and the old ConferenceWebsite URL).
 CONFERENCE_WEBSITE = os.environ.get("CONFERENCE_WEBSITE", "https://www.iglc35.com/")

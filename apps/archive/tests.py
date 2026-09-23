@@ -118,6 +118,13 @@ class LegacyImportTests(TestCase):
 
 
 
+class RobotsTests(TestCase):
+    def test_robots(self):
+        self.assertContains(self.client.get("/robots.txt"), "Disallow: /cms/")
+        with self.settings(SITE_NOINDEX=True):
+            self.assertContains(self.client.get("/robots.txt"), "Disallow: /\n")
+
+
 class LinksAndContentTests(TestCase):
     def test_links_page(self):
         from .models import Link, LinkCategory

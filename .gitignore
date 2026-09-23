@@ -20,3 +20,4 @@ inventory/check-report.csv
 inventory/recheck-report.csv
 inventory/recheck-report-*.csv
 _preview/
+.env.prod

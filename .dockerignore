@@ -7,3 +7,6 @@ media
 staticfiles
 inventory
 __pycache__
+.env.prod
+.venv
+db.sqlite3

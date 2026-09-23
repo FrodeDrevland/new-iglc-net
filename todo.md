@@ -23,5 +23,7 @@
 - [x] Links page generated from the link database (`/links/`)
 - [ ] Review the imported pages; some are out of date (IGLC33 templates, the 34th conference page)
 - [ ] New visual design
-- [ ] Hosting decision and test deployment
+- [x] Preview deployment files for Unraid behind SWAG (`docs/deploy-unraid.md`)
+- [ ] Deploy the preview at https://iglc.drevland.net
+- [ ] Production hosting decision (IGLC-controlled)
 - [ ] Working version to show before switch-over

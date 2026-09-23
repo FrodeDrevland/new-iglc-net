@@ -1,0 +1,40 @@
+# Preview deployment, for example on an Unraid server behind SWAG.
+# See docs/deploy-unraid.md. Settings come from .env.prod (copy .env.prod.example).
+name: iglc
+
+services:
+  db:
+    image: postgres:16
+    container_name: iglc-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: iglc
+      POSTGRES_USER: iglc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+    volumes:
+      - ${APPDATA:-/mnt/user/appdata/iglc}/postgres:/var/lib/postgresql/data
+    networks: [internal]
+
+  web:
+    build: .
+    image: iglc-web
+    container_name: iglc-web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --access-logfile -"
+    env_file: .env.prod
+    environment:
+      DATABASE_URL: postgres://iglc:${POSTGRES_PASSWORD}@db:5432/iglc
+    volumes:
+      - ${APPDATA:-/mnt/user/appdata/iglc}/media:/app/media
+      - ${APPDATA:-/mnt/user/appdata/iglc}/import:/import:ro
+    depends_on: [db]
+    networks: [internal, proxy]
+
+networks:
+  internal:
+  proxy:
+    # The Docker network SWAG is on (see `docker network ls`); set PROXY_NETWORK in .env.prod.
+    name: ${PROXY_NETWORK:-proxynet}
+    external: true
