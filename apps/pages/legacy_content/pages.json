@@ -302,7 +302,7 @@
    },
    {
     "type": "html",
-    "value": "<div style=\"text-align: center;\" class=\"sender-form-field\" data-sender-form-id=\"m335z466am8qamqi794\"></div>"
+    "value": "<div class=\"sender-form-field\" data-sender-form-id=\"m335z466am8qamqi794\"></div>\n<script>\n  (function (s, e, n, d, er) {\n    s[\"Sender\"] = er;\n    s[er] = s[er] || function () { (s[er].q = s[er].q || []).push(arguments); }, s[er].l = 1 * new Date();\n    var a = e.createElement(n), m = e.getElementsByTagName(n)[0];\n    a.async = 1; a.src = d; m.parentNode.insertBefore(a, m);\n  })(window, document, \"script\", \"https://cdn.sender.net/accounts_resources/universal.js\", \"sender\");\n  sender(\"965281254f9756\");\n</script>"
    }
   ]
  },
