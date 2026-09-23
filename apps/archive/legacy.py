@@ -6,8 +6,10 @@ The full list of old routes is in docs/url-inventory.md.
 """
 
 import re
+from urllib.parse import quote
 
-from django.http import HttpResponsePermanentRedirect
+from django.conf import settings
+from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.urls import Resolver404, resolve
 
 # Old path (lower case, no trailing slash) -> new path.
@@ -130,6 +132,9 @@ class LegacyUrlMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.method in ("GET", "HEAD") and request.path.lower().startswith("/content/"):
+            # Old files, now in blob storage. Temporary redirect, so the storage can move later.
+            return HttpResponseRedirect(f"{settings.LEGACY_CONTENT_URL}/{quote(request.path[len('/content/'):])}")
         if request.method in ("GET", "HEAD") and not request.path.startswith(UNTOUCHED_PREFIXES):
             target = legacy_target(request.path, request.GET)
             if target is None and request.path != request.path.lower():

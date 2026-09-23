@@ -4,7 +4,8 @@
 - [x] Route inventory from the legacy code (`docs/url-inventory.md`)
 - [x] URL inventory script: crawl, Crossref and check (`tools/url_inventory.py`)
 - [x] Crawl and Crossref inventory (`inventory/`)
-- [ ] Move the 19 files under `/Content/Proceedings/` and `/Content/Documents/` to storage, and redirect the old paths
+- [x] Redirect `/Content/...` to blob storage
+- [ ] Upload the old Content folders to the `content` blob container (`docs/content-files.md`)
 - [x] Check papers 55, 422 and 2226 (server errors on the old site) render on the new site
 - [x] `url_inventory.py check` against the local site: every paper, conference, PDF, export and Crossref URL works; 30 failures left (19 `/Content` files, the Links page, 9 links already broken on the old site)
 - [x] Django and Wagtail skeleton with the archive app; models ported from the legacy C# classes
@@ -19,7 +20,7 @@
 - [ ] Postgres full-text search for the archive
 - [ ] Author pages (AuthorPerson) with ORCID
 - [x] CMS content ported to Wagtail pages (`import_legacy_pages`)
-- [ ] Links page generated from the link database (`/links/`)
+- [x] Links page generated from the link database (`/links/`)
 - [ ] Review the imported pages; some are out of date (IGLC33 templates, the 34th conference page)
 - [ ] New visual design
 - [ ] Hosting decision and test deployment

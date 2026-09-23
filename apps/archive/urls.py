@@ -9,6 +9,7 @@ app_name = "archive"
 ID = r"(?P<pk>\d+)"
 
 urlpatterns = [
+    re_path(r"^links/?$", views.links, name="links"),
     re_path(r"^papers/?$", views.conference_list, name="conference_list"),
     re_path(rf"^papers/conference/{ID}/?$", views.conference_detail, name="conference"),
     re_path(rf"^papers/details/{ID}/?$", views.paper_detail, name="paper"),

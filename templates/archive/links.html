@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Links{% endblock %}
+{% block content %}
+<h1>Links</h1>
+<p class="lead">Research groups, organisations, journals and resources related to lean construction.</p>
+{% for category in categories %}{% if category.links.all %}
+<section>
+  <h2>{{ category.name }}</h2>
+  {% if category.description %}<p>{{ category.description }}</p>{% endif %}
+  <ul class="links">
+    {% for link in category.links.all %}
+    <li><a href="{{ link.url }}" rel="noopener">{{ link.name }}</a>{% if link.description %}<div class="muted">{{ link.description }}</div>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}{% endfor %}
+{% endblock %}

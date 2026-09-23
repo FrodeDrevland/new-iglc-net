@@ -131,6 +131,11 @@ WAGTAILADMIN_BASE_URL = SITE_URL
 
 # IGLC specifics
 IGLC_DOI_PREFIX = "10.24928"
+# Files the old site served from /Content/ (full proceedings, standards, templates, images)
+# now live in blob storage; /Content/<path> redirects to <LEGACY_CONTENT_URL>/<path>.
+LEGACY_CONTENT_URL = os.environ.get(
+    "LEGACY_CONTENT_URL", "https://iglcstorage.blob.core.windows.net/content"
+).rstrip("/")
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
 from . import exports
-from .models import Author, Conference, Paper
+from .models import Author, Conference, LinkCategory, Paper
 
 
 def _papers():
@@ -115,3 +115,8 @@ def _export(papers, name, fmt):
     if fmt == "bibtex":
         return _download(exports.bibtex(papers, settings.SITE_URL), f"{name}.bib")
     return _download(exports.ris(papers, settings.SITE_URL), f"{name}.ris")
+
+
+def links(request):
+    categories = LinkCategory.objects.prefetch_related("links")
+    return render(request, "archive/links.html", {"categories": categories})

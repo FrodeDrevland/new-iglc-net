@@ -18,3 +18,4 @@ node_modules/
 inventory/*.json
 inventory/check-report.csv
 inventory/recheck-report.csv
+inventory/recheck-report-*.csv

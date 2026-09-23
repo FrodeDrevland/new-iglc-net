@@ -115,3 +115,23 @@ class LegacyImportTests(TestCase):
         self.assertEqual(clean_doi("10.24928/2019/0174."), "10.24928/2019/0174.")  # registered like this
         self.assertEqual(clean_doi(" 10.24928/2019/0123 "), "10.24928/2019/0123")
         self.assertEqual(clean_doi(None), "")
+
+
+
+class LinksAndContentTests(TestCase):
+    def test_links_page(self):
+        from .models import Link, LinkCategory
+
+        category = LinkCategory.objects.create(name="Journals", sort_order=1)
+        Link.objects.create(category=category, name="Lean Construction Journal", url="https://example.org/lcj")
+        for path in ("/links/", "/links"):
+            self.assertContains(self.client.get(path), "Lean Construction Journal")
+        self.assertEqual(self.client.get("/Links", follow=True).status_code, 200)
+
+    def test_old_content_files_go_to_blob_storage(self):
+        with self.settings(LEGACY_CONTENT_URL="https://store.example.net/content"):
+            response = self.client.get("/Content/Proceedings/IGLC-2015-Proceedings.pdf")
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response["Location"], "https://store.example.net/content/Proceedings/IGLC-2015-Proceedings.pdf")
+            response = self.client.get("/Content/Documents/IGLC33 Paper Template.docx")
+            self.assertEqual(response["Location"], "https://store.example.net/content/Documents/IGLC33%20Paper%20Template.docx")
