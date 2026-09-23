@@ -45,7 +45,8 @@ def _full_text(papers, query):
         + SearchVector("abstract", weight="C", config="english")
     )
     search_query = SearchQuery(query, config="english", search_type="websearch")
-    return papers.annotate(rank=SearchRank(vector, search_query)).filter(rank__gt=0)
+    # Filter on the match itself: the rank alone is above 0 when only some of the words match.
+    return papers.annotate(document=vector, rank=SearchRank(vector, search_query)).filter(document=search_query)
 
 
 def _contains(papers, words):

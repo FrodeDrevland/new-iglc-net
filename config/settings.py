@@ -4,6 +4,7 @@ A `.env` file in the project root is read at start-up (see `.env.example`).
 """
 
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -148,7 +149,8 @@ LEGACY_CONTENT_URL = os.environ.get(
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
+    # Not while running the tests, whose client talks plain http.
+    SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True) and sys.argv[1:2] != ["test"]
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "0"))
