@@ -22,6 +22,12 @@ from pathlib import Path
 from fontTools import subset
 from fontTools.ttLib import TTFont
 
+try:
+    import brotli  # noqa: F401  (needed for WOFF2)
+    FLAVOR = "woff2"
+except ImportError:  # WOFF is a little larger but needs nothing extra
+    FLAVOR = "woff"
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "static" / "fonts"
 
@@ -65,15 +71,15 @@ def build(paths) -> int:
             continue
         font = TTFont(io.BytesIO(data))
         options = subset.Options()
-        options.flavor = "woff2"
+        options.flavor = FLAVOR
         options.layout_features = ["*"]
         options.name_IDs = ["*"]
         options.notdef_outline = True
         subsetter = subset.Subsetter(options)
         subsetter.populate(unicodes=subset.parse_unicodes(UNICODES))
         subsetter.subset(font)
-        target = OUT / WANTED[name]
-        font.flavor = "woff2"
+        target = OUT / WANTED[name].replace(".woff2", f".{FLAVOR}")
+        font.flavor = FLAVOR
         font.save(target)
         done.add(name)
         print(f"{target.relative_to(ROOT)}  {target.stat().st_size // 1024} KB")
