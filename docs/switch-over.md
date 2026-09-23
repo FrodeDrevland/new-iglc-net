@@ -47,7 +47,7 @@ before this starts. Tick each item as it is done.
 
 ## The weeks after
 
-- [ ] Google Search Console: add the site (DNS TXT verification) so you see crawl errors.
+- [ ] Google Search Console: add the site (DNS TXT verification) and submit https://www.iglc.net/sitemap.xml.
 - [ ] After a week without problems: turn on HSTS,
       `az webapp config appsettings set -g $rg -n $app --settings DJANGO_HSTS_SECONDS=31536000`.
 - [ ] Crossref: update the resource URLs of all DOIs from `http://` to `https://` (a bulk
