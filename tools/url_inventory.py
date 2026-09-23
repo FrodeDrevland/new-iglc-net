@@ -88,11 +88,13 @@ def fetch(url: str, timeout: float = 30.0, method: str = "GET"):
     request = urllib.request.Request(url, method=method, headers={"User-Agent": USER_AGENT})
     try:
         with _opener.open(request, timeout=timeout) as response:
-            return response.status, response.headers, response.read()
+            # Only HTML is parsed for links; PDFs and other files are not downloaded.
+            is_html = "html" in response.headers.get("Content-Type", "")
+            return response.status, response.headers, response.read() if is_html else b""
     except urllib.error.HTTPError as error:
-        return error.code, error.headers, error.read() if error.fp else b""
-    except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
-        return 0, {}, str(error).encode()
+        return error.code, error.headers, b""
+    except Exception as error:  # bad URL, timeout, connection reset: record it and carry on
+        return 0, {}, f"{type(error).__name__}: {error}".encode()
 
 
 def normalise(url: str, base: str) -> str | None:
@@ -103,9 +105,10 @@ def normalise(url: str, base: str) -> str | None:
         return None
     if parts.hostname not in SITE_HOSTS:
         return None
-    path = parts.path or "/"
-    query = f"?{parts.query}" if parts.query else ""
-    return f"{CANONICAL_ORIGIN}{path}{query}"
+    # Encode spaces and other unsafe characters; keep existing %-escapes as they are.
+    path = urllib.parse.quote(parts.path or "/", safe="/%:@!$&'()*+,;=-._~")
+    query = urllib.parse.quote(parts.query, safe="=&%/:@!$'()*+,;-._~?")
+    return f"{CANONICAL_ORIGIN}{path}{'?' + query if query else ''}"
 
 
 # Pages behind a login on the old site; the new site replaces them rather than keeping them.
@@ -135,7 +138,7 @@ def crawl(start: str, max_pages: int, delay: float, out: Path) -> int:
         location = headers.get("Location", "") if headers else ""
         content_type = headers.get("Content-Type", "") if headers else ""
         row = {"url": url, "status": status, "location": location, "content_type": content_type,
-               "title": "", "found_on": source, "note": ""}
+               "title": "", "found_on": source, "note": body.decode(errors="replace") if status == 0 else ""}
 
         if location:
             target = normalise(location, url)
