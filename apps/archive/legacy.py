@@ -19,6 +19,7 @@ STATIC_REDIRECTS = {
     "/home/about": "/about/",
     "/home/charterandoperatingprocedures": "/charter-and-operating-procedures/",
     "/home/standards": "/standards/",
+    "/home/committees": "/about/committees/",
     "/home/contact": "/contact/",
     "/home/copyright": "/copyright/",
     "/home/referencing": "/for-authors/referencing/",
