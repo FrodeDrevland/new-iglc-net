@@ -52,6 +52,17 @@ The old conference page also listed a ZIP of all papers (`papers-zipped` contain
 - The 117 `jc3-2017` DOIs depend on itc.scix.net staying online. If those papers are also in the IGLC archive, they could be pointed to iglc.net instead.
 - No DOI is registered twice, and no two DOIs share a URL.
 
+## Crawl findings (inventory/crawl.csv, September 2026)
+
+10,581 URLs found. All 2,535 paper pages and all 31 published conference pages were reached, which matches the database.
+
+- **PDFs and presentations:** 2,827 links redirect to `iglcstorage.blob.core.windows.net`. The new site redirects to the same stored URLs.
+- **Files served from the site itself** (not blob storage), which need a new home and redirects from their old paths:
+  - `/Content/Proceedings/`: 12 full proceedings PDFs (2015 to 2024)
+  - `/Content/Documents/`: 3 standards PDFs and 4 IGLC33 author templates and forms
+- **Errors on the live site today:** papers 55, 422 and 2226 return a server error (500). Paper 2226 has a registered DOI (10.24928/2024/0164), so that DOI currently leads to an error page.
+- **Broken links on the live site:** relative `index.html` links (6 pages), `/Index/Papers` on the Proceedings page, `/ForAuthors/FormattingRequirements?view=...`, and a Cloudflare email-protection link. None need to be kept.
+
 ## Content pages (redirect to new Wagtail pages)
 
 The new pages must be created in the CMS with these slugs; until then the redirects lead to a 404.

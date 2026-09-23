@@ -3,7 +3,10 @@
 ## Phase 1: rebuild the foundation
 - [x] Route inventory from the legacy code (`docs/url-inventory.md`)
 - [x] URL inventory script: crawl, Crossref and check (`tools/url_inventory.py`)
-- [ ] Run the crawl and Crossref inventory on a machine that can reach iglc.net; commit the CSV files to `inventory/`
+- [x] Crawl and Crossref inventory (`inventory/`)
+- [ ] Move the 19 files under `/Content/Proceedings/` and `/Content/Documents/` to storage, and redirect the old paths
+- [ ] Check papers 55, 422 and 2226 (server errors on the old site) render on the new site
+- [ ] Run `url_inventory.py check` against the local site
 - [x] Django and Wagtail skeleton with the archive app; models ported from the legacy C# classes
 - [x] Old-URL redirects and exports
 - [ ] First local run: `makemigrations`, `migrate`, `test`; commit the migrations
