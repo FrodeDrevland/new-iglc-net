@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+{% block content %}
+<h1>Page not found</h1>
+<p>The page you asked for does not exist. Try <a href="{% url 'archive:search' %}">searching the papers</a> or go to the <a href="{% url 'home' %}">home page</a>.</p>
+{% endblock %}

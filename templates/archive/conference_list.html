@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Papers{% endblock %}
+{% block content %}
+<h1>Papers</h1>
+<p>Proceedings of every IGLC conference since 1993. Download everything as
+  <a href="{% url 'archive:export_complete_bibtex' %}" rel="nofollow">BibTeX</a> or
+  <a href="{% url 'archive:export_complete_ris' %}" rel="nofollow">RIS</a>.</p>
+<table class="list">
+  <thead><tr><th scope="col">Conference</th><th scope="col">Location</th><th scope="col">Year</th><th scope="col">Papers</th></tr></thead>
+  <tbody>
+  {% for conference in conferences %}
+    <tr>
+      <td><a href="{{ conference.get_absolute_url }}">IGLC {{ conference.number }}</a></td>
+      <td>{{ conference.location }}</td>
+      <td>{{ conference.year|default:"" }}</td>
+      <td>{{ conference.paper_count }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>International Group for Lean Construction</h1>
+  <p class="lead">A network of researchers from practice and academia in architecture, engineering and construction, working to renew how the built environment is designed, built and managed.</p>
+  <form class="search" action="{% url 'archive:search' %}" method="get" role="search">
+    <label for="q">Search {{ paper_count }} papers from {{ conference_count }} conferences</label>
+    <div class="search-row">
+      <input id="q" name="q" type="search" placeholder="Title, author or keyword">
+      <button type="submit">Search</button>
+    </div>
+  </form>
+</section>
+
+<section>
+  <h2>Latest proceedings</h2>
+  <ul class="cards">
+    {% for conference in latest_conferences %}
+    <li><a href="{{ conference.get_absolute_url }}"><strong>IGLC {{ conference.number }}</strong>
+      <span>{{ conference.location }}{% if conference.year %}, {{ conference.year }}{% endif %}</span>
+      <span class="muted">{{ conference.paper_count }} papers</span></a></li>
+    {% empty %}
+    <li>No proceedings published yet.</li>
+    {% endfor %}
+  </ul>
+  <p><a href="{% url 'archive:conference_list' %}">All proceedings</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,4 @@
+<li class="paper">
+  <a href="{{ paper.get_absolute_url }}">{{ paper.title }}</a>
+  <div class="muted">{{ paper.full_author_string }}{% if paper.pages %} &middot; pp. {{ paper.pages }}{% endif %}{% if show_conference %} &middot; IGLC {{ paper.conference.number }}{% endif %}</div>
+</li>

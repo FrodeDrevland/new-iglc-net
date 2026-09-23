@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}IGLC {{ conference.number }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="{% url 'archive:conference_list' %}">Papers</a></p>
+<h1>IGLC {{ conference.number }}{% if conference.location %}, {{ conference.location }}{% endif %}{% if conference.year %}, {{ conference.year }}{% endif %}</h1>
+{% if conference.proceedings_title %}<p class="lead">{{ conference.proceedings_title }}</p>{% endif %}
+<dl class="facts">
+  {% if conference.editors.all %}<dt>Editors</dt><dd>{{ conference.editors.all|join:", " }}</dd>{% endif %}
+  {% if conference.issn %}<dt>ISSN</dt><dd>{{ conference.issn }}</dd>{% endif %}
+  {% for volume in conference.volumes.all %}{% if volume.isbn %}<dt>ISBN, volume {{ volume.number }}</dt><dd>{{ volume.isbn }}</dd>{% endif %}{% endfor %}
+  <dt>Export</dt><dd><a href="{% url 'archive:export_conference_bibtex' conference.pk %}" rel="nofollow">BibTeX</a>, <a href="{% url 'archive:export_conference_ris' conference.pk %}" rel="nofollow">RIS</a></dd>
+</dl>
+<h2>{{ papers|length }} papers</h2>
+<ol class="papers">
+  {% for paper in papers %}{% include "archive/_paper_item.html" %}{% endfor %}
+</ol>
+{% endblock %}

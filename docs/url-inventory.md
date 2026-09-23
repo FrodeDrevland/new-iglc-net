@@ -1,0 +1,80 @@
+# URL inventory
+
+Every URL pattern the old iglc.net answers (ASP.NET MVC 5, 2014 to 2026), taken from its controllers and views, and how the new site handles it.
+The old site matched URLs case-insensitively, and the default route `{controller}/{action}/{id}` also accepted `?id=`. The new site redirects both forms with a 301 (see `apps/archive/legacy.py`).
+
+To inventory the actual URLs, including every paper and the URLs registered with Crossref, run the script on a machine that can reach iglc.net:
+
+```
+python tools/url_inventory.py crawl --out inventory/crawl.csv
+python tools/url_inventory.py crossref --mailto <your email> --out inventory/crossref.csv
+```
+
+Then check the new site against both lists:
+
+```
+python tools/url_inventory.py check inventory/crawl.csv inventory/crossref.csv --base http://localhost:8000
+```
+
+## Proceedings archive (must keep working)
+
+| Old URL | New URL | Status |
+| --- | --- | --- |
+| `/Papers`, `/Papers/Index` | `/papers` | Done |
+| `/Papers/Conference/{id}` | `/papers/conference/{id}` | Done |
+| `/Papers/Details/{id}` (Crossref resource URL) | `/papers/details/{id}` | Done |
+| `/papers/details/{id}/pdf` (redirects to the PDF in blob storage) | same | Done |
+| `/papers/details/{id}/presentation` | same | Done |
+| `/Papers/PDF/{id}`, `/Papers/Presentation/{id}` | `/papers/details/{id}/pdf`, `.../presentation` | Done |
+| `/Papers/Search` (GET form, POST `query`) | `/papers/search?q=` (POST still accepted) | Done |
+| `/Papers/FindByConftoolId?year=&id=` | same, lower case | Done |
+| `/Papers/ExportBibtex/{id}`, `/Papers/ExportRis/{id}` | same, lower case | Done |
+| `/Papers/ExportConferenceBibtex/{id}`, `/Papers/ExportConferenceRis/{id}` | same, lower case | Done |
+| `/Papers/ExportSearchBibtex?query=`, `/Papers/ExportSearchRis?query=` | same, lower case | Done |
+| `/Papers/ExportCompleteBibtex`, `/Papers/ExportCompleteRis` | same, lower case | Done |
+| Any of the above with `?id=` instead of `/{id}` | the `/{id}` form | Done |
+
+The PDF links redirect to the full-text URL stored on each paper, which today points to Azure Blob Storage. Those blob URLs are also linked directly from other sites, so the storage account and container names should be kept, or redirected, when files move.
+
+The old conference page also listed a ZIP of all papers (`papers-zipped` container) and full proceedings PDFs (`proceedings` container, files named `Proceedings-IGLC{number}*.pdf`). Not yet ported.
+
+## Content pages (redirect to new Wagtail pages)
+
+The new pages must be created in the CMS with these slugs; until then the redirects lead to a 404.
+
+| Old URL | New URL |
+| --- | --- |
+| `/`, `/Home`, `/Home/Index` | `/` |
+| `/Home/About` | `/about/` |
+| `/Home/CharterAndOperatingProcedures` | `/charter-and-operating-procedures/` |
+| `/Home/Standards` | `/standards/` |
+| `/Home/Contact` | `/contact/` |
+| `/Home/Copyright` | `/copyright/` |
+| `/Home/Referencing`, `/Referencing`, `/ForAuthors/Referencing` | `/for-authors/referencing/` |
+| `/ForAuthors`, `/ForAuthors/Index`, `/ForAuthors/ShowView` | `/for-authors/` |
+| `/ForAuthors?view=X` (About, ContentRequirements, CopyrightPolicy, EthicsAndMalpracticeStatement, FormattingRequirements, Keywords, PaperStructure, PaperSubmissionAndReviewProcess, Publication, PublicationSchedule, Referencing, Templates) | `/for-authors/x-in-kebab-case/` |
+| `/ForAuthors/Templates`, `/PaperStructure`, `/EthicsAndMalpracticeStatement` | `/for-authors/templates/` and so on |
+| `/Home/ActiveConference`, `/Home/active-conference`, `/ActiveConference` | `/active-conference/` (later conference.iglc.net) |
+| `/ActiveConference/CallForPapers`, `/ConferenceWebsite`, `/FollowingConference` | `/active-conference/call-for-papers/` and so on |
+| `/Links`, `/Home/important-links`, `/Community/Links` | `/links/` |
+| `/Community/Coaching` | `/community/coaching/` |
+| `/Community/MailingList` | `/community/mailing-list/` |
+| `/Anniversary`, `/Anniversary/SvenBertelsen80` | `/anniversary/`, `/anniversary/sven-bertelsen-80/` |
+| `/InMemoriam`, `/InMemoriam/SvenBertelsen` | `/in-memoriam/`, `/in-memoriam/sven-bertelsen/` |
+| `/Sponsors` | `/sponsors/` |
+| `/Proceedings` (full proceedings PDFs) | `/proceedings/` |
+| `/Errors/Error404` | `/` |
+
+## Replaced, not kept
+
+| Old URL | New URL |
+| --- | --- |
+| `/Admin/...` (old admin area) | `/cms/` (Wagtail) |
+| `/Account/...` (login, register, password) | `/cms/login/` |
+| `/DataPunching/...`, `/Authors/...` (admin tools) | `/manage/` (Django admin) |
+| `/Papers/Edit/{id}`, `/Papers/ResetFriendlyFileName/{id}` | `/manage/archive/paper/{id}/change/` (not redirected) |
+
+## New site admin
+
+- `/manage/`: Django admin for the archive (papers, authors, conferences, links).
+- `/cms/`: Wagtail for content pages.

@@ -1,0 +1,36 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}IGLC{% endblock %} | International Group for Lean Construction</title>
+  <meta name="description" content="{% block description %}The International Group for Lean Construction: a network of researchers from practice and academia in architecture, engineering and construction.{% endblock %}">
+  {% block meta %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="{% url 'home' %}">IGLC</a>
+      <nav aria-label="Main">
+        <a href="{% url 'archive:conference_list' %}">Papers</a>
+        <a href="{% url 'archive:search' %}">Search</a>
+        <a href="/for-authors/">For authors</a>
+        <a href="/active-conference/">Conference</a>
+        <a href="/about/">About</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>International Group for Lean Construction, founded 1993.</p>
+      <p>Content on iglc.net is licensed under
+        <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/">CC BY-NC-SA 3.0</a>.</p>
+    </div>
+  </footer>
+</body>
+</html>
