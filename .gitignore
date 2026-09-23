@@ -16,3 +16,5 @@ node_modules/
 *.bacpac
 *.bak
 inventory/*.json
+inventory/check-report.csv
+inventory/recheck-report.csv

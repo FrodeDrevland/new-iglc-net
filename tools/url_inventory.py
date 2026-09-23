@@ -16,6 +16,8 @@ python tools/url_inventory.py crawl --out inventory/crawl.csv
 python tools/url_inventory.py crossref --mailto you@example.org --out inventory/crossref.csv
 python tools/url_inventory.py check inventory/crawl.csv inventory/crossref.csv \
     --base http://localhost:8000 --out inventory/check-report.csv
+python tools/url_inventory.py check inventory/check-report.csv --base http://localhost:8000 \
+    --out inventory/recheck-report.csv     # only the URLs that failed last time
 """
 
 from __future__ import annotations
@@ -210,7 +212,10 @@ def crossref(mailto: str, out: Path, rows_per_page: int = 1000) -> int:
 def _urls_from(path: Path) -> list[str]:
     with path.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
-        column = "resource_url" if "resource_url" in (reader.fieldnames or []) else "url"
+        fields = reader.fieldnames or []
+        if "old_url" in fields:  # an earlier check report: re-check only what failed
+            return [row["old_url"] for row in reader if row.get("ok") != "True"]
+        column = "resource_url" if "resource_url" in fields else "url"
         return [row[column] for row in reader if row.get(column)]
 
 
