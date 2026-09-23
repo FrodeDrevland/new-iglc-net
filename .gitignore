@@ -11,3 +11,8 @@ staticfiles/
 *.log
 .DS_Store
 node_modules/
+
+# Database exports contain personal data (user accounts, emails). Never commit them.
+*.bacpac
+*.bak
+inventory/*.json

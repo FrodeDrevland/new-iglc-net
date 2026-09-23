@@ -104,3 +104,14 @@ class PaperModelTests(ArchiveTestCase):
         self.assertEqual(self.paper.short_author_string(), "Smith et al.")
         self.assertEqual(self.paper.full_author_string(), "Ann Smith, Bo Jones and Cy Lee")
         self.assertEqual(self.paper.file_name(), "Smith et al. 2022 - Takt Planning in Practice")
+
+
+class LegacyImportTests(TestCase):
+    def test_clean_doi(self):
+        from .legacy_import import clean_doi
+
+        self.assertEqual(clean_doi("https://10.24928/2019/0123"), "10.24928/2019/0123")
+        self.assertEqual(clean_doi("https://doi.org/10.24928/2019/0123"), "10.24928/2019/0123")
+        self.assertEqual(clean_doi("10.24928/2019/0174."), "10.24928/2019/0174.")  # registered like this
+        self.assertEqual(clean_doi(" 10.24928/2019/0123 "), "10.24928/2019/0123")
+        self.assertEqual(clean_doi(None), "")
