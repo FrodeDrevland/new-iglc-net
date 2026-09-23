@@ -54,3 +54,13 @@ $files | Set-Content inventory\blob-files.txt
 On the preview server, copy `blob-files.txt` to `/mnt/user/appdata/iglc/import/` and run
 `docker exec iglc-web python manage.py link_blob_files /import/blob-files.txt`.
 The links can also be edited by hand on each conference in the archive admin.
+
+The older full proceedings (2015 to 2022) were served from the old site's own `/Content/Proceedings/` folder and
+are listed on the "Full proceedings" page. To link those to their conference pages as well, run (after `import_legacy_pages`):
+
+```powershell
+.venv\Scripts\python manage.py link_full_proceedings
+```
+
+It reads the table on the Full proceedings page and replaces the links for each conference it lists, so run it
+after `link_blob_files`.

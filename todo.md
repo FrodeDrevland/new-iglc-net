@@ -18,7 +18,7 @@
 - [ ] Self-registration with protection against bots (email confirmation, rate limiting, honeypot field), when accounts have a use (phase 4 or 5)
 - [ ] Fix page ranges of papers 1647 and 1978 (first page after last page)
 - [x] Full proceedings PDFs and ZIP downloads on conference pages (`link_blob_files`)
-- [ ] Run `link_blob_files` with the real blob listing (docs/content-files.md), locally and on the preview
+- [ ] Run `link_blob_files` and `link_full_proceedings` (docs/content-files.md), locally and on the preview
 - [ ] Before switch-over: Crossref deposit XML export (the old admin's Crossref page) must exist in the new site, or keep the old admin running until phase 2
 - [ ] Postgres full-text search for the archive
 - [ ] Author pages (AuthorPerson) with ORCID

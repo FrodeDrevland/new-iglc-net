@@ -200,3 +200,27 @@ class BlobFileTests(ArchiveTestCase):
         self.assertContains(response, "All papers (ZIP)")
         self.assertContains(response, "Volume 2 (PDF)")
         self.assertEqual(self.conference.proceedings_files.count(), 2)
+
+
+class FullProceedingsTests(ArchiveTestCase):
+    def test_link_full_proceedings_from_page(self):
+        import json
+        from io import StringIO
+
+        from django.core.management import call_command
+        from wagtail.models import Site
+
+        from apps.pages.models import StandardPage
+
+        root = Site.objects.get(is_default_site=True).root_page
+        page = StandardPage(title="Full proceedings", slug="proceedings", body=json.dumps([{
+            "type": "html",
+            "value": '<table><tr><td>IGLC 30</td><td>2022</td><td><a href="/Content/Proceedings/IGLC-2022 Proceedings.pdf">'
+                     'Volume I</a></td></tr><tr><td>IGLC 99</td><td><a href="/x.pdf">Volume I</a></td></tr></table>',
+        }]))
+        root.add_child(instance=page)
+        with self.settings(LEGACY_CONTENT_URL="https://store.example.net/content"):
+            call_command("link_full_proceedings", stdout=StringIO())
+        files = list(self.conference.proceedings_files.all())
+        self.assertEqual([(f.label, f.url) for f in files],
+                         [("Full proceedings", "https://store.example.net/content/Proceedings/IGLC-2022%20Proceedings.pdf")])
