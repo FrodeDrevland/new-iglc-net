@@ -13,6 +13,7 @@ The full plan: https://claude.ai/code/artifact/4eba9a7d-936c-4caa-affb-cbefeb7f4
 - conference.iglc.net serves the current conference; conference.iglc.net/<year>/ holds each year's site.
 - Registration and payment are out of scope.
 - The member register and the mailing list are separate; unsubscribing does not affect the right to vote.
+- Old user accounts (4,760, mostly bots) are not migrated; people create new accounts. Registration must be protected against bots.
 - Governance follows the IGLC Charter and Operating Procedures: https://www.iglc.net/Home/CharterAndOperatingProcedures
 
 ## Hard constraints

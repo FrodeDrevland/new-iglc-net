@@ -14,7 +14,8 @@
 - [ ] Repository on GitHub
 - [x] Get a copy of the production database (.bacpac in inventory/, not in Git)
 - [x] Repeatable import from the .bacpac, keeping IDs, with count checks (`import_legacy`)
-- [ ] Decide what to do with the 4,760 old user accounts (only 1 admin and 26 punchers have roles; none are imported)
+- [x] Old user accounts: mostly bots, not migrated; people register anew on the new site
+- [ ] Self-registration with protection against bots (email confirmation, rate limiting, honeypot field), when accounts have a use (phase 4 or 5)
 - [ ] Fix page ranges of papers 1647 and 1978 (first page after last page)
 - [ ] Full proceedings PDFs and ZIP downloads on conference pages (blob containers `proceedings` and `papers-zipped`)
 - [ ] Postgres full-text search for the archive
