@@ -18,7 +18,9 @@
 - [ ] Full proceedings PDFs and ZIP downloads on conference pages (blob containers `proceedings` and `papers-zipped`)
 - [ ] Postgres full-text search for the archive
 - [ ] Author pages (AuthorPerson) with ORCID
-- [ ] CMS content ported to Wagtail pages with the slugs in `docs/url-inventory.md`
+- [x] CMS content ported to Wagtail pages (`import_legacy_pages`)
+- [ ] Links page generated from the link database (`/links/`)
+- [ ] Review the imported pages; some are out of date (IGLC33 templates, the 34th conference page)
 - [ ] New visual design
 - [ ] Hosting decision and test deployment
 - [ ] Working version to show before switch-over

@@ -27,7 +27,8 @@ STATIC_REDIRECTS = {
     "/activeconference": "/active-conference/",
     "/activeconference/index": "/active-conference/",
     "/activeconference/callforpapers": "/active-conference/call-for-papers/",
-    "/activeconference/conferencewebsite": "/active-conference/conference-website/",
+    # The old page only forwarded visitors to the conference's own website.
+    "/activeconference/conferencewebsite": "https://www.iglc-conference.com/",
     "/activeconference/followingconference": "/active-conference/following-conference/",
     "/home/important-links": "/links/",
     "/links": "/links/",
@@ -36,20 +37,16 @@ STATIC_REDIRECTS = {
     "/community/coaching": "/community/coaching/",
     "/community/mailinglist": "/community/mailing-list/",
     "/forauthors/referencing": "/for-authors/referencing/",
-    "/forauthors/templates": "/for-authors/templates/",
-    "/forauthors/paperstructure": "/for-authors/paper-structure/",
-    "/forauthors/ethicsandmalpracticestatement": "/for-authors/ethics-and-malpractice-statement/",
     "/anniversary": "/anniversary/",
     "/anniversary/index": "/anniversary/",
     "/anniversary/svenbertelsen80": "/anniversary/sven-bertelsen-80/",
     "/inmemoriam": "/in-memoriam/",
     "/inmemoriam/index": "/in-memoriam/",
     "/inmemoriam/svenbertelsen": "/in-memoriam/sven-bertelsen/",
-    "/sponsors": "/sponsors/",
-    "/sponsors/index": "/sponsors/",
     "/proceedings": "/proceedings/",
     "/proceedings/index": "/proceedings/",
     "/papers/index": "/papers",
+    "/index/papers": "/papers",  # broken link on the old Proceedings page
     "/errors/error404": "/",
 }
 
@@ -75,6 +72,13 @@ ID_QUERY_ROUTES = {
 
 FOR_AUTHORS_PATHS = {"/forauthors", "/forauthors/index", "/forauthors/showview"}
 
+# Views of the old "For authors" section; also reachable as /ForAuthors/<View>.
+FOR_AUTHORS_VIEWS = [
+    "ContentRequirements", "CopyrightPolicy", "EthicsAndMalpracticeStatement", "FormattingRequirements",
+    "Keywords", "PaperStructure", "PaperSubmissionAndReviewProcess", "Publication", "PublicationSchedule",
+    "Referencing", "Templates",
+]
+
 # Paths served as files; never rewritten.
 UNTOUCHED_PREFIXES = ("/static/", "/media/", "/documents/")
 
@@ -89,10 +93,14 @@ def legacy_target(path: str, query) -> str | None:
 
     if key in FOR_AUTHORS_PATHS:
         view = re.sub(r"[^A-Za-z]", "", query.get("view", ""))
-        return f"/for-authors/{_kebab(view)}/" if view else "/for-authors/"
+        return f"/for-authors/{_kebab(view)}/" if view and view.lower() != "about" else "/for-authors/"
 
     if key in STATIC_REDIRECTS:
         return STATIC_REDIRECTS[key]
+
+    for view in FOR_AUTHORS_VIEWS:
+        if key == f"/forauthors/{view.lower()}":
+            return f"/for-authors/{_kebab(view)}/"
 
     for prefix, target in PREFIX_REDIRECTS:
         if key == prefix or key.startswith(prefix + "/"):

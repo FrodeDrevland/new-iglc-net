@@ -65,7 +65,7 @@ The old conference page also listed a ZIP of all papers (`papers-zipped` contain
 
 ## Content pages (redirect to new Wagtail pages)
 
-The new pages must be created in the CMS with these slugs; until then the redirects lead to a 404.
+`python manage.py import_legacy_pages` creates these pages in Wagtail from the old views (converted by `tools/convert_legacy_pages.py` into `apps/pages/legacy_content/pages.json`). `/Links` is not a CMS page; it will be generated from the link database.
 
 | Old URL | New URL |
 | --- | --- |
@@ -80,13 +80,13 @@ The new pages must be created in the CMS with these slugs; until then the redire
 | `/ForAuthors?view=X` (About, ContentRequirements, CopyrightPolicy, EthicsAndMalpracticeStatement, FormattingRequirements, Keywords, PaperStructure, PaperSubmissionAndReviewProcess, Publication, PublicationSchedule, Referencing, Templates) | `/for-authors/x-in-kebab-case/` |
 | `/ForAuthors/Templates`, `/PaperStructure`, `/EthicsAndMalpracticeStatement` | `/for-authors/templates/` and so on |
 | `/Home/ActiveConference`, `/Home/active-conference`, `/ActiveConference` | `/active-conference/` (later conference.iglc.net) |
-| `/ActiveConference/CallForPapers`, `/ConferenceWebsite`, `/FollowingConference` | `/active-conference/call-for-papers/` and so on |
+| `/ActiveConference/CallForPapers`, `/FollowingConference` | `/active-conference/call-for-papers/`, `/active-conference/following-conference/` |
+| `/ActiveConference/ConferenceWebsite` | `https://www.iglc-conference.com/` (the old page only forwarded there) |
 | `/Links`, `/Home/important-links`, `/Community/Links` | `/links/` |
 | `/Community/Coaching` | `/community/coaching/` |
 | `/Community/MailingList` | `/community/mailing-list/` |
 | `/Anniversary`, `/Anniversary/SvenBertelsen80` | `/anniversary/`, `/anniversary/sven-bertelsen-80/` |
 | `/InMemoriam`, `/InMemoriam/SvenBertelsen` | `/in-memoriam/`, `/in-memoriam/sven-bertelsen/` |
-| `/Sponsors` | `/sponsors/` |
 | `/Proceedings` (full proceedings PDFs) | `/proceedings/` |
 | `/Errors/Error404` | `/` |
 

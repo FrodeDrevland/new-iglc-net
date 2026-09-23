@@ -39,3 +39,8 @@ table.list th, table.list td { text-align: left; padding: .45rem .5rem; border-b
 .cite { background: var(--soft); padding: .75rem 1rem; border-radius: 6px; }
 .site-footer { border-top: 1px solid var(--line); background: var(--soft); font-size: .92rem; }
 .site-footer .wrap { padding-top: 1rem; padding-bottom: 1rem; }
+.prose table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+.prose th, .prose td { border-bottom: 1px solid var(--line); padding: .4rem .5rem; text-align: left; vertical-align: top; }
+.prose img { max-width: 100%; height: auto; }
+.child-pages ul { list-style: none; padding: 0; display: grid; gap: .4rem; }
+.child-pages a { display: block; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 6px; text-decoration: none; }
