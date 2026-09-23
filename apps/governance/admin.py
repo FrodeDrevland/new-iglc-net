@@ -7,7 +7,7 @@ class SeatInline(admin.TabularInline):
     model = Seat
     extra = 1
     fields = ("first_name", "last_name", "role", "is_chair", "affiliation", "country", "start_date", "end_date",
-              "person", "note")
+              "person", "url", "note")
     raw_id_fields = ("person",)
 
 

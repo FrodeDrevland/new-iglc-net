@@ -36,4 +36,6 @@
 ## Governance (pulled forward from phase 4)
 
 - [x] Committees and officers page at /about/committees/, managed under Manage → Governance
-- [ ] Enter the current officers, Standardisation Committee and Control Committee members
+- [x] Current officers and committee members loaded (`load_committee_members`, data in apps/governance/data/members.csv)
+- [ ] Control Committee: second member and the two spares
+- [ ] Exact ABM dates for 2029 (placeholder 1 July)

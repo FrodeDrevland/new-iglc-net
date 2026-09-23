@@ -62,6 +62,7 @@ class Seat(models.Model):
         "archive.AuthorPerson", null=True, blank=True, on_delete=models.SET_NULL, related_name="seats",
         help_text="Links the name to the person's author page, if they have one.",
     )
+    url = models.URLField("profile page", blank=True, help_text="The person's page at their institution.")
     start_date = models.DateField(null=True, blank=True, help_text="Usually the Annual Business Meeting that elected them.")
     end_date = models.DateField(
         null=True, blank=True,

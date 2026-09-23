@@ -19,7 +19,7 @@
     <tr>
       <td class="name">{% if seat.person_id %}<a href="{{ seat.person.get_absolute_url }}">{{ seat.full_name }}</a>{% else %}{{ seat.full_name }}{% endif %}</td>
       <td>{% if seat.is_chair %}Chair, {{ seat.get_role_display }}{% else %}{{ seat.get_role_display }}{% endif %}{% if seat.note %} <span class="muted">({{ seat.note }})</span>{% endif %}</td>
-      <td>{{ seat.affiliation }}{% if seat.affiliation and seat.country %}, {% endif %}{{ seat.country }}</td>
+      <td>{% if seat.url %}<a href="{{ seat.url }}" rel="noopener">{{ seat.affiliation|default:"Profile" }}</a>{% else %}{{ seat.affiliation }}{% endif %}{% if seat.affiliation and seat.country %}, {% endif %}{{ seat.country }}</td>
       <td class="term">{{ seat.term }}</td>
     </tr>
     {% endfor %}

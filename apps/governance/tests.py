@@ -34,3 +34,20 @@ class CommitteePageTests(TestCase):
         body = response.content.decode()
         self.assertLess(body.index("Gina Secretary"), body.index("Ada Current"))
         self.assertContains(response, "Control Committee")
+
+
+class LoadMembersTests(TestCase):
+    def test_load_csv_twice(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        call_command("load_committee_members", stdout=StringIO())
+        call_command("load_committee_members", stdout=StringIO())
+        sc = Committee.objects.get(slug="standardisation-committee")
+        self.assertEqual(sc.seats.count(), 12)
+        self.assertEqual(sc.current_seats(on=date(2026, 9, 24)).count(), 12)
+        self.assertEqual(sc.seats.filter(role=Seat.Role.ELECTED).count(), 9)
+        self.assertEqual(sc.seats.get(is_chair=True).last_name, "Drevland")
+        self.assertEqual(Committee.objects.get(slug="officers").seats.count(), 3)
+        self.assertEqual(Committee.objects.get(slug="control-committee").seats.count(), 1)
