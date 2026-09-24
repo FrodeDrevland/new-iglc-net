@@ -58,7 +58,7 @@ az postgres flexible-server create -g $rg -n $db -l $loc `
   --tier Burstable --sku-name Standard_B1ms --storage-size 32 --version 16 `
   --admin-user iglcadmin --admin-password $dbPassword `
   --backup-retention 35 --public-access 0.0.0.0
-az postgres flexible-server db create -g $rg -s $db -d iglc
+az postgres flexible-server db create -g $rg --server-name $db --name iglc
 ```
 
 (Newer versions of the Azure CLI accept `--database-name` only for elastic clusters, so the
@@ -70,9 +70,11 @@ backups for 35 days and can restore to any point in that time. To reach the data
 
 ```powershell
 $myIp = (Invoke-RestMethod https://api.ipify.org)
-az postgres flexible-server firewall-rule create -g $rg -n $db --rule-name home `
+az postgres flexible-server firewall-rule create -g $rg --server-name $db --name home `
   --start-ip-address $myIp --end-ip-address $myIp
 ```
+
+The server creation prints the password in its output: do not paste that output anywhere.
 
 The database URL used below:
 
@@ -105,10 +107,8 @@ foreach ($f in "times.ttf","timesi.ttf","timesbd.ttf") {
 ## 4. Web app
 
 ```powershell
-az appservice plan create -g $rg -n iglc-plan -l $loc --is-linux --sku B1
-az webapp create -g $rg -p iglc-plan -n $app --container-image-name mcr.microsoft.com/appsvc/staticsite:latest
-az webapp update -g $rg -n $app --https-only true
-az webapp config set -g $rg -n $app --always-on true --generic-configurations '{\"healthCheckPath\": \"/healthz\"}'
+
+
 ```
 
 The placeholder image is replaced by the first deployment (step 6).
