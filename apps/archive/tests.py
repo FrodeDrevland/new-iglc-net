@@ -1,6 +1,6 @@
 from datetime import date
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .legacy import legacy_target
 from .models import Author, Conference, Editor, Paper, Volume
@@ -131,9 +131,14 @@ class AdminBarTests(ArchiveTestCase):
         self.assertContains(self.client.get("/papers/conference/25"), "/manage/archive/conference/25/change/")
 
 
+@override_settings(SITE_NOINDEX=False)  # a preview has it on
 class RobotsTests(TestCase):
     def test_robots(self):
         self.assertContains(self.client.get("/robots.txt"), "Disallow: /cms/")
+
+    @override_settings(SITE_NOINDEX=True)
+    def test_preview_is_not_indexed(self):
+        self.assertEqual(self.client.get("/robots.txt").content.decode().strip(), "User-agent: *\nDisallow: /")
         with self.settings(SITE_NOINDEX=True):
             self.assertContains(self.client.get("/robots.txt"), "Disallow: /\n")
 

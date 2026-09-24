@@ -43,6 +43,7 @@ class SitemapTests(TestCase):
         self.assertIn("/about/committees</loc>", self.client.get("/sitemap-listings.xml").content.decode())
         self.assertEqual(self.client.get("/sitemap-pages.xml").status_code, 200)
 
+    @override_settings(SITE_NOINDEX=False)  # a preview has it on
     def test_robots_points_to_sitemap(self):
         self.assertIn("Sitemap: http://testserver/sitemap.xml", self.client.get("/robots.txt").content.decode())
 
