@@ -31,6 +31,14 @@ Camera-ready examples: missing Title/Authors style, missing affiliation footnote
 mandatory headings and changed page setup are "reject"; long title, abstract over 200 words,
 more than five keywords, missing ORCID and non-template styles are "warn".
 
+Layout checks (apps/production/layout_checks.py, September 2026): the submission checklist
+(missing: warn; still there at production: reject; its pages never count towards the 12),
+references in the abstract, empty paragraphs, figures not "In line with text", captions not
+directly above tables / below figures or in the wrong caption style, formatting set by hand
+(ten or more pieces of text or paragraphs), and style definitions that differ from the current
+template (apps/production/template_styles.json; for a new template run
+`python manage.py template_styles "IGLC35 Paper Template.dotx"`).
+
 ## Camera-ready to publication
 
 1. **Author uploads the camera-ready Word file.** The checks run at once (reject / warn and

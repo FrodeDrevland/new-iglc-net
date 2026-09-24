@@ -1,0 +1,142 @@
+{
+ "defaults": {
+  "rFonts.ascii": "Times New Roman",
+  "rFonts.hAnsi": "Times New Roman"
+ },
+ "styles": {
+  "annotation subject": {
+   "b.val": "on"
+  },
+  "annotation text": {},
+  "authors": {
+   "b.val": "on",
+   "jc.val": "center",
+   "spacing.after": "480",
+   "spacing.before": "360",
+   "sz.val": "24"
+  },
+  "block quote": {
+   "ind.firstLine": "0",
+   "ind.left": "709",
+   "spacing.after": "120",
+   "spacing.before": "120",
+   "sz.val": "22"
+  },
+  "checkgroup": {
+   "b.val": "on",
+   "spacing.before": "240",
+   "spacing.line": "259",
+   "spacing.lineRule": "auto",
+   "sz.val": "22"
+  },
+  "checkpoint": {
+   "spacing.line": "259",
+   "spacing.lineRule": "auto",
+   "sz.val": "22"
+  },
+  "figure": {
+   "jc.val": "center",
+   "spacing.before": "240",
+   "sz.val": "24"
+  },
+  "figure caption": {
+   "spacing.after": "120",
+   "spacing.before": "120"
+  },
+  "footer": {
+   "jc.val": "right"
+  },
+  "footnote": {
+   "ind.hanging": "360",
+   "ind.left": "360"
+  },
+  "footnote text": {
+   "ind.hanging": "180",
+   "ind.left": "180"
+  },
+  "header": {
+   "jc.val": "both"
+  },
+  "heading 1": {
+   "b.val": "on",
+   "caps.val": "on",
+   "spacing.before": "240",
+   "sz.val": "30"
+  },
+  "heading 2": {
+   "b.val": "on",
+   "spacing.before": "120",
+   "sz.val": "28"
+  },
+  "heading 3": {
+   "b.val": "on",
+   "spacing.before": "120",
+   "sz.val": "24"
+  },
+  "list bullet": {
+   "jc.val": "both",
+   "spacing.before": "60",
+   "sz.val": "24"
+  },
+  "list numbered": {},
+  "list paragraph": {
+   "ind.left": "720"
+  },
+  "normal": {},
+  "references": {
+   "ind.hanging": "340",
+   "ind.left": "340",
+   "jc.val": "both",
+   "sz.val": "24"
+  },
+  "revision": {},
+  "style figure + red": {},
+  "style table body + (latin) arial red": {},
+  "table": {
+   "jc.val": "center",
+   "spacing.after": "240",
+   "spacing.before": "240"
+  },
+  "table body": {
+   "jc.val": "center",
+   "spacing.after": "60",
+   "spacing.before": "60",
+   "sz.val": "24"
+  },
+  "table body + left": {
+   "jc.val": "left"
+  },
+  "table caption": {
+   "jc.val": "center",
+   "spacing.after": "120",
+   "spacing.before": "240",
+   "sz.val": "24"
+  },
+  "table heading": {
+   "b.val": "on",
+   "jc.val": "center",
+   "spacing.after": "120",
+   "spacing.before": "120",
+   "sz.val": "24"
+  },
+  "text first": {
+   "jc.val": "both",
+   "spacing.before": "80",
+   "sz.val": "24"
+  },
+  "text running": {
+   "ind.firstLine": "340",
+   "spacing.before": "0"
+  },
+  "title": {
+   "b.val": "on",
+   "caps.val": "on",
+   "jc.val": "center",
+   "spacing.before": "760",
+   "sz.val": "40"
+  },
+  "x-citation": {
+   "jc.val": "both"
+  }
+ }
+}

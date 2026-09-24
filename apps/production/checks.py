@@ -63,6 +63,15 @@ RULES = {
     "not_anonymous": {"review": "reject"},
     "file_properties_names": {"review": "warn"},
     "track_changes_or_comments": {"review": "warn", "camera_ready": "reject"},
+    # Layout (layout_checks.py). "off" switches a check off for a stage.
+    "checklist_missing": {"review": "warn", "camera_ready": "warn", "production": "off"},
+    "checklist_present": {"production": "reject"},
+    "abstract_references": {"review": "warn", "camera_ready": "warn"},
+    "empty_paragraphs": {"review": "note", "camera_ready": "warn", "production": "note"},
+    "figure_floating": {"review": "warn", "camera_ready": "warn"},
+    "caption_position": {"review": "warn", "camera_ready": "warn"},
+    "manual_formatting": {"review": "note", "camera_ready": "warn", "production": "note"},
+    "styles_changed": {"review": "note", "camera_ready": "warn", "production": "note"},
 }
 
 MAX_PAGES = 12
@@ -147,11 +156,14 @@ def _page_checks(pdf, stage=None) -> list[tuple[str, str]]:
     try:
         from pypdf import PdfReader
 
-        pages = len(PdfReader(pdf).pages)
+        from .layout_checks import checklist_pages
+
+        reader = PdfReader(pdf)
+        pages = len(reader.pages) - checklist_pages(reader)  # the checklist does not count
     except Exception:  # noqa: BLE001 - any unreadable PDF
         return [("pdf_unreadable", "The PDF could not be read, so the number of pages was not checked")]
     if pages > MAX_PAGES:
-        return [("too_many_pages", f"The paper has {pages} pages (maximum {MAX_PAGES})")]
+        return [("too_many_pages", f"The paper has {pages} pages without the checklist (maximum {MAX_PAGES})")]
     return []
 
 
@@ -204,7 +216,10 @@ def check_paper(path, stage: str = "camera_ready", pdf=None) -> CheckResult:
     if pdf is not None:
         pdf_bytes = Path(pdf).read_bytes() if isinstance(pdf, (str, Path)) else pdf.read()
     manuscript = read_manuscript(path)
+    from .layout_checks import layout_checks
+
     raw = (list(zip(manuscript.issues.codes, manuscript.issues)) + _extra_checks(path, manuscript)
+           + layout_checks(path, manuscript.abstract)
            + _page_checks(io.BytesIO(pdf_bytes) if pdf_bytes else None, stage))
     if pdf_bytes:
         raw += _pages_differ(path, pdf_bytes)
@@ -224,7 +239,7 @@ def check_paper(path, stage: str = "camera_ready", pdf=None) -> CheckResult:
     for code, message in raw:
         rule = RULES.get(code, {})
         level = rule.get(stage) or (rule.get("camera_ready") if stage == PRODUCTION else None)
-        if level:
+        if level and level != "off":
             findings.append(Finding(code, level, message))
     findings.sort(key=lambda f: ORDER[f.level])
     return CheckResult(stage, manuscript, findings)

@@ -27,7 +27,8 @@ def sup(text):
 
 
 STYLES = {"Title": "Title", "Authors": "Authors", "Heading1": "heading 1", "TextFirst": "Text First",
-          "TextRunning": "Text Running", "Normal": "Normal"}
+          "TextRunning": "Text Running", "Normal": "Normal", "Figure": "Figure",
+          "Figurecaption": "Figure caption", "Tablecaption": "Table caption"}
 
 
 def make_docx(body, notes, header=""):
@@ -1004,3 +1005,104 @@ class ZipAndAuthorPageTests(PublishTests):
         page = self.client.get(person.get_absolute_url()).content.decode()
         self.assertIn('<span class="pp">2027</span>', page)
         self.assertNotIn("p. 77", page)
+
+
+def drawing(anchored=False):
+    WPNS = 'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"'
+    kind = "anchor" if anchored else "inline"
+    return f'<w:r><w:drawing><wp:{kind} {WPNS}/></w:drawing></w:r>'
+
+
+def checklist_pdf(paper_pages: int) -> bytes:
+    import io
+
+    from reportlab.pdfgen import canvas
+
+    buffer = io.BytesIO()
+    page = canvas.Canvas(buffer)
+    for number in range(paper_pages):
+        page.drawString(72, 700, f"Paper text on page {number + 1}")
+        page.showPage()
+    for heading in ("IGLC PAPER SUBMISSION CHECKLIST", "Abstract"):
+        page.drawString(72, 760, heading)
+        page.showPage()
+    page.save()
+    return buffer.getvalue()
+
+
+class LayoutCheckTests(SimpleTestCase):
+    def codes(self, body, abstract=""):
+        from .layout_checks import layout_checks
+
+        return {code: message for code, message in layout_checks(make_docx(body, NOTES), abstract)}
+
+    def test_checklist(self):
+        self.assertIn("checklist_missing", self.codes(BODY))
+        found = self.codes(BODY + p("Heading1", t("IGLC Paper Submission Checklist")) + p("TextFirst", t("x")))
+        self.assertIn("checklist_present", found)
+        self.assertNotIn("checklist_missing", found)
+
+    def test_references_in_the_abstract(self):
+        self.assertIn("abstract_references", self.codes(BODY, "As shown by (Koskela, 2000), flow matters."))
+        self.assertIn("abstract_references", self.codes(BODY, "Ballard and Howell (2003) argued so."))
+        self.assertNotIn("abstract_references", self.codes(BODY, "Papers from IGLC (1993–2025) were read."))
+
+    def test_empty_paragraphs(self):
+        found = self.codes(BODY.replace(p("Heading1", t("Introduction")),
+                                        p("Heading1", t("Introduction")) + "<w:p/><w:p/>"))
+        self.assertIn("2 empty paragraphs", found["empty_paragraphs"])
+        # at the very end (before the checklist or the end of the file) they are left alone
+        self.assertNotIn("empty_paragraphs", self.codes(BODY + "<w:p/>"))
+
+    def test_floating_figures_and_captions(self):
+        figure = p("Figure", drawing()) + p("Figurecaption", t("Figure 1: Flow"))
+        self.assertNotIn("figure_floating", self.codes(BODY + figure))
+        self.assertNotIn("caption_position", self.codes(BODY + figure))
+        self.assertIn("figure_floating", self.codes(BODY + p("Figure", drawing(anchored=True))))
+        wrong = p("Figurecaption", t("Figure 1: Flow")) + p("Figure", drawing())
+        self.assertIn("below its figure", self.codes(BODY + wrong)["caption_position"])
+        table = "<w:tbl><w:tr><w:tc><w:p>" + t("cell") + "</w:p></w:tc></w:tr></w:tbl>"
+        self.assertNotIn("caption_position", self.codes(BODY + p("Tablecaption", t("Table 1: Data")) + table))
+        self.assertIn("above its table", self.codes(BODY + table + p("Tablecaption", t("Table 1: Data")))["caption_position"])
+
+    def test_manual_formatting(self):
+        sized = "".join(p("TextRunning", f'<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:t>small {i}</w:t></w:r>')
+                        for i in range(12))
+        self.assertIn("font size of 12", self.codes(BODY + sized)["manual_formatting"])
+        # a few are left alone
+        self.assertNotIn("manual_formatting", self.codes(BODY + sized[: len(sized) // 4]))
+
+    def test_changed_styles(self):
+        import json
+
+        from .layout_checks import STYLES_FILE, _changed_styles
+
+        reference = json.loads(STYLES_FILE.read_text())
+        self.assertIn("title", reference["styles"])
+        path = make_docx(BODY, NOTES)
+        styles = ('<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                  '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/>'
+                  '<w:pPr><w:spacing w:before="360"/></w:pPr><w:rPr><w:sz w:val="40"/></w:rPr></w:style></w:styles>')
+        rewritten = path.with_name("styles.docx")
+        with zipfile.ZipFile(path) as source, zipfile.ZipFile(rewritten, "w") as target:
+            for name in source.namelist():
+                target.writestr(name, styles if name == "word/styles.xml" else source.read(name))
+        self.assertIn("Title", _changed_styles(rewritten)[0][1])
+
+    def test_checklist_pages_do_not_count(self):
+        import io
+
+        from .checks import _page_checks
+
+        self.assertEqual(_page_checks(io.BytesIO(checklist_pdf(12))), [])
+        self.assertEqual([c for c, _ in _page_checks(io.BytesIO(checklist_pdf(13)))], ["too_many_pages"])
+
+    def test_rules_per_stage(self):
+        from .checks import check_paper
+
+        path = make_docx(BODY + p("Heading1", t("IGLC Paper Submission Checklist")), NOTES)
+        self.assertIn("checklist_present", [f.code for f in check_paper(path, "production").findings])
+        self.assertNotIn("checklist_present", [f.code for f in check_paper(path, "camera_ready").findings])
+        plain = make_docx(BODY, NOTES)
+        self.assertIn("checklist_missing", [f.code for f in check_paper(plain, "camera_ready").findings])
+        self.assertNotIn("checklist_missing", [f.code for f in check_paper(plain, "production").findings])

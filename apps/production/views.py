@@ -77,7 +77,7 @@ def author_skill(request):
         archive.write(here / "skill" / "SKILL.md", "iglc-paper-check/SKILL.md")
         archive.write(here / "skill" / "check_paper.py", "iglc-paper-check/scripts/check_paper.py")
         archive.writestr("iglc-paper-check/scripts/iglc_check/__init__.py", "")
-        for name in ("docx_reader.py", "checks.py"):
+        for name in ("docx_reader.py", "checks.py", "layout_checks.py", "template_styles.json"):
             archive.write(here / name, f"iglc-paper-check/scripts/iglc_check/{name}")
     response = HttpResponse(buffer.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = 'attachment; filename="iglc-paper-check-skill.zip"'

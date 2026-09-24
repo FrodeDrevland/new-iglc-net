@@ -42,7 +42,14 @@ read, so they can see whether the metadata (title, authors, affiliations, ORCIDs
 | Missing heading (Abstract, Keywords, Introduction, References) | Add the heading with the **Heading 1** style. |
 | Paragraphs in a style that is not a template style (often "Normal") | Apply the template's styles: **Text First** for the first paragraph after a heading, **Text Running** for the following ones, **Table body** in tables, **Figure caption** / **Table caption** for captions, **References** for the reference list. |
 | Page size or margins changed | Layout → Margins → 2.5 cm on all sides; Layout → Size → A4. |
-| Too many pages | At most 12 pages, including references. Shortening is the author's decision. |
+| Too many pages | At most 12 pages, including references; the submission checklist at the end does not count. Shortening is the author's decision. |
+| Submission checklist missing | Copy the checklist from the end of the IGLC template to the end of the paper and tick the boxes that apply. |
+| Reference in the abstract | Rewrite the sentence without the citation. The wording is the author's decision. |
+| Empty paragraphs | Delete the empty lines (Home → ¶ shows them); the styles give the space between paragraphs. |
+| Figure not "In line with text" | Right-click the picture → Wrap Text → In Line with Text, in its own paragraph in the **Figure** style. |
+| Caption in the wrong place or style | Table captions go directly above the table (**Table caption**), figure captions directly below the figure (**Figure caption**). |
+| Formatting set by hand | Select the text and press Ctrl+Space (character formatting) and Ctrl+Q (paragraph formatting) so the style decides font, size and spacing. |
+| Style definitions changed | Start again from the current IGLC template and paste the text in with "Keep Text Only", or copy the template's styles with the Organizer (Developer → Document Template → Organizer). |
 | Not anonymous (review stage) | Replace author names with XXXX and remove the footnotes' contents; File → Info → Check for Issues → Inspect Document → remove Document Properties and Personal Information. |
 | Tracked changes or comments | Review → Accept all changes; delete all comments. |
 
@@ -54,6 +61,8 @@ as `PAPER-checked.docx`, never in the original:
 - apply template styles to paragraphs in Normal or foreign styles (Text First after a heading,
   Text Running otherwise, the caption styles for captions);
 - apply the Title and Authors styles;
+- delete empty paragraphs between paragraphs;
+- clear character and paragraph formatting set by hand (keep bold, italic, superscript and subscript);
 - accept tracked changes and remove comments, if the author confirms;
 - remove personal information from the file properties (review stage).
 
