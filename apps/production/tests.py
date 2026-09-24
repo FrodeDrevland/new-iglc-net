@@ -1106,3 +1106,74 @@ class LayoutCheckTests(SimpleTestCase):
         plain = make_docx(BODY, NOTES)
         self.assertIn("checklist_missing", [f.code for f in check_paper(plain, "camera_ready").findings])
         self.assertNotIn("checklist_missing", [f.code for f in check_paper(plain, "production").findings])
+
+
+class CheckSettingsTests(TestCase):
+    def test_rules_come_from_the_back_office(self):
+        from .checks import check_paper
+        from .models import CheckRule
+
+        path = make_docx(BODY.replace("Takt planning in practice", "T" * 95), NOTES)
+        self.assertIn("title_long", [f.code for f in check_paper(path, "review").findings])
+        CheckRule.objects.filter(code="title_long").update(review="off")
+        self.assertNotIn("title_long", [f.code for f in check_paper(path, "review").findings])
+        CheckRule.objects.filter(code="title_long").update(camera_ready="reject")
+        found = {f.code: f.level for f in check_paper(path, "camera_ready").findings}
+        self.assertEqual(found["title_long"], "reject")
+
+    def test_limits_come_from_the_back_office(self):
+        import io
+
+        from .checks import check_paper
+        from .models import CheckLimits
+
+        path = make_docx(BODY, NOTES)
+        pdf = io.BytesIO(checklist_pdf(11))
+        self.assertNotIn("too_many_pages", [f.code for f in check_paper(path, "camera_ready", pdf).findings])
+        limits = CheckLimits.load()
+        limits.max_pages, limits.title_chars = 10, 20
+        limits.save()
+        found = {f.code: f.message for f in check_paper(path, "camera_ready", io.BytesIO(checklist_pdf(11))).findings}
+        self.assertIn("maximum 10", found["too_many_pages"])
+        self.assertIn("maximum 20", found["title_long"])
+
+    def test_sync_keeps_changed_levels(self):
+        from .check_config import sync_rules
+        from .checks import RULE_LABELS
+        from .models import CheckRule
+
+        self.assertEqual(CheckRule.objects.count(), len(RULE_LABELS))
+        CheckRule.objects.filter(code="empty_paragraphs").update(camera_ready="reject")
+        sync_rules()
+        self.assertEqual(CheckRule.objects.get(code="empty_paragraphs").camera_ready, "reject")
+
+    def test_back_office_pages(self):
+        from django.contrib.auth.models import User
+
+        from .models import CheckRule
+
+        self.client.force_login(User.objects.create_superuser("root", password="pw"))
+        self.assertContains(self.client.get("/manage/paper-check-rules/"), "Empty paragraphs")
+        rule = CheckRule.objects.get(code="empty_paragraphs")
+        response = self.client.post(f"/manage/paper-check-rules/edit/{rule.pk}/",
+                                    {"review": "off", "camera_ready": "reject", "production": "note"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(CheckRule.objects.get(pk=rule.pk).camera_ready, "reject")
+        self.assertNotEqual(self.client.get("/manage/paper-check-rules/new/").status_code, 200)
+        self.assertContains(self.client.get("/manage/settings/production/checklimits/", follow=True), "Maximum pages")
+        editor = User.objects.create_user("ed", password="pw")
+        self.client.force_login(editor)
+        self.assertNotEqual(self.client.get("/manage/paper-check-rules/").status_code, 200)
+
+    def test_skill_zip_carries_the_settings(self):
+        import io
+        import json
+
+        from .models import CheckRule
+
+        CheckRule.objects.filter(code="title_long").update(review="off")
+        response = self.client.get("/for-authors/check-your-paper/iglc-paper-check-skill.zip")
+        saved = json.loads(zipfile.ZipFile(io.BytesIO(response.content))
+                           .read("iglc-paper-check/scripts/iglc_check/check_rules.json"))
+        self.assertEqual(saved["rules"]["title_long"]["review"], "off")
+        self.assertEqual(saved["limits"]["max_pages"], 12)

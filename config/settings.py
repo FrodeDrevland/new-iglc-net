@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "apps.production",
     "apps.crossref",
     "apps.conferences",
+    "wagtail.contrib.settings",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",

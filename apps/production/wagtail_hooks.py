@@ -8,14 +8,14 @@ from wagtail.admin.menu import MenuItem
 
 from wagtail.admin.forms import WagtailAdminModelForm
 from wagtail.admin.menu import MenuItem as _MenuItem  # noqa: F401
-from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, ObjectList
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, InlinePanel, ObjectList
 from wagtail.admin.viewsets.model import ModelViewSet
 from django.core.exceptions import PermissionDenied
 from wagtail.admin.views.generic.models import EditView
 from wagtail.permission_policies import ModelPermissionPolicy
 
 from . import admin_urls
-from .models import PaperCheck, Production, ProductionEditor
+from .models import CheckRule, PaperCheck, Production, ProductionEditor
 
 
 @hooks.register("register_admin_urls")
@@ -137,9 +137,44 @@ class PaperCheckViewSet(ModelViewSet):
 paper_checks = PaperCheckViewSet("paper_checks", url_prefix="reports/paper-checks")
 
 
+# ---------------------------------------------------------------- the paper check's rules (Settings)
+
+class CheckRulePolicy(ModelPermissionPolicy):
+    """The rules come from the checks in the code: they can be changed, not added or deleted."""
+
+    def user_has_permission(self, user, action):
+        if action in ("add", "delete"):
+            return False
+        return super().user_has_permission(user, "change" if action == "inspect" else action)
+
+
+class CheckRuleViewSet(ModelViewSet):
+    model = CheckRule
+    icon = "tasks"
+    menu_label = "Paper check rules"
+    add_to_settings_menu = True
+    list_display = ["label", "code", "review", "camera_ready", "production"]
+    list_filter = ["review", "camera_ready", "production"]
+    search_fields = ["label", "code"]
+    list_per_page = 100
+    ordering = ["order"]
+    panels = [
+        HelpPanel("<p>What happens at each stage when this check finds something. <b>Reject</b>: the upload is "
+                  "refused until it is fixed. <b>Warn</b>: the author must confirm to submit anyway. <b>Note</b>: "
+                  "shown for information. <b>Off</b>: not checked. The limits (pages, words …) are under "
+                  "Settings → Paper check limits.</p>"),
+        FieldPanel("review"), FieldPanel("camera_ready"), FieldPanel("production"),
+    ]
+
+    @property
+    def permission_policy(self):
+        return CheckRulePolicy(self.model)
+
+
 @hooks.register("register_admin_viewset")
 def production_viewsets():
-    return [ProductionViewSet("production_settings", url_prefix="production-settings"), paper_checks]
+    return [ProductionViewSet("production_settings", url_prefix="production-settings"), paper_checks,
+            CheckRuleViewSet("check_rules", url_prefix="paper-check-rules")]
 
 
 @hooks.register("register_reports_menu_item")

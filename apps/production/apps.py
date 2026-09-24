@@ -10,6 +10,7 @@ class ProductionConfig(AppConfig):
         from django.db.models.signals import post_migrate
 
         post_migrate.connect(create_editor_group, sender=self)
+        post_migrate.connect(sync_check_rules, sender=self)
 
 
 EDITOR_GROUP = "Proceedings editors"
@@ -41,3 +42,9 @@ def create_editor_group(sender, **kwargs):
     publishers.permissions.add(*access)
     publishers.permissions.add(*permissions, *Permission.objects.filter(
         content_type__app_label="production", codename__in=["publish_production", "change_production"]))
+
+
+def sync_check_rules(sender, **kwargs):
+    from .check_config import sync_rules
+
+    sync_rules()

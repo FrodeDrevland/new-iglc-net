@@ -93,7 +93,7 @@ def _short(text: str) -> str:
 
 # ---------------------------------------------------------------- the checks
 
-def layout_checks(path, abstract: str = "") -> list[tuple[str, str]]:
+def layout_checks(path, abstract: str = "", manual_threshold: int = MANUAL_THRESHOLD) -> list[tuple[str, str]]:
     try:
         archive = zipfile.ZipFile(path)
         root = ET.fromstring(archive.read("word/document.xml"))
@@ -174,7 +174,7 @@ def layout_checks(path, abstract: str = "") -> list[tuple[str, str]]:
             found.append(("caption_position", f"{message}: “{_short(wrong[0])}”"
                           + (f" and {len(wrong) - 1} more" if len(wrong) > 1 else "")))
 
-    found += _manual_formatting(elements, names, archive)
+    found += _manual_formatting(elements, names, archive, manual_threshold)
     found += _changed_styles(path)
     return found
 
@@ -209,7 +209,7 @@ def _effective_styles(archive) -> dict[str, dict[str, str]]:
     return {sid: resolve(sid) for sid in own}
 
 
-def _manual_formatting(elements, names, archive) -> list[tuple[str, str]]:
+def _manual_formatting(elements, names, archive, threshold=MANUAL_THRESHOLD) -> list[tuple[str, str]]:
     """Font, size, spacing and indents set by hand to something else than the style says."""
     effective = _effective_styles(archive)
     default_id = next((sid for sid, name in names.items() if name == "normal"), "Normal")
@@ -239,7 +239,7 @@ def _manual_formatting(elements, names, archive) -> list[tuple[str, str]]:
                 if size is not None and size.get(W + "val") != style.get("sz.val", "20"):
                     sizes += 1
     # A few are left alone (a symbol, a superscript size); many mean the styles were not used
-    fonts, sizes, spacing = (n if n >= MANUAL_THRESHOLD else 0 for n in (fonts, sizes, spacing))
+    fonts, sizes, spacing = (n if n >= threshold else 0 for n in (fonts, sizes, spacing))
     parts = []
     if fonts:
         parts.append(f"the font of {fonts} piece{'s' if fonts > 1 else ''} of text")

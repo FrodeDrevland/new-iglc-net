@@ -79,6 +79,9 @@ def author_skill(request):
         archive.writestr("iglc-paper-check/scripts/iglc_check/__init__.py", "")
         for name in ("docx_reader.py", "checks.py", "layout_checks.py", "template_styles.json"):
             archive.write(here / name, f"iglc-paper-check/scripts/iglc_check/{name}")
+        from .check_config import as_json
+
+        archive.writestr("iglc-paper-check/scripts/iglc_check/check_rules.json", as_json())  # the site's settings
     response = HttpResponse(buffer.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = 'attachment; filename="iglc-paper-check-skill.zip"'
     return response

@@ -13,8 +13,10 @@ will be a subset of this. Agreed with the General Secretary, September 2026.
 
 ## Automatic checks
 
-Each check is written once in code (apps/production). An admin page sets, for each
-submission stage (abstract, full paper, revised paper, camera-ready), whether a check is:
+Each check is written once in code (apps/production). The back office sets, for each stage,
+whether a check is (Settings → Paper check rules; the numbers such as maximum pages under
+Settings → Paper check limits; superusers). The stages today are the paper for review, the
+camera-ready paper and the editors' upload:
 
 | Level | Effect |
 |---|---|

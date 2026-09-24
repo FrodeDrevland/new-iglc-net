@@ -671,11 +671,11 @@ def book_file(request, number, name):
 @login_required
 def guide(request):
     """The editors' guide to proceedings production."""
-    from .checks import MAX_PAGES
+    from .checks import configuration
 
     if not productions_for(request.user).exists() and not request.user.is_superuser:
         raise PermissionDenied
-    return render(request, "production/editor/guide.html", {"max_pages": MAX_PAGES})
+    return render(request, "production/editor/guide.html", {"max_pages": configuration()[1]["max_pages"]})
 
 
 @login_required

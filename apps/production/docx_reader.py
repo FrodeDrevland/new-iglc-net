@@ -337,7 +337,11 @@ def _read_authors(paragraphs, notes, note_order, issues) -> list[ManuscriptAutho
 
 # ---------------------------------------------------------------- main
 
-def read_manuscript(path) -> Manuscript:
+LIMITS = {"title_chars": 90, "abstract_words": 200, "keywords": 5}
+
+
+def read_manuscript(path, limits: dict | None = None) -> Manuscript:
+    limits = {**LIMITS, **(limits or {})}
     path = Path(path)
     result = Manuscript(file=path.name)
     issues = result.issues
@@ -388,8 +392,8 @@ def read_manuscript(path) -> Manuscript:
     if abstract:
         result.abstract = " ".join(text for _, text in abstract)
         words = len(result.abstract.split())
-        if words > 200:
-            issues.add("abstract_long", f"Abstract has {words} words (maximum 200)")
+        if words > limits["abstract_words"]:
+            issues.add("abstract_long", f"Abstract has {words} words (maximum {limits['abstract_words']})")
     else:
         issues.add("abstract_missing", "No “Abstract” heading (Heading 1)")
 
@@ -397,8 +401,8 @@ def read_manuscript(path) -> Manuscript:
     if keywords:
         line = " ".join(text for _, text in keywords)
         result.keywords = [k.strip(" .") for k in re.split(r"[;,]", line) if k.strip(" .")]
-        if len(result.keywords) > 5:
-            issues.add("keywords_many", f"{len(result.keywords)} keywords (maximum five)")
+        if len(result.keywords) > limits["keywords"]:
+            issues.add("keywords_many", f"{len(result.keywords)} keywords (maximum {limits['keywords']})")
     else:
         issues.add("keywords_missing", "No “Keywords” heading (Heading 1)")
 
@@ -409,8 +413,8 @@ def read_manuscript(path) -> Manuscript:
     letters = [c for c in result.title if c.isalpha()]
     if letters and sum(c.isupper() for c in letters) / len(letters) > 0.8:
         issues.add("title_capitals", "The title is typed in capitals (the Title style adds capitals itself)")
-    if len(result.title) > 90:
-        issues.add("title_long", f"Title has {len(result.title)} characters (maximum 90)")
+    if len(result.title) > limits["title_chars"]:
+        issues.add("title_long", f"Title has {len(result.title)} characters (maximum {limits['title_chars']})")
 
     # Styles outside the template
     stray = {}

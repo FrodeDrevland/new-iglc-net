@@ -354,3 +354,58 @@ class MetadataCheck(models.Model):
 
     def __str__(self):
         return f"{self.submission.conftool_id}: {self.get_status_display()}"
+
+
+# ---------------------------------------------------------------- the paper check's settings
+
+LEVEL_CHOICES = [
+    ("off", "Off"),
+    ("note", "Note"),
+    ("warn", "Warn"),
+    ("reject", "Reject"),
+]
+
+
+class CheckRule(models.Model):
+    """What happens at each stage when a check of the paper check (apps/production/checks.py)
+    finds something. One row per check, made from the defaults in the code (check_config.py)."""
+
+    code = models.CharField(max_length=60, unique=True, editable=False)
+    label = models.CharField(max_length=200, editable=False)
+    review = models.CharField("paper for review", max_length=10, choices=LEVEL_CHOICES,
+                              help_text="Full and revised papers under review (anonymous).")
+    camera_ready = models.CharField("camera-ready paper", max_length=10, choices=LEVEL_CHOICES,
+                                    help_text="The authors' camera-ready paper.")
+    production = models.CharField("editors' upload", max_length=10, choices=LEVEL_CHOICES,
+                                  help_text="The proceedings editors' uploads (Word file and PDF).")
+    order = models.PositiveIntegerField(default=0, editable=False)
+
+    class Meta:
+        ordering = ["order", "code"]
+        verbose_name = "paper check rule"
+
+    def __str__(self):
+        return self.label or self.code
+
+
+from wagtail.contrib.settings.models import BaseGenericSetting, register_setting  # noqa: E402
+
+
+@register_setting(icon="cog")
+class CheckLimits(BaseGenericSetting):
+    max_pages = models.PositiveIntegerField("maximum pages", default=12,
+                                            help_text="Without the submission checklist.")
+    title_chars = models.PositiveIntegerField("maximum title length (characters)", default=90)
+    abstract_words = models.PositiveIntegerField("maximum abstract length (words)", default=200)
+    keywords = models.PositiveIntegerField("maximum keywords", default=5)
+    manual_formatting = models.PositiveIntegerField(
+        "formatting set by hand: report from", default=10,
+        help_text="Pieces of text (or paragraphs) formatted by hand before it is reported. A few are "
+                  "normal (a symbol, a superscript size).")
+
+    class Meta:
+        verbose_name = "paper check limits"
+
+    def as_dict(self):
+        return {name: getattr(self, name) for name in
+                ("max_pages", "title_chars", "abstract_words", "keywords", "manual_formatting")}

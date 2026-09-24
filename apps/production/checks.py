@@ -7,8 +7,9 @@ Each check has a code. RULES gives, per stage, what happens when a check finds s
     note    for information
     (absent) not checked at that stage
 
-The levels are set here for now; the submission system will let the admin change them per
-conference and stage.
+The levels and limits here are the defaults. On the site they can be changed in the back
+office (Settings → Paper check rules / Paper check limits, apps/production/check_config.py);
+the authors' skill ZIP carries the site's current settings as check_rules.json.
 """
 
 from __future__ import annotations
@@ -75,6 +76,88 @@ RULES = {
 }
 
 MAX_PAGES = 12
+# Numbers the checks use; the site's settings override them (configuration()).
+LIMITS = {"max_pages": MAX_PAGES, "title_chars": 90, "abstract_words": 200, "keywords": 5,
+          "manual_formatting": 10}
+LEVEL_CHOICES = ("off", "note", "warn", "reject")
+# What each check looks for, for the admin page and the documentation.
+RULE_LABELS = {
+    "not_docx": "The file is not a readable Word (.docx) file",
+    "title_missing": "No paragraph in the Title style",
+    "title_wrong_style": "The title is in another style than Title",
+    "title_capitals": "The title is typed in capitals",
+    "title_long": "The title is longer than the limit (characters)",
+    "authors_missing": "No paragraph in the Authors style",
+    "author_no_affiliation": "An author has no footnote with affiliation",
+    "footnote_missing": "An author refers to a footnote that does not exist",
+    "author_no_email": "No email address in an author's footnote",
+    "author_no_orcid": "No ORCID iD in an author's footnote",
+    "orcid_invalid": "An ORCID iD is not valid",
+    "author_title_in_name": "An author name includes a title (Dr, Prof …)",
+    "abstract_missing": "No Abstract heading",
+    "abstract_long": "The abstract is longer than the limit (words)",
+    "keywords_missing": "No Keywords heading",
+    "keywords_many": "More keywords than the limit",
+    "heading_missing": "A mandatory heading (Introduction, References) is missing",
+    "non_template_styles": "Paragraphs in styles that are not the template's",
+    "page_setup_changed": "Page size or margins differ from the template",
+    "too_many_pages": "More pages than the limit (the checklist not counted)",
+    "pdf_not_checked": "No PDF uploaded, so the pages were not counted",
+    "pdf_unreadable": "The PDF could not be read",
+    "pdf_pages_differ": "The PDF has another number of pages than Word counts",
+    "pdf_not_from_word": "The PDF was not made by Word (no marked headers/footers)",
+    "pdf_running_left": "Text left in the header or footer area of the PDF",
+    "reference_space_missing": "No room for the reference above the title on page 1",
+    "pdf_missing": "No PDF with the Word file (editors' upload)",
+    "not_anonymous": "Author names or emails in a paper under review",
+    "file_properties_names": "Names in the file properties of a paper under review",
+    "track_changes_or_comments": "Tracked changes or comments in the file",
+    "checklist_missing": "The submission checklist is missing",
+    "checklist_present": "The submission checklist is still in the file",
+    "abstract_references": "References cited in the abstract",
+    "empty_paragraphs": "Empty paragraphs between paragraphs",
+    "figure_floating": "Figures not placed “In line with text”",
+    "caption_position": "Captions not above tables / below figures, or in the wrong style",
+    "manual_formatting": "Formatting set by hand (reported from the limit upwards)",
+    "styles_changed": "Style definitions differ from the current template",
+}
+
+
+def default_rules() -> dict[str, dict[str, str]]:
+    """Every check with an explicit level for every stage (the editors' upload falls back to the
+    camera-ready level, as in RULES)."""
+    out = {}
+    for code in RULE_LABELS:
+        rule = RULES.get(code, {})
+        out[code] = {stage: rule.get(stage) or "off" for stage in ("review", "camera_ready")}
+        out[code][PRODUCTION] = rule.get(PRODUCTION) or rule.get("camera_ready") or "off"
+    return out
+
+
+def configuration() -> tuple[dict, dict]:
+    """(rules, limits) in force: the site's settings, else check_rules.json next to this file
+    (the authors' skill), else the defaults here."""
+    rules, limits = default_rules(), dict(LIMITS)
+    try:
+        import json
+        from pathlib import Path
+
+        saved = json.loads((Path(__file__).with_name("check_rules.json")).read_text())
+        for code, levels in saved.get("rules", {}).items():
+            rules.setdefault(code, {}).update(levels)
+        limits.update(saved.get("limits", {}))
+    except (OSError, ValueError):
+        pass
+    try:
+        from .check_config import load
+
+        site_rules, site_limits = load()
+        for code, levels in site_rules.items():
+            rules.setdefault(code, {}).update(levels)
+        limits.update(site_limits)
+    except Exception:  # noqa: BLE001 - outside Django, or no database: the defaults
+        pass
+    return rules, limits
 A4 = (11906, 16838)
 MARGIN = 1418  # twips, 2.5 cm
 TOLERANCE = 30
@@ -146,12 +229,12 @@ def _extra_checks(path, manuscript) -> list[tuple[str, str]]:
     return found
 
 
-def _page_checks(pdf, stage=None) -> list[tuple[str, str]]:
+def _page_checks(pdf, stage=None, max_pages: int = MAX_PAGES) -> list[tuple[str, str]]:
     """The page count can only be known from Word's own layout, so from a PDF made by Word."""
     if pdf is None and stage == PRODUCTION:
         return [("pdf_missing", "No PDF yet: upload the PDF made by Word together with the Word file")]
     if pdf is None:
-        return [("pdf_not_checked", f"The number of pages was not checked (maximum {MAX_PAGES}). "
+        return [("pdf_not_checked", f"The number of pages was not checked (maximum {max_pages}). "
                                     "Upload a PDF of the paper, saved from Word, to check it.")]
     try:
         from pypdf import PdfReader
@@ -162,8 +245,8 @@ def _page_checks(pdf, stage=None) -> list[tuple[str, str]]:
         pages = len(reader.pages) - checklist_pages(reader)  # the checklist does not count
     except Exception:  # noqa: BLE001 - any unreadable PDF
         return [("pdf_unreadable", "The PDF could not be read, so the number of pages was not checked")]
-    if pages > MAX_PAGES:
-        return [("too_many_pages", f"The paper has {pages} pages without the checklist (maximum {MAX_PAGES})")]
+    if pages > max_pages:
+        return [("too_many_pages", f"The paper has {pages} pages without the checklist (maximum {max_pages})")]
     return []
 
 
@@ -207,20 +290,26 @@ def _layout_checks(pdf_bytes) -> list[tuple[str, str]]:
     return layout_findings(writer, removed)
 
 
-def check_paper(path, stage: str = "camera_ready", pdf=None) -> CheckResult:
-    """Check a Word file (and optionally the PDF Word made of it) for a stage."""
+def check_paper(path, stage: str = "camera_ready", pdf=None, rules=None, limits=None) -> CheckResult:
+    """Check a Word file (and optionally the PDF Word made of it) for a stage. The rules and
+    limits default to the configured ones (configuration())."""
     import io
     from pathlib import Path
 
     pdf_bytes = None
     if pdf is not None:
         pdf_bytes = Path(pdf).read_bytes() if isinstance(pdf, (str, Path)) else pdf.read()
-    manuscript = read_manuscript(path)
+    if rules is None or limits is None:
+        configured_rules, configured_limits = configuration()
+        rules = configured_rules if rules is None else rules
+        limits = configured_limits if limits is None else limits
+    limits = {**LIMITS, **limits}
+    manuscript = read_manuscript(path, limits)
     from .layout_checks import layout_checks
 
     raw = (list(zip(manuscript.issues.codes, manuscript.issues)) + _extra_checks(path, manuscript)
-           + layout_checks(path, manuscript.abstract)
-           + _page_checks(io.BytesIO(pdf_bytes) if pdf_bytes else None, stage))
+           + layout_checks(path, manuscript.abstract, limits["manual_formatting"])
+           + _page_checks(io.BytesIO(pdf_bytes) if pdf_bytes else None, stage, limits["max_pages"]))
     if pdf_bytes:
         raw += _pages_differ(path, pdf_bytes)
     if stage == PRODUCTION and pdf_bytes:
@@ -237,7 +326,7 @@ def check_paper(path, stage: str = "camera_ready", pdf=None) -> CheckResult:
     raw = merged
     findings = []
     for code, message in raw:
-        rule = RULES.get(code, {})
+        rule = rules.get(code, {})
         level = rule.get(stage) or (rule.get("camera_ready") if stage == PRODUCTION else None)
         if level and level != "off":
             findings.append(Finding(code, level, message))
