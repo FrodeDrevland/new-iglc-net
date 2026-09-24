@@ -31,15 +31,24 @@
     <span id="filter-count" class="muted small" role="status"></span>
   </div>
 </div>
-<ol class="paper-list" id="papers">
-  {% for paper in papers %}{% include "archive/_paper_item.html" %}{% endfor %}
-</ol>
+<div id="papers">
+{% regroup papers by track as groups %}
+{% for group in groups %}
+  <section class="track-group">
+    {% if group.grouper %}<h2 class="track-heading">{{ group.grouper.title }}</h2>{% endif %}
+    <ol class="paper-list">
+      {% for paper in group.list %}{% include "archive/_paper_item.html" %}{% endfor %}
+    </ol>
+  </section>
+{% endfor %}
+</div>
 {% endblock %}
 {% block scripts %}
 <script>
   (function () {
     var input = document.getElementById("filter");
-    var rows = Array.prototype.slice.call(document.querySelectorAll("#papers > li"));
+    var rows = Array.prototype.slice.call(document.querySelectorAll("#papers .paper-list > li"));
+    var groups = Array.prototype.slice.call(document.querySelectorAll("#papers .track-group"));
     var count = document.getElementById("filter-count");
     var texts = rows.map(function (row) { return row.textContent.toLowerCase(); });
     input.addEventListener("input", function () {
@@ -49,6 +58,9 @@
         var match = words.every(function (w) { return texts[i].indexOf(w) !== -1; });
         row.hidden = !match;
         shown += match;
+      });
+      groups.forEach(function (group) {
+        group.hidden = !group.querySelector(".paper-list > li:not([hidden])");
       });
       count.textContent = words.length ? shown + " of " + rows.length + " shown" : "";
     });

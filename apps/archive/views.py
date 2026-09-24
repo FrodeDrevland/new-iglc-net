@@ -14,7 +14,7 @@ from .search import SORTS, matching_authors, search_papers
 
 
 def _papers():
-    return Paper.objects.select_related("conference", "volume").prefetch_related(
+    return Paper.objects.select_related("conference", "volume", "track").prefetch_related(
         Prefetch("authors", queryset=Author.objects.order_by("order", "pk")),
         "conference__editors",
     )
@@ -42,7 +42,14 @@ def conference_list(request):
 def conference_detail(request, pk):
     conference = get_object_or_404(
         Conference.objects.prefetch_related("editors", "volumes", "proceedings_files"), pk=pk)
-    papers = _papers().filter(conference=conference)
+    papers = list(_papers().filter(conference=conference))
+    if any(p.track_id for p in papers):
+        # Tracks in the order they start in the proceedings; papers by page within each.
+        start = {}
+        for p in papers:
+            if p.track_id and p.first_page:
+                start[p.track_id] = min(start.get(p.track_id, p.first_page), p.first_page)
+        papers.sort(key=lambda p: (p.track_id is None, start.get(p.track_id, 10 ** 6), p.first_page or 10 ** 6, p.pk))
     return render(request, "archive/conference_detail.html", {
         "conference": conference,
         "papers": papers,

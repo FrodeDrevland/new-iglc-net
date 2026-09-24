@@ -6,3 +6,6 @@ whitenoise>=6.7
 gunicorn>=23.0
 # Uploaded images and documents in Azure blob storage (production)
 django-storages[azure]>=1.14
+# Reading and writing PDFs (tracks from footers, headers and footers on proceedings)
+pypdf>=6.0
+reportlab>=4.2

@@ -349,3 +349,28 @@ class SingleNameTests(ArchiveTestCase):
         Author.objects.create(paper=self.paper, last_name="Hermawan", order=4)
         call_command("group_authors", stdout=StringIO())
         self.assertTrue(AuthorPerson.objects.filter(last_name="Hermawan", first_name="").exists())
+
+
+class TrackTests(ArchiveTestCase):
+    def test_import_tracks_and_headings(self):
+        import tempfile
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from .models import ConferenceTrack
+
+        other = Paper.objects.create(conference=self.conference, title="Second", first_page=30)
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8") as f:
+            f.write("paper_id,track\n2150,Production Planning\n%d,Lean and Green\n" % other.pk)
+        call_command("import_tracks", f.name, stdout=StringIO())
+        self.assertEqual(ConferenceTrack.objects.filter(conference=self.conference).count(), 2)
+        page = self.client.get("/papers/conference/25").content.decode()
+        self.assertIn('<h2 class="track-heading">Production Planning</h2>', page)
+        self.assertLess(page.index("Production Planning</h2>"), page.index("Lean and Green</h2>"))
+
+    def test_track_candidates(self):
+        from .management.commands.read_tracks import candidate
+
+        self.assertEqual(candidate("People, Culture and Change899"), "People, Culture and Change")
+        self.assertEqual(candidate("900 Proceedings IGLC34, 22–26 June 2026, Singapore"), "")

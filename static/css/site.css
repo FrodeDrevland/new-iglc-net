@@ -266,3 +266,7 @@ table.members .term { white-space: nowrap; font-variant-numeric: tabular-nums; c
 table.members th:nth-child(1) { width: 26%; }
 table.members th:nth-child(2) { width: 26%; }
 table.members th:nth-child(4) { width: 7.5rem; }
+
+/* Tracks in a conference's paper list */
+.track-heading { font-size: 1.15rem; margin: 2rem 0 .25rem; padding-bottom: .3rem; border-bottom: 2px solid var(--orange); }
+.track-group[hidden] { display: none; }
