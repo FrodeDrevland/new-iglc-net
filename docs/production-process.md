@@ -135,6 +135,21 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
 - Editor accounts: Manage → Users → add user, tick "Staff status", group "Proceedings
   editors"; then add the person to the production (Manage → Proceedings productions).
 
+**Step 2 (editors' upload):** /production/ (link in the admin bar)
+
+- The production's paper list: filter by track, status or own papers; download the current
+  Word files (and PDFs) of chosen papers as a ZIP named by ConfTool ID.
+- Upload: any number of Word files and PDFs, or ZIP files; matched to papers by the ConfTool
+  ID at the start of the name. A PDF alone goes with the paper's current Word file. Every
+  upload becomes a new version, is checked (camera-ready rules, plus the PDF's layout: made by
+  Word, nothing left in the header/footer areas, room for the reference on page 1), and its
+  pages are counted from the PDF.
+- A paper's page: the check, the metadata read from the paper next to what was registered in
+  ConfTool (differences highlighted), all versions with their files, upload of a new version,
+  approve / needs more work with a comment, track and editor, and the history.
+- Editors see only their tracks' papers; chief editors see all. Files are private and only
+  downloaded through the site.
+
 ## Open
 
 - Template for IGLC 35: Title style 40 pt space before (was 18 pt) and a one-line note in the

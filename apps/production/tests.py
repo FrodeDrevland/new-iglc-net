@@ -316,3 +316,127 @@ class ConfToolImportTests(TestCase):
 
         group = Group.objects.get(name="Proceedings editors")
         self.assertTrue(group.permissions.filter(codename="add_paperversion").exists())
+
+
+# ---------------------------------------------------------------- editors' pages
+
+def make_word_pdf(pages=2, title_y=700, stray_header=False) -> bytes:
+    """A small PDF like Word's: header and footer marked as pagination artefacts."""
+    import io
+
+    from pypdf import PdfWriter
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+
+    writer = PdfWriter()
+    font = DictionaryObject({NameObject("/Type"): NameObject("/Font"), NameObject("/Subtype"): NameObject("/Type1"),
+                             NameObject("/BaseFont"): NameObject("/Helvetica")})
+    for number in range(pages):
+        page = writer.add_blank_page(595.2, 841.92)
+        body = (f"/Artifact <</Type /Pagination /Subtype /Header>> BDC BT /F1 10 Tf 70 796 Td (Old header) Tj ET EMC "
+                f"/Artifact <</Type /Pagination /Subtype /Footer>> BDC BT /F1 10 Tf 70 38 Td (Old footer {number + 1}) Tj ET EMC "
+                f"BT /F1 12 Tf 70 {title_y if number == 0 else 700} Td (Body text) Tj ET")
+        if stray_header:
+            body += " BT /F1 10 Tf 70 800 Td (Typed header) Tj ET"
+        stream = DecodedStreamObject()
+        stream.set_data(body.encode())
+        page[NameObject("/Contents")] = writer._add_object(stream)
+        page[NameObject("/Resources")] = DictionaryObject(
+            {NameObject("/Font"): DictionaryObject({NameObject("/F1"): font})})
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    return buffer.getvalue()
+
+
+class EditorPagesTests(TestCase):
+    def setUp(self):
+        import io
+        from datetime import date
+
+        from django.contrib.auth.models import User
+
+        from apps.archive.models import Conference, ConferenceTrack
+
+        from .models import Production, ProductionEditor, Submission
+
+        conference = Conference.objects.create(pk=40, number=35, start_date=date(2027, 7, 12))
+        self.planning = ConferenceTrack.objects.create(conference=conference, title="Planning", order=1)
+        self.green = ConferenceTrack.objects.create(conference=conference, title="Lean and Green", order=2)
+        self.production = Production.objects.create(conference=conference)
+        Submission.objects.create(production=self.production, conftool_id=123, title="Takt", track=self.planning)
+        Submission.objects.create(production=self.production, conftool_id=124, title="Green", track=self.green)
+        self.chief = User.objects.create_user("chief", password="pw", is_staff=True)
+        self.editor = User.objects.create_user("ed", password="pw", is_staff=True)
+        ProductionEditor.objects.create(production=self.production, user=self.chief, role="chief")
+        entry = ProductionEditor.objects.create(production=self.production, user=self.editor, role="editor")
+        entry.tracks.add(self.green)
+        self.docx = make_docx(BODY, NOTES, HEADER).read_bytes()
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("123.docx", self.docx)
+            archive.writestr("123.pdf", make_word_pdf())
+            archive.writestr("124 edited.docx", self.docx)
+            archive.writestr("notes.txt", "x")
+        self.zip = buffer.getvalue()
+
+    def test_editors_see_their_tracks_only(self):
+        self.client.login(username="ed", password="pw")
+        page = self.client.get("/production/35/").content.decode()
+        self.assertIn("Green", page)
+        self.assertNotIn(">Takt<", page)
+        self.assertEqual(self.client.get("/production/35/123/").status_code, 404)
+
+    def test_outsiders_and_visitors_are_kept_out(self):
+        from django.contrib.auth.models import User
+
+        User.objects.create_user("other", password="pw", is_staff=True)
+        self.client.login(username="other", password="pw")
+        self.assertEqual(self.client.get("/production/35/").status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.client.get("/production/35/").status_code, 302)
+
+    def test_batch_upload_pairs_checks_and_versions(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from .models import Submission
+
+        self.client.login(username="chief", password="pw")
+        page = self.client.post("/production/35/upload/", {
+            "files": [SimpleUploadedFile("batch.zip", self.zip)], "comment": "first round"}).content.decode()
+        self.assertIn("2 new versions", page)
+        self.assertIn("notes.txt", page)
+        takt = Submission.objects.get(conftool_id=123)
+        version = takt.current
+        self.assertEqual((version.number, version.pages, version.metadata["title"]), (1, 2, "Takt planning in practice"))
+        self.assertTrue(version.passed, version.findings)
+        self.assertEqual(takt.status, "uploaded")
+        # a PDF alone becomes version 2, with the current Word file
+        self.client.post("/production/35/upload/", {"files": [SimpleUploadedFile("123.pdf", make_word_pdf(pages=3))]})
+        self.assertEqual((takt.current.number, takt.current.pages), (2, 3))
+        # the paper without a PDF is told so
+        green = Submission.objects.get(conftool_id=124)
+        self.assertIn("pdf_missing", [f["code"] for f in green.current.findings])
+        # files are downloadable only through the site
+        response = self.client.get("/production/35/123/v1.docx")
+        self.assertEqual(b"".join(response.streaming_content), self.docx)
+        import io
+
+        response = self.client.post("/production/35/download/", {"paper": ["123"], "with_pdf": "1"})
+        self.assertEqual(sorted(zipfile.ZipFile(io.BytesIO(response.content)).namelist()), ["123.docx", "123.pdf"])
+
+    def test_layout_checks_and_approval(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from .models import Submission
+
+        self.client.login(username="chief", password="pw")
+        self.client.post("/production/35/123/", {"action": "upload", "docx": SimpleUploadedFile("123.docx", self.docx),
+                                                  "pdf": SimpleUploadedFile("123.pdf", make_word_pdf(title_y=750, stray_header=True))})
+        takt = Submission.objects.get(conftool_id=123)
+        codes = [f["code"] for f in takt.current.findings]
+        self.assertIn("pdf_running_left", codes)
+        self.assertIn("reference_space_missing", codes)
+        self.assertEqual(takt.status, "needs_work")
+        self.client.post("/production/35/123/", {"action": "approve", "comment": "fine"})
+        takt.refresh_from_db()
+        self.assertEqual(takt.status, "approved")
+        self.assertEqual(takt.events.first().action, "approved")

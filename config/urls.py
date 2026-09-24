@@ -22,7 +22,7 @@ def robots_txt(request):
     if settings.SITE_NOINDEX:
         return HttpResponse("User-agent: *\nDisallow: /\n", content_type="text/plain")
     sitemap = request.build_absolute_uri("/sitemap.xml")
-    return HttpResponse(f"User-agent: *\nDisallow: /manage/\nDisallow: /cms/\n\nSitemap: {sitemap}\n",
+    return HttpResponse(f"User-agent: *\nDisallow: /manage/\nDisallow: /cms/\nDisallow: /production/\n\nSitemap: {sitemap}\n",
                         content_type="text/plain")
 
 

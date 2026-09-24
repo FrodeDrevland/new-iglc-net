@@ -92,16 +92,65 @@ FOOTER_ZONE = 55      # points from the bottom edge
 REFERENCE_ZONE = 100  # page 1: room for a five-line reference above the title
 
 
-def _text_positions(page):
+def _multiply(a, b):
+    return [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3],
+            a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3],
+            a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5]]
+
+
+def _text_positions(page, document=None):
+    """(top of the letters, text) for text drawn by the page itself.
+
+    A small interpreter of the page's content stream, so positions are exact. Text inside
+    figures (form XObjects) is left out: figures are the paper's content, and their text
+    would otherwise be reported at the wrong place.
+    """
     found = []
+    identity = [1, 0, 0, 1, 0, 0]
+    ctm, stack = identity[:], []
+    tm = line = identity[:]
+    size, leading = 12.0, 0.0
+    content = ContentStream(page.get_contents(), document) if page.get_contents() is not None else None
+    if content is None:
+        return found
 
-    def visit(text, cm, tm, font, size):
+    def show(text):
         if text.strip():
-            baseline = tm[5] * cm[3] + cm[5]
-            height = abs(size * tm[3] * cm[3]) or size
-            found.append((baseline + 0.75 * height, text.strip()))  # top of the letters
+            m = _multiply(tm, ctm)
+            height = abs(size * m[3]) or size
+            found.append((m[5] + 0.75 * height, text.strip()))
 
-    page.extract_text(visitor_text=visit)
+    for operands, op in content.operations:
+        if op == b"q":
+            stack.append(ctm[:])
+        elif op == b"Q" and stack:
+            ctm = stack.pop()
+        elif op == b"cm":
+            ctm = _multiply([float(v) for v in operands], ctm)
+        elif op == b"BT":
+            tm = line = identity[:]
+        elif op == b"Tf" and len(operands) == 2:
+            size = float(operands[1])
+        elif op == b"TL":
+            leading = float(operands[0])
+        elif op in (b"Td", b"TD"):
+            tx, ty = float(operands[0]), float(operands[1])
+            if op == b"TD":
+                leading = -ty
+            line = _multiply([1, 0, 0, 1, tx, ty], line)
+            tm = line[:]
+        elif op == b"Tm":
+            line = [float(v) for v in operands]
+            tm = line[:]
+        elif op in (b"T*", b"'", b'"'):
+            line = _multiply([1, 0, 0, 1, 0, -leading], line)
+            tm = line[:]
+            if op != b"T*":
+                show(str(operands[-1]))
+        elif op == b"Tj":
+            show(str(operands[0]))
+        elif op == b"TJ":
+            show("".join(str(part) for part in operands[0] if not isinstance(part, (int, float))))
     return found
 
 
@@ -115,7 +164,7 @@ def layout_findings(writer: PdfWriter, removed: int) -> list[tuple[str, str]]:
     left, crowded = [], False
     for number, page in enumerate(writer.pages, 1):
         height = float(page.mediabox.height)
-        for y, text in _text_positions(page):
+        for y, text in _text_positions(page, writer):
             if y > height - HEADER_ZONE or y < FOOTER_ZONE:
                 left.append((number, text))
             elif number == 1 and y > height - REFERENCE_ZONE:

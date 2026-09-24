@@ -8,4 +8,8 @@
 - [x] Logging out should return the user to whatever page they were on or to the front page if the were in the manage or admin areas
 - [x] Do we need a separate admin and manage interface or could the joined. At least there needs  to be links to navigate between them and also to the front end. 
 - [ ] Can we have a function on the admin side of the site to produce the zip bundle of papers for a proceeding?
-- [ ] Another thing to put on the development roadmap: Conference programming and conference program. Setting us plenary and paralell sessions, Assigning papers to sessions. Assigning session chair. Assigning rooms. 
+- [ ] Another thing to put on the development roadmap: Conference programming and conference program. Setting us plenary and paralell sessions, Assigning papers to sessions. Assigning session chair. Assigning rooms. Public facing progam with links to the papers. Maybe be could have the subdomain program.iglc.net be for just displaying the program, in different format for computer and phone.
+- [ ] Another thing to consider is how the submission and review portal should appear. Probably as it's own minisite possibly on its own subdomain. 
+- [ ] Another thing for the roadmap is how handling phd summer school applications. We have in the past tried to use Conftool for it in parallell with paper submission, but that has not worked out well. So it should be a separate thing form the paper submission portal. 
+- [ ] Related to that, an idea would be to have a separate student mini site. e.g. student.iglc.net. It could give information about the phd school, study program where lean construcion is taught and information about the coaching program. 
+- [ ] 

@@ -160,3 +160,19 @@ class PaperVersion(models.Model):
 
     def __str__(self):
         return f"{self.submission.conftool_id} v{self.number}"
+
+
+class Event(models.Model):
+    """What happened to a paper, by whom: uploads, approvals, papers sent back."""
+
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="events")
+    time = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=40)
+    comment = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-time"]
+
+    def __str__(self):
+        return f"{self.submission.conftool_id}: {self.action}"

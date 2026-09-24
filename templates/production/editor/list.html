@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Proceedings production{% endblock %}
+{% block content %}
+<div class="page-head"><p class="kicker">Editors</p><h1>Proceedings production</h1></div>
+<ul class="plain-list">
+  {% for p in productions %}<li><a href="{% url 'production:production' p.conference.number %}">{{ p }}</a> <span class="muted">{{ p.get_status_display }}</span></li>
+  {% empty %}<li>You are not an editor of any proceedings.</li>{% endfor %}
+</ul>
+{% endblock %}

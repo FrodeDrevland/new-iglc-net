@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Upload papers | {{ production }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'production:production' production.conference.number %}">{{ production }}</a></p>
+  <h1>Upload papers</h1>
+  <p class="lead">Upload the edited Word files and the PDFs Word made of them: any number at once, or as ZIP files. Files are matched to papers by the ConfTool ID at the start of the file name (<code>123.docx</code>, <code>123.pdf</code>). A PDF on its own goes with the paper's current Word file.</p>
+</div>
+{% if report %}
+<section class="upload-report">
+  <h2>Result</h2>
+  {% if report.added %}<p><b>{{ report.added|length }} new version{{ report.added|length|pluralize }}:</b></p>
+  <ul>{% for v in report.added %}<li><a href="{% url 'production:paper' production.conference.number v.submission.conftool_id %}">{{ v.submission.conftool_id }}</a> version {{ v.number }}:
+    {% if v.passed %}<span class="ok">passed</span>{% else %}<span class="fail">not passed</span>{% endif %}{% if v.pages %}, {{ v.pages }} pages{% endif %}{% if not v.pdf %}, no PDF{% endif %}</li>{% endfor %}</ul>{% endif %}
+  {% if report.failed %}<p><b>Not added:</b></p><ul>{% for n, why in report.failed %}<li>{{ n }}: {{ why }}</li>{% endfor %}</ul>{% endif %}
+  {% if report.unknown %}<p><b>No paper with these ConfTool IDs (or not one of yours):</b> {{ report.unknown|join:", " }}</p>{% endif %}
+  {% if report.ignored %}<p><b>Ignored</b> (not .docx or .pdf, or no number in the name): {{ report.ignored|join:", " }}</p>{% endif %}
+</section>
+{% endif %}
+<form class="check-form" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <p><label for="files"><b>Files</b></label><br><input id="files" type="file" name="files" multiple accept=".docx,.pdf,.zip"></p>
+  <p><label for="comment"><b>Comment</b> (optional, kept with each version)</label><br><input id="comment" type="text" name="comment" style="width:100%"></p>
+  <button class="button" type="submit">Upload and check</button>
+</form>
+{% endblock %}

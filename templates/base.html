@@ -19,6 +19,7 @@
       <span class="admin-bar-label">Admin</span>
       <a href="/cms/">Pages (CMS)</a>
       <a href="{% url 'admin:index' %}">Archive (conferences, papers)</a>
+      <a href="{% url 'production:productions' %}">Proceedings production</a>
       {% block admin_edit %}{% endblock %}
       <form class="admin-bar-logout" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit">Log out {{ user.get_username }}</button></form>
     </div>

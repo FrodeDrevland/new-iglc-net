@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ submission.conftool_id }} | {{ production }}{% endblock %}
+{% block content %}
+{% with n=production.conference.number %}
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
+  <h1>{{ current.metadata.title|default:submission.title }}</h1>
+  <p class="lead">ConfTool {{ submission.conftool_id }} · {{ submission.track.title|default:"no track" }} · <span class="badge {{ submission.status }}">{{ submission.get_status_display }}</span>{% if current.pages %} · {{ current.pages }} pages{% endif %} · DOI {{ submission.doi }}</p>
+</div>
+
+<div class="paper-layout prod-paper">
+<div>
+{% if current %}
+  <h2>Check of version {{ current.number }}: {% if current.passed %}<span class="ok">passed</span>{% else %}<span class="fail">not passed</span>{% endif %}</h2>
+  {% for label, items in groups %}<h3>{{ label }}</h3><ul>{% for f in items %}<li>{{ f.message }}</li>{% endfor %}</ul>
+  {% empty %}<p>No problems found.</p>{% endfor %}
+
+  <h2>Metadata read from the paper</h2>
+  {% if current.metadata.title != submission.title %}<p class="muted small">Registered title: {{ submission.title }}</p>{% endif %}
+  <table class="prod-table authors-compare">
+    <thead><tr><th>In the paper</th><th>Registered in ConfTool</th></tr></thead>
+    <tbody>{% for row in authors %}
+      <tr{% if not row.same_name %} class="differs"{% endif %}>
+        <td>{% if row.read %}<b>{{ row.read.name }}</b><br><span class="small">{{ row.read.affiliation }}</span><br><span class="small muted">{{ row.read.email|default:"no email" }} · {{ row.read.orcid|default:"no ORCID" }}</span>{% else %}<span class="muted">–</span>{% endif %}</td>
+        <td>{% if row.registered %}{{ row.registered.name }}<br><span class="small">{{ row.registered.organisation }}</span><br><span class="small muted">{{ row.registered.email }}</span>{% else %}<span class="muted">not registered</span>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+  </table>
+  <p class="muted small">Names that differ are highlighted. The paper is what will be published; ConfTool's email addresses are used to contact the authors.</p>
+  <p><b>Keywords:</b> {{ current.metadata.keywords|join:", " }}</p>
+  <details><summary>Abstract</summary><p>{{ current.metadata.abstract }}</p></details>
+{% else %}
+  <p>No files uploaded yet.</p>
+{% endif %}
+
+  <h2>Versions</h2>
+  <table class="prod-table">
+    <thead><tr><th>Version</th><th>Uploaded</th><th>By</th><th>Files</th><th>Pages</th><th>Check</th><th>Comment</th></tr></thead>
+    <tbody>{% for v in versions %}
+      <tr><td>{{ v.number }}</td><td>{{ v.uploaded|date:"j M Y H:i" }}</td><td>{% if v.uploaded_by %}{{ v.uploaded_by.get_full_name|default:v.uploaded_by.username }}{% endif %}</td>
+        <td><a href="{% url 'production:version_file' n submission.conftool_id v.number 'docx' %}">Word</a>{% if v.pdf %} · <a href="{% url 'production:version_file' n submission.conftool_id v.number 'pdf' %}">PDF</a>{% endif %}</td>
+        <td>{{ v.pages|default:"–" }}</td><td>{% if v.passed %}<span class="ok">passed</span>{% else %}<span class="fail">not passed</span>{% endif %}</td><td>{{ v.comment }}</td></tr>
+    {% empty %}<tr><td colspan="7">None yet.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+
+<aside>
+  <div class="panel">
+    <h3>Upload a new version</h3>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload">
+      <p><label>Word file<br><input type="file" name="docx" accept=".docx"></label></p>
+      <p><label>PDF made by Word<br><input type="file" name="pdf" accept=".pdf"></label></p>
+      <p><label>Comment<br><input type="text" name="comment" style="width:100%"></label></p>
+      <button class="button block" type="submit">Upload and check</button>
+    </form>
+  </div>
+  <div class="panel">
+    <h3>Decision</h3>
+    <form method="post">{% csrf_token %}
+      <p><label>Comment<br><textarea name="comment" rows="3" style="width:100%"></textarea></label></p>
+      <button class="button" type="submit" name="action" value="approve"{% if not current or not current.pdf %} disabled title="Needs a version with a PDF"{% endif %}>Approve</button>
+      <button class="button secondary" type="submit" name="action" value="send_back">Needs more work</button>
+    </form>
+  </div>
+  <div class="panel">
+    <h3>Track and editor</h3>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="assign">
+      <p><label>Track<br><select name="track"><option value="">none</option>{% for t in tracks %}<option value="{{ t.pk }}"{% if t.pk == submission.track_id %} selected{% endif %}>{{ t.title }}</option>{% endfor %}</select></label></p>
+      <p><label>Editor<br><select name="editor"><option value="">none</option>{% for u in editors %}<option value="{{ u.pk }}"{% if u.pk == submission.editor_id %} selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>{% endfor %}</select></label></p>
+      <button class="button secondary" type="submit">Save</button>
+    </form>
+  </div>
+  <div class="panel">
+    <h3>History</h3>
+    <ul class="small">{% for e in events %}<li>{{ e.time|date:"j M H:i" }} {% if e.user %}{{ e.user.get_full_name|default:e.user.username }}{% endif %}: {{ e.action }}{% if e.comment %} – “{{ e.comment }}”{% endif %}</li>{% empty %}<li>Nothing yet.</li>{% endfor %}</ul>
+  </div>
+</aside>
+</div>
+{% endwith %}
+{% endblock %}
