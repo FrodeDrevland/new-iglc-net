@@ -73,6 +73,11 @@ The site admin is at `/manage/` and the CMS at `/cms/`, with the account from `c
 ## Updating
 
 In `/mnt/user/appdata/iglc/src`, run `git pull`, then the `up -d --build` command again.
+```sh
+cd /mnt/user/appdata/iglc/src
+git pull 
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
 
 ## Backups
 
