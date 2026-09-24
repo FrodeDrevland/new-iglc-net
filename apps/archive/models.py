@@ -97,10 +97,26 @@ class Volume(EditTracking):
         return f"Vol {self.number}: pages {self.first_page}-{self.last_page}"
 
 
-class Editor(models.Model):
-    conference = models.ForeignKey(Conference, on_delete=models.CASCADE, related_name="editors")
+class PersonName(models.Model):
+    """First and last name. A single name (mononym) is stored as the last name, which is how
+    APA and the citation formats treat it."""
+
     first_name = models.CharField(max_length=200, blank=True)
-    last_name = models.CharField(max_length=200, blank=True)
+    last_name = models.CharField(
+        max_length=200, blank=True, help_text="For a person with a single name, put it here and leave the first name empty.")
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        self.first_name, self.last_name = self.first_name.strip(), self.last_name.strip()
+        if self.first_name and not self.last_name:
+            self.first_name, self.last_name = "", self.first_name
+        super().save(*args, **kwargs)
+
+
+class Editor(PersonName):
+    conference = models.ForeignKey(Conference, on_delete=models.CASCADE, related_name="editors")
     title_and_contact = models.TextField(blank=True)
     order = models.PositiveIntegerField(null=True, blank=True)
 
@@ -111,12 +127,10 @@ class Editor(models.Model):
         return f"{self.first_name} {self.last_name}".strip()
 
 
-class AuthorPerson(models.Model):
+class AuthorPerson(PersonName):
     """One real person across all their papers."""
 
     orcid = models.CharField("ORCID", max_length=40, blank=True)
-    first_name = models.CharField(max_length=200, blank=True)
-    last_name = models.CharField(max_length=200, blank=True)
 
     class Meta:
         ordering = ["last_name", "first_name"]
@@ -220,15 +234,13 @@ class Paper(EditTracking):
         return f"{self.short_author_string()}{year} - {self.title}"
 
 
-class Author(models.Model):
+class Author(PersonName):
     """An author as printed on one paper."""
 
     paper = models.ForeignKey(Paper, on_delete=models.CASCADE, related_name="authors")
     person = models.ForeignKey(
         AuthorPerson, null=True, blank=True, on_delete=models.SET_NULL, related_name="authorships"
     )
-    first_name = models.CharField(max_length=200, blank=True)
-    last_name = models.CharField(max_length=200, blank=True)
     title_and_contact = models.TextField("affiliation and contact", blank=True)
     order = models.PositiveIntegerField(null=True, blank=True)
 

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.auth.views import LogoutView
 from django.contrib.sitemaps import views as sitemap_views
 from django.http import HttpResponse
 from django.urls import include, path, re_path
@@ -32,6 +33,8 @@ urlpatterns = [
     path("sitemap-<section>.xml", cache_page(6 * 3600)(sitemap_views.sitemap), {"sitemaps": SITEMAPS},
          name="sitemap_section"),
     path("manage/", admin.site.urls),
+    # Before the CMS's own logout, which would go to the CMS login page.
+    path("cms/logout/", LogoutView.as_view(next_page="/"), name="cms_logout"),
     path("cms/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
     path("", archive_views.home, name="home"),

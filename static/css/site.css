@@ -54,10 +54,7 @@ p { margin: 0 0 1em; }
 .site-header { border-top: 5px solid var(--orange); border-bottom: 1px solid var(--line); background: var(--white); }
 .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.75rem; }
 .brand { display: flex; align-items: center; gap: .75rem; text-decoration: none; color: var(--ink); }
-.brand img { width: 44px; height: 40px; border-radius: 3px; }
-.brand-name { display: flex; flex-direction: column; line-height: 1.15; }
-.brand-name strong { font-family: var(--serif); font-size: 1.35rem; color: var(--blue-dark); }
-.brand-name span { font-size: .8rem; color: var(--muted); }
+.brand img { width: auto; height: 44px; display: block; }
 .main-nav > ul { list-style: none; margin: 0; padding: 0; display: flex; gap: .15rem; }
 .main-nav li { position: relative; }
 .main-nav a { display: block; padding: .5rem .7rem; border-radius: 6px; text-decoration: none; color: var(--ink); font-weight: 500; white-space: nowrap; }
@@ -70,7 +67,6 @@ p { margin: 0 0 1em; }
 .main-nav .has-sub > ul a:hover { background: var(--blue-tint); color: var(--blue-dark); }
 .menu { display: none; }
 @media (max-width: 60rem) {
-  .brand-name span { display: none; }
   .main-nav.desktop { display: none; }
   .menu { display: block; position: relative; }
   .menu summary { list-style: none; cursor: pointer; padding: .5rem .8rem; border: 1px solid var(--line); border-radius: 6px; font-weight: 600; }

@@ -28,11 +28,12 @@ def fold(text: str) -> str:
 
 
 def name_key(first: str, last: str) -> str | None:
-    last_f = " ".join(fold(last).split())
-    first_tokens = [t for t in fold(first).split() if t]
-    if not last_f or not first_tokens:
+    last_f = " ".join(fold(last or first).split())
+    first_tokens = [t for t in fold(first if last else "").split() if t]
+    if not last_f:
         return None
-    return f"{last_f}|{first_tokens[0]}"
+    # A single name (mononym) is its own key.
+    return f"{last_f}|{first_tokens[0]}" if first_tokens else f"{last_f}|"
 
 
 def surname(text: str) -> str:

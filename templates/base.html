@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}IGLC{% endblock %} | International Group for Lean Construction</title>
   <meta name="description" content="{% block description %}The International Group for Lean Construction: a network of researchers from practice and academia in architecture, engineering and construction, since 1993.{% endblock %}">
-  <link rel="icon" href="{% static 'img/iglc-logo.png' %}">
+  <link rel="icon" href="{% static 'img/iglc-logo-symbol.svg' %}" type="image/svg+xml">
+  <link rel="icon" href="{% static 'img/iglc-logo.png' %}" sizes="any">
   {% block meta %}{% endblock %}
   <link rel="preload" href="{% static 'fonts/source-sans-3-var.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
@@ -19,15 +20,14 @@
       <a href="/cms/">Pages (CMS)</a>
       <a href="{% url 'admin:index' %}">Archive (conferences, papers)</a>
       {% block admin_edit %}{% endblock %}
-      <form class="admin-bar-logout" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">Log out {{ user.get_username }}</button></form>
+      <form class="admin-bar-logout" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit">Log out {{ user.get_username }}</button></form>
     </div>
   </div>
   {% endif %}
   <header class="site-header">
     <div class="wrap">
       <a class="brand" href="{% url 'home' %}">
-        <img src="{% static 'img/iglc-logo.png' %}" alt="" width="44" height="40">
-        <span class="brand-name"><strong>IGLC</strong><span>International Group for Lean Construction</span></span>
+        <img src="{% static 'img/iglc-logo-horizontal.svg' %}" alt="IGLC – International Group for Lean Construction" width="184" height="44">
       </a>
       {% include "_nav.html" with class="main-nav desktop" %}
       <details class="menu">
@@ -72,7 +72,7 @@
       </div>
       <div class="footer-bottom">
         <span>Proceedings ISSN 2309-0979 (print) &middot; 2789-0015 (online) &middot; DOI prefix 10.24928</span>
-        <span><a href="/copyright/">Copyright</a></span>
+        <span><a href="/copyright/">Copyright</a>{% if not user.is_authenticated %} &middot; <a href="{% url 'admin:login' %}?next={{ request.get_full_path|urlencode }}" rel="nofollow">Log in</a>{% endif %}</span>
       </div>
     </div>
   </footer>

@@ -45,3 +45,32 @@ class SitemapTests(TestCase):
 
     def test_robots_points_to_sitemap(self):
         self.assertIn("Sitemap: http://testserver/sitemap.xml", self.client.get("/robots.txt").content.decode())
+
+
+class LoginLogoutTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        self.user = User.objects.create_superuser("admin", "a@example.org", "pw")
+
+    def test_login_link_for_visitors(self):
+        self.assertContains(self.client.get("/robots.txt".replace("robots.txt", "links/")),
+                            '/manage/login/?next=/links/')
+
+    def test_logout_returns_to_the_page(self):
+        self.client.login(username="admin", password="pw")
+        response = self.client.post("/manage/logout/", {"next": "/links/"})
+        self.assertRedirects(response, "/links/", fetch_redirect_response=False)
+
+    def test_logout_from_admin_and_cms_goes_to_front_page(self):
+        self.client.login(username="admin", password="pw")
+        self.assertRedirects(self.client.post("/manage/logout/"), "/", fetch_redirect_response=False)
+        self.client.login(username="admin", password="pw")
+        self.assertRedirects(self.client.post("/cms/logout/"), "/", fetch_redirect_response=False)
+
+    def test_admin_links_to_cms_and_site(self):
+        self.client.login(username="admin", password="pw")
+        page = self.client.get("/manage/").content.decode()
+        self.assertIn('href="/cms/"', page)
+        self.assertIn('href="/">View site', page)
+        self.assertIn("/manage/", self.client.get("/cms/").content.decode())

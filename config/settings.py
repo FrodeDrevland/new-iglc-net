@@ -151,6 +151,9 @@ if AZURE_STORAGE_CONNECTION_STRING:
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 WAGTAIL_SITE_NAME = "IGLC"
+# Logging out of the archive admin or the CMS returns to the front page; logging out from a
+# page on the site returns to that page (the form sends it as "next").
+LOGOUT_REDIRECT_URL = "/"
 WAGTAILADMIN_BASE_URL = SITE_URL
 
 # IGLC specifics

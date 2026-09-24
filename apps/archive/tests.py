@@ -326,3 +326,26 @@ class AuthorPageTests(ArchiveTestCase):
         self.client.post("/manage/archive/authorperson/", {"action": "merge_people", "_selected_action": ids})
         self.assertEqual(AuthorPerson.objects.count(), 2)
         self.assertEqual(AuthorPerson.objects.get(last_name="Smith").authorships.count(), 3)
+
+
+class SingleNameTests(ArchiveTestCase):
+    def test_single_name_is_stored_as_last_name_and_cited_plainly(self):
+        from . import citations
+
+        author = Author.objects.create(paper=self.paper, first_name="Hermawan ", last_name="", order=4)
+        author.refresh_from_db()
+        self.assertEqual((author.first_name, author.last_name), ("", "Hermawan"))
+        self.assertIn("Lee, C., & Hermawan. (2022)", citations.as_text(citations.apa7(self.paper)))
+        page = self.client.get("/papers/details/2150").content.decode()
+        self.assertIn('<meta name="citation_author" content="Hermawan">', page)
+
+    def test_single_name_gets_an_author_page(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from .models import AuthorPerson
+
+        Author.objects.create(paper=self.paper, last_name="Hermawan", order=4)
+        call_command("group_authors", stdout=StringIO())
+        self.assertTrue(AuthorPerson.objects.filter(last_name="Hermawan", first_name="").exists())

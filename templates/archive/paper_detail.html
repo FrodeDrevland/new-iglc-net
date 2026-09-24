@@ -3,7 +3,7 @@
 {% block description %}{{ paper.abstract|truncatewords:40 }}{% endblock %}
 {% block meta %}
   <meta name="citation_title" content="{{ paper.title }}">
-  {% for author in paper.authors.all %}<meta name="citation_author" content="{{ author.last_name }}, {{ author.first_name }}">
+  {% for author in paper.authors.all %}<meta name="citation_author" content="{{ author.last_name }}{% if author.first_name %}, {{ author.first_name }}{% endif %}">
   {% endfor %}{% if paper.year %}<meta name="citation_publication_date" content="{{ paper.year }}">{% endif %}
   {% with ct=paper.conference.conference_title|default:paper.conference.proceedings_title %}{% if ct %}<meta name="citation_conference_title" content="{{ ct }}">{% endif %}{% endwith %}
   {% if paper.volume.isbn %}<meta name="citation_isbn" content="{{ paper.volume.isbn }}">{% endif %}
