@@ -32,6 +32,9 @@ $wdExportOptimizeForPrint = 0
 $wdExportCreateHeadingBookmarks = 1
 
 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
+# Word runs in its own process with its own working folder: give it full paths only.
+$OutputFolder = (Resolve-Path $OutputFolder).Path
+$InputFolder = (Resolve-Path $InputFolder).Path
 $files = Get-ChildItem -Path $InputFolder -Filter *.docx | Where-Object { $_.Name -notlike '~$*' } |
     Sort-Object { [int]($_.BaseName -replace '\D', '0') }
 $word = New-Object -ComObject Word.Application
