@@ -43,6 +43,14 @@ Do the rest of the steps in the same PowerShell window, which remembers them. In
 them again from the password manager (`$dbPassword = "..."`, `$secretKey = "..."`); do not run
 `New-Secret` again, which makes new values.
 
+Switch on the Azure services the site uses (once per subscription; each takes a minute or two):
+
+```powershell
+az provider register --namespace Microsoft.DBforPostgreSQL --wait
+az provider register --namespace Microsoft.Web --wait
+az provider register --namespace Microsoft.Communication --wait   # email, when that is set up
+```
+
 ## 2. Database
 
 ```powershell
