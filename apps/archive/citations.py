@@ -33,7 +33,8 @@ def author_list(paper) -> str:
     names = []
     for a in paper.authors.all():
         ini = initials(a.first_name)
-        names.append(f"{a.last_name}, {ini}" if ini else a.last_name)
+        last = a.last_name.strip(" ,;")
+        names.append(f"{last}, {ini}" if ini else last)
     return _join(names)
 
 
@@ -41,7 +42,7 @@ def editor_list(conference) -> str:
     names = []
     for e in conference.editors.all():
         ini = initials(e.first_name)
-        names.append(f"{ini} {e.last_name}".strip())
+        names.append(f"{ini} {e.last_name.strip(' ,;')}".strip())
     return _join(names)
 
 
