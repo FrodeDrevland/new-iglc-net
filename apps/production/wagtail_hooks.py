@@ -10,6 +10,8 @@ from wagtail.admin.forms import WagtailAdminModelForm
 from wagtail.admin.menu import MenuItem as _MenuItem  # noqa: F401
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, ObjectList
 from wagtail.admin.viewsets.model import ModelViewSet
+from django.core.exceptions import PermissionDenied
+from wagtail.admin.views.generic.models import EditView
 from wagtail.permission_policies import ModelPermissionPolicy
 
 from . import admin_urls
@@ -51,16 +53,54 @@ class EditorForm(WagtailAdminModelForm):
 ProductionEditor.base_form_class = EditorForm
 
 
+class ProductionPolicy(ModelPermissionPolicy):
+    """Superusers and publishers (change_production) edit any production; a chief editor edits
+    their own. Deleting needs the real permission."""
+
+    def _chief_somewhere(self, user):
+        return user.is_active and user.production_roles.filter(role=ProductionEditor.Role.CHIEF).exists()
+
+    def user_has_permission(self, user, action):
+        if action in ("change", "view") and self._chief_somewhere(user):
+            return True
+        return super().user_has_permission(user, action)
+
+    def user_has_permission_for_instance(self, user, action, instance):
+        if super().user_has_permission(user, action):
+            return True
+        return action in ("change", "view") and instance.editors.filter(
+            user=user, role=ProductionEditor.Role.CHIEF).exists()
+
+
+class ProductionEditView(EditView):
+    def get_object(self, queryset=None):
+        production = super().get_object(queryset)
+        if not self.permission_policy.user_has_permission_for_instance(self.request.user, "change", production):
+            raise PermissionDenied
+        return production
+
+    def get_success_url(self):
+        return reverse("proceedings:production", args=[self.object.conference.number])
+
+
 class ProductionViewSet(ModelViewSet):
     """Who works on a production, and its settings. Reached from the production's own page."""
 
     model = Production
+    edit_view_class = ProductionEditView
+    add_view_enabled = False
     icon = "doc-full-inverse"
     add_to_admin_menu = False
     inspect_view_enabled = False
     list_display = ["__str__", "status"]
+
+    @property
+    def permission_policy(self):
+        return ProductionPolicy(self.model)
+
     edit_handler = ObjectList([
-        FieldRowPanel([FieldPanel("conference"), FieldPanel("status"), FieldPanel("first_page")]),
+        FieldRowPanel([FieldPanel("conference", read_only=True), FieldPanel("status", read_only=True),
+                       FieldPanel("first_page", read_only=True)]),
         FieldRowPanel([FieldPanel("conference_chair"), FieldPanel("copyright_holders")]),
         InlinePanel("editors", heading="Editors", label="Editor",
                     help_text="Chief editors see and arrange everything and stage publication; editors see the papers of "

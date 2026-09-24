@@ -819,3 +819,37 @@ class PageCountCheckTests(SimpleTestCase):
         self.assertEqual(_pages_differ(folder / "a.docx", make_word_pdf(12)), [])
         # Word did not store its count (it says 1): not checked
         self.assertEqual(_pages_differ(folder / "b.docx", make_word_pdf(13)), [])
+
+
+class RoleGapTests(EditorPagesTests):
+    def test_chief_editors_edit_their_own_production_settings(self):
+        from datetime import date
+
+        from apps.archive.models import Conference
+
+        from .models import Production
+
+        other = Production.objects.create(conference=Conference.objects.create(pk=41, number=36, start_date=date(2028, 7, 1)))
+        self.client.login(username="chief", password="pw")
+        self.assertEqual(self.client.get(f"/manage/production-settings/edit/{self.production.pk}/").status_code, 200)
+        self.assertNotEqual(self.client.get(f"/manage/production-settings/edit/{other.pk}/").status_code, 200)
+        self.client.login(username="ed", password="pw")  # an editor, not chief
+        self.assertNotEqual(self.client.get(f"/manage/production-settings/edit/{self.production.pk}/").status_code, 200)
+
+    def test_archive_editors_edit_the_archive_and_committees(self):
+        from django.contrib.auth.models import Group, User
+
+        from apps.archive.models import Paper
+        from apps.governance.models import Committee
+
+        paper = Paper.objects.create(conference=self.production.conference, title="A paper")
+        committee = Committee.objects.create(name="Standardisation Committee", slug="standardisation")
+        user = User.objects.create_user("arch", password="pw")
+        user.groups.add(Group.objects.get(name="Archive editors"))
+        self.client.login(username="arch", password="pw")
+        for url in ("/manage/", "/manage/archive/paper/", f"/manage/archive/paper/edit/{paper.pk}/",
+                    "/manage/archive/person/", f"/manage/committees/edit/{committee.pk}/"):
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+        # DOIs point to papers: no deleting, and no production pages
+        self.assertNotEqual(self.client.get(f"/manage/archive/paper/delete/{paper.pk}/").status_code, 200)
+        self.assertNotEqual(self.client.get("/manage/production/35/").status_code, 200)

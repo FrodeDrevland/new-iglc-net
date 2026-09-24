@@ -210,10 +210,14 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
 - *Editors* (per production): the papers of their tracks, or all papers.
 - *Chief editors* (per production): everything in the production. They stage publication:
   they ask for the papers to be published, send corrections, and submit the full proceedings.
+  They manage their production's editors and settings ("Editors and settings").
 - *Publishers* (site-wide, group "Publishers"): every production. They approve and carry out
   publication of the papers, corrections and the full proceedings, and enter the ISBNs. IGLC is
   registered as a publisher in Norway; the ISBNs are requested by whoever holds this role,
   a more permanent position than a proceedings editor.
+- *Archive editors* (site-wide, group "Archive editors"): edit conferences, papers, authors
+  (including merging people), links and committees; they cannot delete conferences or papers
+  (DOIs point to them) and see no productions unless they also have a role in one.
 - *Superusers*: everything, as chief editor and publisher.
 
 **Step 5 (the full proceedings):** /production/<n>/book/
