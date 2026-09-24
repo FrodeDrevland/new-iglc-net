@@ -5,7 +5,7 @@
 .DESCRIPTION
   Word is the only program that lays out the papers exactly as the authors see them, so page
   counts and the final PDFs come from Word. For every .docx in -InputFolder this script opens
-  the file (invisibly, read-only), updates its fields, and writes:
+  the file (invisibly, read-only) and writes:
     - pages.csv with the file name and Word's page count
     - with -Pdf: <name>.pdf in -OutputFolder
 
@@ -51,13 +51,13 @@ try {
         $doc = $word.Documents.Open($file.FullName, $false, $true, $false, "", "", $true, "", "",
             0, [Type]::Missing, [bool]$Visible, $false, [Type]::Missing, $true)
         try {
-            $doc.Fields.Update() | Out-Null
-            foreach ($section in $doc.Sections) {
-                foreach ($part in @($section.Headers + $section.Footers)) { $part.Range.Fields.Update() | Out-Null }
-            }
-            $doc.Repaginate()
+            # No field updates: page numbers in headers and footers are filled in when Word lays
+            # out the pages, and updating the body's fields (citations, cross-references) could
+            # change the paper or make Word wait for an add-in.
+            Write-Host " counting..." -NoNewline
             $pages = $doc.ComputeStatistics($wdStatisticPages)
             if ($Pdf) {
+                Write-Host " pdf..." -NoNewline
                 $target = Join-Path $OutputFolder ($file.BaseName + ".pdf")
                 $doc.ExportAsFixedFormat($target, $wdExportFormatPDF, $false, $wdExportOptimizeForPrint,
                     0, 0, 0, 0, $true, $true, $wdExportCreateHeadingBookmarks, $true, $true, $false)
