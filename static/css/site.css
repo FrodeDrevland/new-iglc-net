@@ -316,3 +316,9 @@ table.members th:nth-child(4) { width: 7.5rem; }
 .book-steps h2 { margin-top: 0; }
 .isbn-form label { margin-right: 1rem; }
 .linklike { background: none; border: 0; padding: 0; color: var(--blue); text-decoration: underline; cursor: pointer; font: inherit; }
+/* The authors' metadata check */
+.metadata-check fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: .75rem 1rem; margin: 0 0 1rem; }
+.metadata-check legend { font-weight: 700; padding: 0 .3rem; }
+.metadata-check input[type=text], .metadata-check textarea { width: 100%; box-sizing: border-box; font: inherit; padding: .4rem; }
+.metadata-check .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 40rem) { .metadata-check .row { grid-template-columns: 1fr; } }

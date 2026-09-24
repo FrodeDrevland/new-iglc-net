@@ -18,7 +18,7 @@ from apps.archive.management.commands.group_authors import fold
 from .access import is_publisher, productions_for, role, submissions_for
 from .arrange import number_pages, save_order
 from .checks import LEVELS
-from .models import Event, Production, Submission
+from .models import Event, MetadataCheck, Production, Submission
 from . import publish as publishing
 from .uploads import add_version, upload_batch
 
@@ -105,9 +105,13 @@ def production_detail(request, number):
     if mine:
         papers = papers.filter(editor=request.user)
     rows = []
+    checks = {}
+    for check in MetadataCheck.objects.filter(submission__production=production).order_by("created"):
+        checks[check.submission_id] = check
     for paper in papers:
         versions = list(paper.versions.all())
-        rows.append({"paper": paper, "current": versions[0] if versions else None, "count": len(versions)})
+        rows.append({"paper": paper, "current": versions[0] if versions else None, "count": len(versions),
+                     "check": checks.get(paper.pk)})
     summary = [(label, production.submissions.filter(status=key).count()) for key, label in Submission.Status.choices]
     summary = [(label, n) for label, n in summary if n]
     return render(request, "production/editor/production.html", {
@@ -223,6 +227,22 @@ def paper(request, number, conftool_id):
                 Event.objects.create(submission=submission, user=request.user,
                                      action="correction sent to the publisher", comment=comment)
                 messages.success(request, "The correction waits for the publisher's approval.")
+        elif action in ("apply_check", "close_check"):
+            from . import metadata_check as checks
+
+            if my_role != "chief":
+                raise PermissionDenied
+            check = submission.metadata_checks.filter(pk=request.POST.get("check")).first()
+            if check is None or check.status != MetadataCheck.Status.CORRECTIONS:
+                messages.error(request, "There is nothing to handle.")
+            elif action == "apply_check":
+                changes = checks.apply(check, request.user, comment)
+                messages.success(request, f"{len(changes)} change(s) made to the published record. Send a new Crossref "
+                                          "deposit (publish page) so the DOI's record follows; if the change is printed "
+                                          "in the paper, also publish a corrected version.")
+            else:
+                checks.close(check, request.user, comment)
+                messages.success(request, "Marked as handled.")
         elif action == "stage_pdf":
             if my_role != "chief":
                 raise PermissionDenied
@@ -280,10 +300,22 @@ def paper(request, number, conftool_id):
         "editors": [e.user for e in production.editors.select_related("user")],
         "events": submission.events.select_related("user")[:30],
         "published_meta": publishing.published_metadata(submission) if current else None,
+        "check": _check_context(submission),
         "can_publish": is_publisher(request.user),
         "correction_problems": publishing.correction_problems(submission) if submission.published_version_id else [],
         "corrections": submission.corrections.select_related("user", "version"),
     })
+
+
+def _check_context(submission):
+    from . import metadata_check as checks
+
+    check = submission.metadata_checks.first()
+    if check is None or not submission.paper_id:
+        return None
+    record = checks.published_record(submission.paper)
+    return {"check": check, "changes": checks.differences(record, check.proposal) if check.proposal else [],
+            "comment": (check.proposal or {}).get("comment", "")}
 
 
 @login_required
@@ -349,6 +381,14 @@ def publish(request, number):
     action = request.POST.get("action")
     if request.method == "POST" and action and action.startswith("crossref_"):
         return _crossref_action(request, production, action)
+    if request.method == "POST" and action in ("metadata_send", "metadata_remind"):
+        from . import metadata_check as checks
+
+        if my_role != "chief" and not is_publisher(request.user):
+            raise PermissionDenied
+        after = request.POST.get("after", "0")
+        step = checks.send_next if action == "metadata_send" else checks.remind_next
+        return JsonResponse(step(production, request.user, n=10, after=int(after) if after.isdigit() else 0))
     if request.method == "POST" and action == "request":
         if my_role != "chief":
             raise PermissionDenied
@@ -385,8 +425,23 @@ def publish(request, number):
                        .select_related("submission", "user"),
         "waiting_corrections": production.submissions.exclude(correction_note="").select_related("correction_requested_by"),
         "deposits": production.conference.crossref_deposits.select_related("user")[:10],
+        "metadata": _metadata_summary(production),
         "crossref": _crossref_settings(),
     })
+
+
+def _metadata_summary(production):
+    from collections import Counter
+
+    from . import metadata_check as checks
+
+    latest = {}
+    for check in MetadataCheck.objects.filter(submission__production=production).order_by("created"):
+        latest[check.submission_id] = check.status
+    counts = Counter(latest.values())
+    return {"not_asked": len(checks.pending(production)),
+            "counts": [(label, counts.get(key, 0)) for key, label in MetadataCheck.Status.choices],
+            "waiting": counts.get(MetadataCheck.Status.SENT, 0)}
 
 
 def _crossref_settings():

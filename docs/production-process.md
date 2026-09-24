@@ -248,6 +248,20 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
   read from the PDFs' footers first: `read_tracks --conference 28` and `import_tracks`.
 - Tested on IGLC 34: 1,878 pages in 29 s; 125 MB (the papers' own PDFs take 140 MB).
 
+**Step 5 (the authors' check of the details):** the publish page (chief editors, publishers)
+
+- After publication, "Ask the authors" emails each paper's authors (the addresses registered in
+  ConfTool, and those in the paper's footnotes) a secret link to a page where they see the
+  title, names, affiliations and ORCID iDs as published and registered with Crossref, and
+  either confirm them or correct them (ORCID iDs are checked). One answer per paper; two weeks
+  to answer; "Remind" sends the link again where nobody has answered. Replies go to the chief
+  editors.
+- The production's paper list shows each paper's status. Corrections come to the paper's page,
+  published and proposed side by side, and by email to the chief editors; a chief editor
+  applies them to the published record in one step (or marks them handled). The PDF is not
+  changed: a correction to what is printed also needs a corrected version.
+- Then (again) the Crossref deposit.
+
 **Step 6 (Crossref):** the publish page, "DOIs at Crossref" (publishers)
 
 - A deposit holds the whole conference (schema 5.3.1): the series (ISSN), the proceedings DOI

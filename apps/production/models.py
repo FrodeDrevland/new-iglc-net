@@ -321,3 +321,36 @@ class BookPart(models.Model):
     @property
     def label(self):
         return self.title or self.get_kind_display().split(" (")[0]
+
+
+class MetadataCheck(models.Model):
+    """The authors of a published paper are asked to check its metadata (title, names,
+    affiliations, ORCID iDs) through a secret link; any of them may answer."""
+
+    class Status(models.TextChoices):
+        SENT = "sent", "Waiting for the authors"
+        CONFIRMED = "confirmed", "Confirmed by the authors"
+        CORRECTIONS = "corrections", "Corrections proposed"
+        HANDLED = "handled", "Corrections handled"
+
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="metadata_checks")
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created = models.DateTimeField(auto_now_add=True)
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+")
+    recipients = models.JSONField(default=list)
+    deadline = models.DateField()
+    reminded = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SENT)
+    responded = models.DateTimeField(null=True, blank=True)
+    responder = models.CharField(max_length=200, blank=True, help_text="Who answered (as they gave their name).")
+    proposal = models.JSONField(default=dict, blank=True, help_text="The corrections: title, authors, comment.")
+    handled = models.DateTimeField(null=True, blank=True)
+    handled_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name="+")
+    handled_note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created"]
+
+    def __str__(self):
+        return f"{self.submission.conftool_id}: {self.get_status_display()}"

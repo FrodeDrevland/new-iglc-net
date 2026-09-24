@@ -875,3 +875,76 @@ class CrossrefPageTests(FullProceedingsTests):
         self.client.post("/manage/production/35/publish/", {"action": "crossref_send", "deposit": deposit.pk})
         deposit.refresh_from_db()
         self.assertEqual(deposit.status, "made")
+
+
+class MetadataCheckTests(FullProceedingsTests):
+    def test_authors_check_and_editors_apply(self):
+        from django.core import mail
+
+        from apps.archive.models import Paper
+
+        from .models import MetadataCheck, Submission
+
+        self._publish_all()
+        self.chief.email = "chief@example.org"
+        self.chief.save()
+        takt = Submission.objects.get(conftool_id=123)
+        takt.registered_authors = [{"name": "Ann Registered", "email": "ann@example.org"}]
+        takt.save()
+        mail.outbox.clear()
+        self.client.login(username="chief", password="pw")
+        self.assertContains(self.client.get("/manage/production/35/publish/"), "2 not asked yet")
+        result = self.client.post("/manage/production/35/publish/", {"action": "metadata_send"}).json()
+        self.assertEqual((result["left"], result["sent"] + len(result["problems"])), (0, 2))
+        message = next(m for m in mail.outbox if "ann@example.org" in m.to)
+        self.assertEqual(message.reply_to, ["chief@example.org"])
+        check = MetadataCheck.objects.get(submission=takt)
+        self.assertIn(str(check.token), message.body)
+
+        # the author's page: no login needed
+        self.client.logout()
+        url = f"/for-authors/check-your-details/{check.token}/"
+        page = self.client.get(url).content.decode()
+        self.assertIn("Check your paper", page)
+        paper = Paper.objects.get(doi="10.24928/2027/0123")
+        first = paper.authors.first()
+        data = {"responder": "Ann", "action": "correct", "title": "Takt planning in practice, revised",
+                "first_name_0": first.first_name, "last_name_0": first.last_name + "-Berg",
+                "affiliation_0": "NTNU, Norway", "orcid_0": "0000-0002-1825-0098"}  # wrong check digit
+        self.assertContains(self.client.post(url, data), "is not valid")
+        data["orcid_0"] = "0000-0002-1825-0097"
+        mail.outbox.clear()
+        self.client.post(url, data)
+        check.refresh_from_db()
+        self.assertEqual(check.status, "corrections")
+        self.assertEqual(mail.outbox[0].to, ["chief@example.org"])
+        self.assertIn("Takt planning in practice, revised", mail.outbox[0].body)
+
+        # the chief editor applies them
+        self.client.login(username="chief", password="pw")
+        page = self.client.get("/manage/production/35/123/").content.decode()
+        self.assertIn("Corrections proposed", page)
+        self.client.post("/manage/production/35/123/", {"action": "apply_check", "check": check.pk, "comment": "ok"})
+        paper.refresh_from_db()
+        first.refresh_from_db()
+        self.assertEqual(paper.title, "Takt planning in practice, revised")
+        self.assertTrue(first.last_name.endswith("-Berg"))
+        self.assertIn("orcid.org/0000-0002-1825-0097", first.title_and_contact)
+        check.refresh_from_db()
+        self.assertEqual(check.status, "handled")
+        self.client.logout()
+        self.assertContains(self.client.get(url), "have handled the answer")
+
+    def test_confirming(self):
+        from .models import MetadataCheck
+
+        self._publish_all()
+        self.client.login(username="chief", password="pw")
+        self.client.post("/manage/production/35/publish/", {"action": "metadata_send"})
+        check = MetadataCheck.objects.first()
+        if check is None:
+            self.skipTest("the test papers have no email addresses")
+        self.client.logout()
+        self.client.post(f"/for-authors/check-your-details/{check.token}/", {"responder": "Bo", "action": "confirm"})
+        check.refresh_from_db()
+        self.assertEqual((check.status, check.responder), ("confirmed", "Bo"))

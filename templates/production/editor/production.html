@@ -21,7 +21,7 @@
   {% csrf_token %}
   <table class="listing prod-table">
     <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.pick').forEach(c => c.checked = this.checked)" aria-label="All"></th>
-      <th>ID</th><th>Title</th><th>Track</th><th>Status</th><th>Version</th><th>Pages</th><th>Check</th><th>Editor</th></tr></thead>
+      <th>ID</th><th>Title</th><th>Track</th><th>Status</th><th>Version</th><th>Pages</th><th>Check</th><th>Authors</th><th>Editor</th></tr></thead>
     <tbody>
     {% for row in rows %}{% with p=row.paper c=row.current %}
     <tr class="status-{{ p.status }}">
@@ -33,9 +33,10 @@
       <td>{% if c %}{{ c.number }}{% else %}–{% endif %}</td>
       <td>{{ c.pages|default:"–" }}{% if p.first_page and c.pages %}<br><span class="muted small">p. {{ p.first_page }}</span>{% endif %}</td>
       <td>{% if c %}{% if c.passed %}<span class="ok">passed</span>{% else %}<span class="fail">not passed</span>{% endif %}{% else %}–{% endif %}</td>
+      <td>{% if row.check %}<span class="badge {% if row.check.status == 'corrections' %}needs_work{% elif row.check.status == 'confirmed' or row.check.status == 'handled' %}approved{% endif %}" title="The authors' check of the published details">{{ row.check.get_status_display }}</span>{% else %}–{% endif %}</td>
       <td>{% if p.editor %}{{ p.editor.get_full_name|default:p.editor.username }}{% else %}–{% endif %}</td>
     </tr>
-    {% endwith %}{% empty %}<tr><td colspan="9">No papers.</td></tr>{% endfor %}
+    {% endwith %}{% empty %}<tr><td colspan="10">No papers.</td></tr>{% endfor %}
     </tbody>
   </table>
   <p><button class="button button-secondary" type="submit">Download Word files (ZIP)</button>

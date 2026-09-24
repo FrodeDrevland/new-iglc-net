@@ -40,6 +40,18 @@
   {% if published %}<h2>Published so far</h2><ul class="small">{% for s in published %}<li><a href="{{ s.paper.get_absolute_url }}">{{ s.paper.doi }}</a> {{ s.paper.title }} (pp. {{ s.paper.pages }})</li>{% endfor %}</ul>{% endif %}
 {% endif %}
 
+{% if production.papers_published and role == "chief" or production.papers_published and can_publish %}
+<h2>The authors’ check of the details</h2>
+<p>Each paper’s authors get an email with a link to check its title, their names, affiliations and ORCID iDs as published and registered with Crossref, and to confirm or correct them. One answer per paper is enough. Corrections come to the paper’s page (and by email to the chief editors), where they are applied to the published record.</p>
+<p class="small">{% for label, n in metadata.counts %}{% if n %}{{ n }} {{ label|lower }} · {% endif %}{% endfor %}{{ metadata.not_asked }} not asked yet.</p>
+<form id="metadata-form">{% csrf_token %}
+  <button class="button button-secondary" type="button" data-action="metadata_send" data-confirm="Email the authors of {{ metadata.not_asked }} paper(s)?"{% if not metadata.not_asked %} disabled{% endif %}>Ask the authors of {{ metadata.not_asked }} paper{{ metadata.not_asked|pluralize }}</button>
+  <button class="button button-secondary" type="button" data-action="metadata_remind" data-confirm="Send a reminder for {{ metadata.waiting }} paper(s)?"{% if not metadata.waiting %} disabled{% endif %}>Remind {{ metadata.waiting }} that have not answered</button>
+  <span class="publish-progress muted" id="metadata-progress" role="status"></span>
+  <ul class="small" id="metadata-problems"></ul>
+</form>
+{% endif %}
+
 {% if can_publish and production.papers_published %}
 <h2>DOIs at Crossref</h2>
 <p>The papers’ DOIs work once Crossref has registered them. A deposit sends the metadata of all published papers (authors with affiliations and ORCID iDs, titles, abstracts, pages) and of the proceedings; sending a new one updates the records, for example after a correction or when the full proceedings get their ISBN.</p>
@@ -62,6 +74,36 @@
 {% endwith %}
 {% endblock %}
 {% block page_js %}
+<script>
+(function () {
+  const form = document.getElementById("metadata-form");
+  if (!form) return;
+  const status = document.getElementById("metadata-progress"), list = document.getElementById("metadata-problems");
+  const token = form.querySelector("[name=csrfmiddlewaretoken]").value;
+  form.querySelectorAll("button[data-action]").forEach(function (button) {
+    button.addEventListener("click", async function () {
+      if (!confirm(button.dataset.confirm)) return;
+      form.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+      list.innerHTML = "";
+      let sent = 0, after = 0, failed = 0;
+      for (;;) {
+        let data;
+        try {
+          const response = await fetch(location.href, {method: "POST", headers: {"X-CSRFToken": token},
+            body: new URLSearchParams({csrfmiddlewaretoken: token, action: button.dataset.action, after: after})});
+          data = await response.json();
+        } catch (e) { data = {error: "The connection failed. Press the button again to go on."}; }
+        if (data.error) { status.textContent = data.error; return; }
+        sent += data.sent; after = data.next;
+        (data.problems || []).forEach(function (p) { const li = document.createElement("li"); li.textContent = p; list.appendChild(li); failed += 1; });
+        status.textContent = sent + " sent" + (failed ? ", " + failed + " not (listed below)" : "") + ", " + data.left + " to go…";
+        if (data.left === 0) break;
+      }
+      status.textContent = sent + " sent" + (failed ? ", " + failed + " not (listed below)" : "") + ". Reload the page to see the new counts.";
+    });
+  });
+})();
+</script>
 <script>
 (function () {
   const start = document.getElementById("publish-start");

@@ -114,6 +114,28 @@
     {% endif %}
   </div>
   {% endif %}
+  {% if check %}{% with c=check.check %}
+  <div class="panel">
+    <h3>Authors’ check of the details</h3>
+    <p class="small"><span class="badge {% if c.status == 'corrections' %}needs_work{% elif c.status != 'sent' %}approved{% endif %}">{{ c.get_status_display }}</span>
+      Asked {{ c.created|date:"j M Y" }}{% if c.reminded %}, reminded {{ c.reminded|date:"j M Y" }}{% endif %}{% if c.responded %}; answered {{ c.responded|date:"j M Y" }} by {{ c.responder }}{% endif %}.</p>
+    <p class="small muted">Sent to {{ c.recipients|join:", " }}</p>
+    {% if check.changes or check.comment %}
+      <table class="listing prod-table"><thead><tr><th></th><th>Published</th><th>Proposed</th></tr></thead><tbody>
+      {% for what, old, new in check.changes %}<tr><td class="small">{{ what }}</td><td class="small">{{ old|default:"–" }}</td><td class="small"><b>{{ new|default:"–" }}</b></td></tr>{% endfor %}
+      </tbody></table>
+      {% if check.comment %}<p class="small"><b>Comment:</b> {{ check.comment }}</p>{% endif %}
+    {% endif %}
+    {% if c.status == "corrections" and role == "chief" %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="check" value="{{ c.pk }}">
+        <p><label>Note (for the record)<br><textarea name="comment" rows="2"></textarea></label></p>
+        <button class="button button-small" type="submit" name="action" value="apply_check"{% if not check.changes %} disabled{% endif %}>Apply to the published record</button>
+        <button class="button button-small button-secondary" type="submit" name="action" value="close_check">Mark as handled</button>
+      </form>
+      <p class="small muted">Applying changes the site and, after a new Crossref deposit, the DOI’s record. It does not change the PDF: if the correction is printed in the paper, also publish a corrected version.</p>
+    {% elif c.status == "handled" %}<p class="small muted">Handled {{ c.handled|date:"j M Y" }}{% if c.handled_by %} by {{ c.handled_by.get_full_name|default:c.handled_by.username }}{% endif %}{% if c.handled_note %}: {{ c.handled_note }}{% endif %}</p>{% endif %}
+  </div>
+  {% endwith %}{% endif %}
   <div class="panel">
     <h3>Upload a new version</h3>
     <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload">

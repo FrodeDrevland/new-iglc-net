@@ -82,3 +82,33 @@ def author_skill(request):
     response = HttpResponse(buffer.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = 'attachment; filename="iglc-paper-check-skill.zip"'
     return response
+
+
+def metadata_check(request, token):
+    """The authors' page for checking their published paper's details (secret link, no login)."""
+    from . import metadata_check as checks
+    from .models import MetadataCheck
+
+    check = get_object_or_404(MetadataCheck.objects.select_related("submission__paper__conference"), token=token)
+    paper = check.submission.paper
+    record = checks.published_record(paper)
+    errors, proposal = [], None
+    if request.method == "POST" and check.status != MetadataCheck.Status.HANDLED:
+        responder = request.POST.get("responder", "").strip()
+        if not responder:
+            errors.append("Please give your name.")
+        if request.POST.get("action") == "confirm":
+            if not errors:
+                checks.respond(check, responder, confirmed=True)
+                return redirect("production:metadata_check", token=token)
+        else:
+            proposal, more = checks.clean_proposal(record, request.POST)
+            errors += more
+            if not errors:
+                checks.respond(check, responder, confirmed=False, proposal=proposal)
+                return redirect("production:metadata_check", token=token)
+    return render(request, "production/metadata_check.html", {
+        "check": check, "paper": paper, "record": record, "errors": errors,
+        "form": proposal or check.proposal or record,
+        "changes": checks.differences(record, check.proposal) if check.proposal else [],
+    })

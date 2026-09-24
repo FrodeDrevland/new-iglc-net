@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Check your paper's details{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="kicker">IGLC {{ paper.conference.number }} · for authors</p>
+  <h1>Check your paper’s details</h1>
+  <p class="lead">These details are published on the paper’s page and registered with Crossref for its DOI, <a href="{{ paper.doi_url }}">{{ paper.doi_url }}</a>. Please confirm them or correct them{% if check.status == "sent" %} by {{ check.deadline|date:"j F Y" }}{% endif %}.</p>
+</div>
+
+{% if check.status == "handled" %}
+  <p class="upload-report">Thank you. The editors have handled the answer to this check{% if check.handled %} ({{ check.handled|date:"j F Y" }}){% endif %}. For anything else, reply to the email you received.</p>
+{% else %}
+  {% if check.status == "confirmed" %}<p class="upload-report">Thank you: {{ check.responder }} confirmed the details on {{ check.responded|date:"j F Y" }}. You can still send corrections below.</p>
+  {% elif check.status == "corrections" %}<p class="upload-report">Thank you: {{ check.responder }} sent corrections on {{ check.responded|date:"j F Y" }}; the editors will look at them. You can change them below until then.</p>{% endif %}
+  {% if errors %}<div class="upload-report"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <form method="post" class="metadata-check">{% csrf_token %}
+    <p><label>Title<br><textarea name="title" rows="2">{{ form.title }}</textarea></label></p>
+    {% for a in form.authors %}
+    <fieldset>
+      <legend>Author {{ forloop.counter }}</legend>
+      <p class="row"><label>First name(s)<br><input type="text" name="first_name_{{ forloop.counter0 }}" value="{{ a.first_name }}"></label>
+         <label>Last name<br><input type="text" name="last_name_{{ forloop.counter0 }}" value="{{ a.last_name }}"></label></p>
+      <p><label>Affiliation<br><textarea name="affiliation_{{ forloop.counter0 }}" rows="2">{{ a.affiliation }}</textarea></label></p>
+      <p><label>ORCID iD<br><input type="text" name="orcid_{{ forloop.counter0 }}" value="{{ a.orcid }}" placeholder="0000-0000-0000-0000"></label></p>
+    </fieldset>
+    {% endfor %}
+    <p><label>Anything else (for example a missing author, or the order of the authors)<br><textarea name="comment" rows="3">{{ form.comment }}</textarea></label></p>
+    <p><label>Your name<br><input type="text" name="responder" value="{{ check.responder }}" required></label></p>
+    <p class="small muted">A single-name author: leave the first name empty. The published PDF itself is not changed by this form; if the corrections concern what is printed in the paper, the editors will be in touch.</p>
+    <p><button class="button" type="submit" name="action" value="confirm">Everything is correct</button>
+       <button class="button secondary" type="submit" name="action" value="correct">Send corrections</button></p>
+  </form>
+{% endif %}
+{% endblock %}
