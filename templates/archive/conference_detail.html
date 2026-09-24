@@ -31,11 +31,18 @@
     <span id="filter-count" class="muted small" role="status"></span>
   </div>
 </div>
+{% if tracks %}
+<nav class="track-index" aria-label="Tracks">
+  <h2 class="visually-hidden">Tracks</h2>
+  <ul>{% for track, n in tracks %}<li><a href="#track-{{ track.pk }}">{{ track.title }}</a> <span class="muted small">{{ n }}</span></li>{% endfor %}
+  {% if untracked %}<li><a href="#track-other">Other papers</a> <span class="muted small">{{ untracked }}</span></li>{% endif %}</ul>
+</nav>
+{% endif %}
 <div id="papers">
 {% regroup papers by track as groups %}
 {% for group in groups %}
-  <section class="track-group">
-    {% if group.grouper %}<h2 class="track-heading">{{ group.grouper.title }}</h2>{% endif %}
+  <section class="track-group" id="track-{% if group.grouper %}{{ group.grouper.pk }}{% else %}other{% endif %}">
+    {% if group.grouper %}<h2 class="track-heading">{{ group.grouper.title }}</h2>{% elif tracks %}<h2 class="track-heading">Other papers</h2>{% endif %}
     <ol class="paper-list">
       {% for paper in group.list %}{% include "archive/_paper_item.html" %}{% endfor %}
     </ol>

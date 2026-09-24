@@ -384,3 +384,21 @@ class TrackTests(ArchiveTestCase):
 
         self.assertEqual(candidate("People, Culture and Change899"), "People, Culture and Change")
         self.assertEqual(candidate("900 Proceedings IGLC34, 22–26 June 2026, Singapore"), "")
+
+
+class TrackTests(ArchiveTestCase):
+    def test_conference_page_and_search_by_track(self):
+        from .models import ConferenceTrack
+
+        planning = ConferenceTrack.objects.create(conference=self.conference, title="Production Planning and Control", order=1)
+        Paper.objects.filter(pk=2150).update(track=planning)
+        Paper.objects.create(pk=2152, conference=self.conference, title="Untracked", first_page=30, last_page=40)
+        page = self.client.get("/papers/conference/25").content.decode()
+        self.assertIn(f'href="#track-{planning.pk}"', page)
+        self.assertIn("Other papers", page)
+        self.assertLess(page.index("Takt Planning in Practice"), page.index("Untracked"))
+        # words of the track name, in any spelling
+        page = self.client.get("/papers/search/?track=planning+%26+control").content.decode()
+        self.assertIn("Takt Planning in Practice", page)
+        self.assertNotIn(">Untracked<", page)
+        self.assertIn("Production Planning and Control", page)  # shown with the result, and suggested

@@ -15,6 +15,8 @@
       <label>From <select name="from"><option value="">any year</option>{% for y in years %}<option{% if y == year_from %} selected{% endif %}>{{ y }}</option>{% endfor %}</select></label>
       <label>to <select name="to"><option value="">any year</option>{% for y in years %}<option{% if y == year_to %} selected{% endif %}>{{ y }}</option>{% endfor %}</select></label>
       <label>Conference <select name="conference"><option value="">all</option>{% for c in conferences %}<option value="{{ c.number }}"{% if c.number == conference %} selected{% endif %}>IGLC {{ c.number }}{% if c.year %} ({{ c.year }}){% endif %}</option>{% endfor %}</select></label>
+      <label>Track <input name="track" type="search" list="tracks" value="{{ track }}" placeholder="any" size="22"></label>
+      <datalist id="tracks">{% for t in common_tracks %}<option value="{{ t }}">{% endfor %}</datalist>
       <label>Sort <select name="sort">{% for key, label in sorts %}<option value="{{ key }}"{% if key == sort %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
     </div>
   </form>
@@ -37,7 +39,7 @@
       <span class="pp">{{ paper.year }}</span>
       <div>
         <a class="title" href="{{ paper.get_absolute_url }}">{{ paper.title|highlight:query }}</a>
-        <div class="meta">{{ paper.full_author_string|highlight:query }} &middot; IGLC {{ paper.conference.number }}{% if paper.full_text_url %} &middot; <a href="{% url 'archive:paper_pdf' paper.pk %}" title="Download the paper">PDF</a>{% endif %}{% if paper.presentation_url %} &middot; <a href="{% url 'archive:paper_presentation' paper.pk %}" title="Download the presentation">Slides</a>{% endif %}</div>
+        <div class="meta">{{ paper.full_author_string|highlight:query }} &middot; IGLC {{ paper.conference.number }}{% if paper.track %} &middot; {{ paper.track.title }}{% endif %}{% if paper.full_text_url %} &middot; <a href="{% url 'archive:paper_pdf' paper.pk %}" title="Download the paper">PDF</a>{% endif %}{% if paper.presentation_url %} &middot; <a href="{% url 'archive:paper_presentation' paper.pk %}" title="Download the presentation">Slides</a>{% endif %}</div>
         {% if query and paper.abstract %}<p class="snippet">{{ paper.abstract|snippet:query }}</p>{% endif %}
       </div>
     </li>

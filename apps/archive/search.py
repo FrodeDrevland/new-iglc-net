@@ -24,8 +24,14 @@ def terms(query: str) -> list[str]:
     return [t for t in re.findall(r"[\w][\w'-]*", query) if len(t) > 1][:12]
 
 
-def filtered(year_from=None, year_to=None, conference=None):
+def filtered(year_from=None, year_to=None, conference=None, track=""):
     papers = Paper.objects.filter(conference__is_published=True)
+    if track:
+        # Track names vary between conferences ("People, Culture and Change", "People, Culture, & Change"):
+        # every word must be in the track's name.
+        for word in re.findall(r"\w{2,}", track.lower()):
+            if word not in ("and", "the", "of", "with"):
+                papers = papers.filter(track__title__icontains=word)
     if year_from:
         papers = papers.filter(conference__start_date__year__gte=year_from)
     if year_to:
@@ -67,8 +73,8 @@ def _contains(papers, words):
     return papers.annotate(rank=score)
 
 
-def search_papers(query="", year_from=None, year_to=None, conference=None, sort="relevance"):
-    papers = filtered(year_from, year_to, conference)
+def search_papers(query="", year_from=None, year_to=None, conference=None, sort="relevance", track=""):
+    papers = filtered(year_from, year_to, conference, track)
     words = terms(query)
     if words:
         found = None
@@ -77,7 +83,7 @@ def search_papers(query="", year_from=None, year_to=None, conference=None, sort=
             if not found.exists():
                 found = None
         papers = found if found is not None else _contains(papers, words)
-    elif not (year_from or year_to or conference):
+    elif not (year_from or year_to or conference or track):
         return Paper.objects.none()
 
     order = SORTS.get(sort)
@@ -97,3 +103,16 @@ def matching_authors(query: str, limit=8):
 
     return people.annotate(paper_count=Count("authorships__paper", distinct=True)).order_by(
         "-paper_count", "last_name")[:limit]
+
+
+def common_tracks(limit=30) -> list[str]:
+    """The track names used most (by number of papers), for the search form's suggestions."""
+    from django.db.models import Count
+
+    from .models import ConferenceTrack
+
+    counts = {}
+    for title, n in (ConferenceTrack.objects.filter(conference__is_published=True)
+                     .annotate(n=Count("papers")).values_list("title", "n")):
+        counts[title] = counts.get(title, 0) + n
+    return [t for t, _ in sorted(counts.items(), key=lambda kv: -kv[1])[:limit]]

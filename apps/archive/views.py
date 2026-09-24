@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from . import citations, exports
 from .models import Author, AuthorPerson, Conference, LinkCategory, Paper
 from .management.commands.group_authors import fold
-from .search import SORTS, matching_authors, search_papers
+from .search import common_tracks, SORTS, matching_authors, search_papers
 
 
 def _papers():
@@ -49,10 +49,20 @@ def conference_detail(request, pk):
         for p in papers:
             if p.track_id and p.first_page:
                 start[p.track_id] = min(start.get(p.track_id, p.first_page), p.first_page)
-        papers.sort(key=lambda p: (p.track_id is None, start.get(p.track_id, 10 ** 6), p.first_page or 10 ** 6, p.pk))
+        order = {t.pk: t.order for t in conference.tracks.all()}
+        papers.sort(key=lambda p: (p.track_id is None, order.get(p.track_id) or 10 ** 6, start.get(p.track_id, 10 ** 6),
+                                   p.first_page or 10 ** 6, p.title))
+    tracks = []
+    for p in papers:
+        if p.track and (not tracks or tracks[-1][0] != p.track):
+            tracks.append([p.track, 0])
+        if p.track:
+            tracks[-1][1] += 1
     return render(request, "archive/conference_detail.html", {
         "conference": conference,
         "papers": papers,
+        "tracks": tracks,
+        "untracked": sum(1 for p in papers if not p.track_id) if tracks else 0,
         "show_paper_numbers": _show_paper_numbers(conference),
     })
 
@@ -117,6 +127,7 @@ def _search_params(request):
         "year_from": _int(data.get("from")),
         "year_to": _int(data.get("to")),
         "conference": _int(data.get("conference")),
+        "track": (data.get("track") or "").strip()[:100],
         "sort": sort if sort in SORTS else "relevance",
     }
 
@@ -124,7 +135,8 @@ def _search_params(request):
 @csrf_exempt  # read-only; the old site's search form posted here
 def search(request):
     params = _search_params(request)
-    searched = bool(params["query"] or params["year_from"] or params["year_to"] or params["conference"])
+    searched = bool(params["query"] or params["year_from"] or params["year_to"] or params["conference"]
+                    or params["track"])
     page = None
     if searched:
         ids = list(search_papers(**params).values_list("pk", flat=True))
@@ -146,6 +158,7 @@ def search(request):
         "conferences": Conference.objects.filter(is_published=True).order_by("-number"),
         "years": range(years["last"] or date.today().year, (years["first"] or 1993) - 1, -1),
         "sorts": [("relevance", "Relevance"), ("newest", "Newest first"), ("oldest", "Oldest first")],
+        "common_tracks": common_tracks(),
     })
 
 
