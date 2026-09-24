@@ -70,7 +70,22 @@ papers are renumbered automatically.
   Word, empties headers and footers first, and writes page counts. Later a small Windows app
   that also downloads and uploads.
 
+## Headers and footers on the PDF (tested on IGLC 34)
+
+apps/production/pdf_running.py removes Word's header and footer content from the PDF (all 156
+papers) and prints new ones: same font, size and position as Word's, justified, the DOI as a
+blue underlined link. Line breaks in the first-page reference match Word's in about 3 of 4
+papers; the others break a word earlier or later, which is fine.
+
+**Template requirement:** the first-page reference takes 3 to 5 lines. In Word a longer header
+pushes the text down, but in the new process the PDF is made with empty headers, so the
+template's first page must reserve room for 5 header lines (fixed height), or the reference
+would overlap the title. The same reserved height also keeps the page count independent of
+the reference's length.
+
 ## Open
 
 - The 2027 process with ConfTool, as a subset of this.
-- Printing the headers onto the PDFs: font, size and position identical to the template.
+- Template: fixed-height first-page header (above).
+- Fonts on the server: Times New Roman from Microsoft's redistributable core fonts in the
+  container image.

@@ -198,3 +198,13 @@ class StampTests(SimpleTestCase):
         self.assertIn('mc:Ignorable="w14"', header)
         self.assertIn('xmlns:w14=', header)  # still declared although nothing uses it
         self.assertIn("<w:i", header)
+
+
+# ---------------------------------------------------------------- PDF headers and footers
+
+class PdfRunningTests(SimpleTestCase):
+    def test_line_breaks_after_spaces_and_hyphens(self):
+        from .pdf_running import _words
+
+        pieces = [w for w, _ in _words([Segment("Garcia-Lopez (pp. 922–933). x")])]
+        self.assertEqual(pieces, ["Garcia-", "Lopez ", "(pp. ", "922–", "933). ", "x"])
