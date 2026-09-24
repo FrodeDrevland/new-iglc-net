@@ -14,6 +14,7 @@ urlpatterns = [
     path("production/<int:number>/", editor_views.production_detail, name="production"),
     path("production/<int:number>/download/", editor_views.download, name="download"),
     path("production/<int:number>/upload/", editor_views.upload, name="upload"),
+    path("production/<int:number>/arrange/", editor_views.arrange, name="arrange"),
     path("production/<int:number>/<int:conftool_id>/", editor_views.paper, name="paper"),
     path("production/<int:number>/<int:conftool_id>/v<int:version>.<str:kind>", editor_views.version_file,
          name="version_file"),

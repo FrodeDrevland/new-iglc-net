@@ -90,6 +90,9 @@ def add_version(submission: Submission, docx: tuple[str, bytes] | None, pdf: tup
     submission.status = Submission.Status.UPLOADED if result.passed else Submission.Status.NEEDS_WORK
     submission.save(update_fields=["status"])
     Event.objects.create(submission=submission, user=user, action=f"uploaded version {number}", comment=comment)
+    from .arrange import store_page_numbers
+
+    store_page_numbers(submission.production)  # a new page count moves the following papers
     return version
 
 

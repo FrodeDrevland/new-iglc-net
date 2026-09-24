@@ -440,3 +440,48 @@ class EditorPagesTests(TestCase):
         takt.refresh_from_db()
         self.assertEqual(takt.status, "approved")
         self.assertEqual(takt.events.first().action, "approved")
+
+
+class ArrangeTests(EditorPagesTests):
+    def test_page_numbers_follow_the_order(self):
+        import json
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from .arrange import number_pages
+        from .models import Submission
+
+        self.client.login(username="chief", password="pw")
+        for number, pages in ((123, 3), (124, 2)):
+            self.client.post("/production/35/upload/", {"files": [
+                SimpleUploadedFile(f"{number}.docx", self.docx), SimpleUploadedFile(f"{number}.pdf", make_word_pdf(pages))]})
+        self.production.first_page = 10
+        self.production.save()
+        layout, unknown = number_pages(self.production)
+        self.assertEqual([(i.submission.conftool_id, i.first_page, i.last_page) for _, placed in layout for i in placed],
+                         [(123, 10, 12), (124, 13, 14)])
+        self.assertEqual(unknown, [])
+        # the chief editor puts Lean and Green first and moves 123 there too
+        response = self.client.post("/production/35/arrange/", {
+            "first_page": "1", "layout": json.dumps([[self.green.pk, ["124", "123"]], [self.planning.pk, []]])})
+        self.assertEqual(response.status_code, 302)
+        papers = {s.conftool_id: s for s in Submission.objects.all()}
+        self.assertEqual((papers[124].first_page, papers[123].first_page, papers[123].track), (1, 3, self.green))
+        page = self.client.get("/production/35/arrange/").content.decode()
+        self.assertIn("1–2", page)
+        self.assertIn("3–5", page)
+
+    def test_editors_cannot_rearrange(self):
+        self.client.login(username="ed", password="pw")
+        self.assertEqual(self.client.get("/production/35/arrange/").status_code, 200)
+        self.assertEqual(self.client.post("/production/35/arrange/", {"layout": "[]"}).status_code, 403)
+
+    def test_unknown_pages_stop_the_numbering(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from .arrange import number_pages
+
+        self.client.login(username="chief", password="pw")
+        self.client.post("/production/35/upload/", {"files": [SimpleUploadedFile("123.docx", self.docx)]})
+        layout, unknown = number_pages(self.production)
+        self.assertEqual([s.conftool_id for s in unknown], [123, 124])

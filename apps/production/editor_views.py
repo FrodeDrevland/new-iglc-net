@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from apps.archive.management.commands.group_authors import fold
 
 from .access import productions_for, role, submissions_for
+from .arrange import number_pages, save_order
 from .checks import LEVELS
 from .models import Event, Production, Submission
 from .uploads import add_version, upload_batch
@@ -177,3 +178,31 @@ def version_file(request, number, conftool_id, version, kind):
     if not field:
         raise Http404
     return FileResponse(field.open("rb"), as_attachment=True, filename=f"{conftool_id}-v{version}.{kind}")
+
+
+@login_required
+def arrange(request, number):
+    """Order of tracks and papers, and the page numbers. Chief editors change it; editors see it."""
+    import json
+
+    production = _production(request, number)
+    my_role = role(request.user, production)
+    if request.method == "POST":
+        if my_role != "chief":
+            raise PermissionDenied
+        try:
+            layout = json.loads(request.POST.get("layout", "[]"))
+            first_page = int(request.POST.get("first_page") or 1)
+        except (ValueError, TypeError):
+            messages.error(request, "The order could not be read; nothing was changed.")
+            return redirect("production:arrange", number=number)
+        if first_page != production.first_page:
+            production.first_page = max(1, first_page)
+            production.save(update_fields=["first_page"])
+        save_order(production, [(t or None, [int(i) for i in ids]) for t, ids in layout])
+        messages.success(request, "Order and page numbers saved.")
+        return redirect("production:arrange", number=number)
+    layout, unknown = number_pages(production)
+    return render(request, "production/editor/arrange.html", {
+        "production": production, "layout": layout, "unknown": unknown, "role": my_role,
+    })

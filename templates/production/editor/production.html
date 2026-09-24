@@ -5,7 +5,8 @@
   <p class="kicker"><a href="{% url 'production:productions' %}">Proceedings production</a></p>
   <h1>{{ production }}</h1>
   <p class="lead">{{ production.get_status_display }}. {% for label, n in summary %}{{ n }} {{ label|lower }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
-  <p><a class="button" href="{% url 'production:upload' production.conference.number %}">Upload papers</a></p>
+  <p><a class="button" href="{% url 'production:upload' production.conference.number %}">Upload papers</a>
+     <a class="button secondary" href="{% url 'production:arrange' production.conference.number %}">Order and page numbers</a></p>
 </div>
 <form class="prod-filters" method="get">
   <label>Track <select name="track"><option value="">all</option>{% for t in tracks %}<option value="{{ t.pk }}"{% if filters.track == t.pk|stringformat:"s" %} selected{% endif %}>{{ t.title }}</option>{% endfor %}</select></label>
@@ -27,7 +28,7 @@
       <td>{{ p.track.title|default:"–" }}</td>
       <td><span class="badge {{ p.status }}">{{ p.get_status_display }}</span></td>
       <td>{% if c %}{{ c.number }}{% else %}–{% endif %}</td>
-      <td>{{ c.pages|default:"–" }}</td>
+      <td>{{ c.pages|default:"–" }}{% if p.first_page and c.pages %}<br><span class="muted small">p. {{ p.first_page }}</span>{% endif %}</td>
       <td>{% if c %}{% if c.passed %}<span class="ok">passed</span>{% else %}<span class="fail">not passed</span>{% endif %}{% else %}–{% endif %}</td>
       <td>{% if p.editor %}{{ p.editor.get_full_name|default:p.editor.username }}{% else %}–{% endif %}</td>
     </tr>

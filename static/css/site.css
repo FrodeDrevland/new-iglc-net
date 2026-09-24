@@ -301,3 +301,10 @@ table.members th:nth-child(4) { width: 7.5rem; }
 .upload-report { margin: 1rem 0 1.5rem; padding: 1rem; border-left: 3px solid var(--blue); background: var(--soft); }
 .prod-paper aside select, .prod-paper aside input[type=text], .prod-paper aside textarea, .prod-paper aside input[type=file] { max-width: 100%; box-sizing: border-box; }
 .prod-paper aside select { width: 100%; }
+.arrange-track { margin: 1.25rem 0; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white, #fff); }
+.arrange-track h2 { font-size: 1.05rem; margin: .25rem 0 .5rem; }
+.arrange-papers { list-style: none; padding: 0; margin: 0; min-height: 1.5rem; }
+.arrange-papers li { display: flex; gap: .6rem; align-items: baseline; padding: .35rem .25rem; border-top: 1px solid var(--line); background: #fff; }
+.arrange-papers li .pp { min-width: 6.5rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.grip { cursor: grab; color: var(--muted); user-select: none; }
+.dragging { opacity: .45; }

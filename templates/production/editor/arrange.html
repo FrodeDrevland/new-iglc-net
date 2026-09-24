@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Arrange | {{ production }}{% endblock %}
+{% block content %}
+{% with n=production.conference.number %}
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
+  <h1>Order and page numbers</h1>
+  <p class="lead">{% if role == "chief" %}Drag the tracks and the papers into the order of the proceedings; papers can also be dragged to another track. The page numbers follow and are saved with the order.{% else %}The order of the proceedings. Only chief editors can change it.{% endif %}</p>
+</div>
+{% if unknown %}
+<p class="upload-report">Page numbers are exact up to the first paper without a PDF. Waiting for a PDF: {% for p in unknown %}<a href="{% url 'production:paper' n p.conftool_id %}">{{ p.conftool_id }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+{% endif %}
+<form method="post" id="arrange-form">
+  {% csrf_token %}
+  <p><label>First page of the first paper <input type="number" name="first_page" min="1" value="{{ production.first_page }}" id="first-page" style="width:6rem"{% if role != "chief" %} disabled{% endif %}></label></p>
+  <div id="tracks">
+  {% for track, placed in layout %}
+    <section class="arrange-track" data-track="{{ track.pk|default:'' }}"{% if role == "chief" and track %} draggable="true"{% endif %}>
+      <h2>{% if role == "chief" and track %}<span class="grip" title="Drag to move the track">⠿</span> {% endif %}{{ track.title|default:"No track" }}</h2>
+      <ol class="arrange-papers">
+        {% for item in placed %}
+        <li data-id="{{ item.submission.conftool_id }}" data-pages="{{ item.pages|default:'' }}"{% if role == "chief" %} draggable="true"{% endif %}>
+          {% if role == "chief" %}<span class="grip">⠿</span>{% endif %}
+          <span class="pp pages-label">{% if item.first_page %}{{ item.first_page }}–{{ item.last_page }}{% else %}?{% endif %}</span>
+          <a href="{% url 'production:paper' n item.submission.conftool_id %}">{{ item.submission.current.metadata.title|default:item.submission.title }}</a>
+          <span class="muted small">{{ item.submission.conftool_id }} · {{ item.pages|default:"no PDF" }}{% if item.pages %} pages{% endif %} · {{ item.submission.get_status_display }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+  {% endfor %}
+  </div>
+  <input type="hidden" name="layout" id="layout">
+  {% if role == "chief" %}<p><button class="button" type="submit">Save order and page numbers</button></p>{% endif %}
+</form>
+{% endwith %}
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById("arrange-form");
+  var tracks = document.getElementById("tracks");
+  var dragged = null;
+
+  function renumber() {
+    var page = parseInt(document.getElementById("first-page").value || "1", 10);
+    tracks.querySelectorAll(".arrange-papers > li").forEach(function (li) {
+      var pages = parseInt(li.dataset.pages || "0", 10);
+      var label = li.querySelector(".pages-label");
+      if (pages && !isNaN(page)) { label.textContent = page + "–" + (page + pages - 1); page += pages; }
+      else { label.textContent = "?"; page = NaN; }
+    });
+  }
+
+  function after(container, y, selector) {
+    var items = Array.prototype.slice.call(container.querySelectorAll(selector)).filter(function (el) { return el !== dragged; });
+    return items.find(function (el) { var box = el.getBoundingClientRect(); return y < box.top + box.height / 2; }) || null;
+  }
+
+  tracks.addEventListener("dragstart", function (e) {
+    dragged = e.target.closest("li[draggable], section[draggable]");
+    if (!dragged) return;
+    e.stopPropagation();
+    dragged.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+  });
+  tracks.addEventListener("dragend", function () {
+    if (dragged) dragged.classList.remove("dragging");
+    dragged = null;
+    renumber();
+  });
+  tracks.addEventListener("dragover", function (e) {
+    if (!dragged) return;
+    e.preventDefault();
+    if (dragged.tagName === "LI") {
+      var list = e.target.closest(".arrange-track");
+      if (!list) return;
+      list = list.querySelector(".arrange-papers");
+      list.insertBefore(dragged, after(list, e.clientY, ":scope > li"));
+    } else {
+      tracks.insertBefore(dragged, after(tracks, e.clientY, ":scope > section[draggable]"));
+      var untracked = tracks.querySelector('section[data-track=""]');
+      if (untracked) tracks.appendChild(untracked);
+    }
+  });
+  document.getElementById("first-page").addEventListener("input", renumber);
+  form.addEventListener("submit", function () {
+    var layout = Array.prototype.map.call(tracks.querySelectorAll(".arrange-track"), function (section) {
+      return [section.dataset.track ? parseInt(section.dataset.track, 10) : null,
+              Array.prototype.map.call(section.querySelectorAll(".arrange-papers > li"), function (li) { return li.dataset.id; })];
+    });
+    document.getElementById("layout").value = JSON.stringify(layout);
+  });
+})();
+</script>
+{% endblock %}
