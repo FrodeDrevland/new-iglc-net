@@ -53,11 +53,15 @@ more than five keywords, missing ORCID and non-template styles are "warn".
    with a request to use the conversion tool. The page count is taken from this PDF.
 5. **Editors arrange the proceedings:** order of tracks and of papers within tracks. Page
    numbers follow from the PDFs and update when the order changes.
-6. **The system builds everything:** prints headers, footers and page numbers on each PDF
-   (first page: full reference with DOI link; even pages: title and conference line; odd
-   pages: authors and track), assigns DOIs, builds front matter, table of contents and the
-   full proceedings, and publishes the papers in the archive.
+6. **Publication of the papers (before the conference; this is the deadline that matters):**
+   the system prints headers, footers and page numbers on each PDF (first page: full
+   reference with DOI link; even pages: title and conference line; odd pages: authors and
+   track), assigns DOIs and publishes every paper in the archive.
 7. **Authors check the published metadata**; then the Crossref deposit is made.
+8. **The full proceedings (later, not urgent):** the system joins the papers' PDFs and adds
+   the cover, front matter (title page, colophon with ISSN/ISBN, foreword, committees,
+   table of contents) and back matter, and publishes the full proceedings PDF. The papers'
+   page numbers are fixed in step 5, so the book can follow without changing the papers.
 
 A paper replaced after step 5 goes through step 3 again; before publication, the following
 papers are renumbered automatically.
@@ -103,11 +107,11 @@ from there follows steps 3-7 above.
    headers and footers and counts the pages. Papers can be uploaded again as often as
    needed; every version is kept.
 4. **Editors** approve each paper and order tracks and papers; page numbers follow.
-5. **The site** prints headers, footers and page numbers, assigns DOIs
-   (10.24928/2027/ConfTool ID), builds front matter, table of contents and full proceedings,
-   and publishes the papers in the archive.
+5. **Before the conference, the site publishes the papers:** headers, footers and page
+   numbers, DOIs (10.24928/2027/ConfTool ID), and every paper in the archive.
 6. **The site emails each paper's authors** a personal link to check the metadata; after the
    check, the Crossref deposit is made.
+7. **Afterwards, the full proceedings:** the papers joined, with cover, front and back matter.
 
 Needed: sending email through Azure Communication Services Email (decided; setup in
 docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted papers.

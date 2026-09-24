@@ -42,7 +42,8 @@ class Production(models.Model):
     class Status(models.TextChoices):
         COLLECTING = "collecting", "Collecting and editing papers"
         ARRANGING = "arranging", "Arranging (order and page numbers)"
-        PUBLISHED = "published", "Published"
+        PAPERS_PUBLISHED = "papers_published", "Papers published"
+        COMPLETE = "complete", "Full proceedings published"
 
     conference = models.OneToOneField("archive.Conference", on_delete=models.CASCADE, related_name="production")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.COLLECTING)
