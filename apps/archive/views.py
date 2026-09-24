@@ -78,7 +78,14 @@ def paper_detail(request, pk):
         "keywords": keywords,
         "apa": citations.apa7(paper),
         "short": citations.iglc_short(paper),
+        "corrections": _corrections(paper),
     })
+
+
+def _corrections(paper):
+    from apps.production.models import Correction
+
+    return list(Correction.objects.filter(submission__paper=paper).order_by("time"))
 
 
 def paper_pdf(request, pk):

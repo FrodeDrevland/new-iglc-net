@@ -26,6 +26,21 @@
       </tr>{% endfor %}</tbody>
   </table>
   <p class="muted small">Names that differ are highlighted. The paper is what will be published; ConfTool's email addresses are used to contact the authors.</p>
+  {% if published_meta %}
+  <h2 id="as-published">As it will be published</h2>
+  <form method="post" class="published-meta">{% csrf_token %}<input type="hidden" name="action" value="metadata">
+    <p><label>Title in sentence case, as in the reference{% if not published_meta.title_confirmed %} <span class="fail">(a suggestion: check it and save)</span>{% endif %}<br>
+      <input type="text" name="published_title" value="{{ published_meta.title }}" style="width:100%"></label></p>
+    <table class="prod-table">
+      <thead><tr><th>Name in the paper</th><th>First name(s)</th><th>Last name</th></tr></thead>
+      <tbody>{% for a in published_meta.authors %}<tr><td>{{ a.name }}<input type="hidden" name="author_name" value="{{ a.name }}"></td>
+        <td><input type="text" name="first_{{ forloop.counter0 }}" value="{{ a.first_name }}"></td>
+        <td><input type="text" name="last_{{ forloop.counter0 }}" value="{{ a.last_name }}"></td></tr>{% endfor %}</tbody>
+    </table>
+    <p class="muted small">Names are sorted and cited by the last name. A single name goes in the last name.</p>
+    <button class="button secondary" type="submit">Save title and names</button>
+  </form>
+  {% endif %}
   <p><b>Keywords:</b> {{ current.metadata.keywords|join:", " }}</p>
   <details><summary>Abstract</summary><p>{{ current.metadata.abstract }}</p></details>
 {% else %}
@@ -44,6 +59,25 @@
 </div>
 
 <aside>
+  {% if submission.published_version %}
+  <div class="panel">
+    <h3>Published</h3>
+    <p class="small">Version {{ submission.published_version.number }}, pages {{ submission.paper.pages }}.
+      <a href="{{ submission.paper.get_absolute_url }}">Paper page</a> · <a href="{% url 'archive:paper_pdf' submission.paper.pk %}">PDF</a></p>
+    {% for c in corrections %}<p class="small muted">Corrected {{ c.time|date:"j M Y" }} (version {{ c.version.number }}): {{ c.note }}</p>{% endfor %}
+    {% if correction_problems %}
+      <p class="small">To correct the paper after publication, upload the corrected Word file and PDF below; the DOI and page numbers stay.{% if current.pk != submission.published_version_id %} {{ correction_problems|join:" " }}{% endif %}</p>
+    {% elif role == "chief" %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct">
+        <p class="small">Version {{ current.number }} ({{ current.pages }} pages) can replace the published paper. The DOI and first page stay; the paper's page will say it was corrected.</p>
+        <p><label>What was corrected (shown publicly)<br><textarea name="comment" rows="3" style="width:100%" required></textarea></label></p>
+        <button class="button" type="submit">Publish correction</button>
+      </form>
+    {% else %}
+      <p class="small">Version {{ current.number }} is ready to replace the published paper; a chief editor publishes the correction.</p>
+    {% endif %}
+  </div>
+  {% endif %}
   <div class="panel">
     <h3>Upload a new version</h3>
     <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload">

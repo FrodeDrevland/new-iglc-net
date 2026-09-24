@@ -64,7 +64,22 @@ more than five keywords, missing ORCID and non-template styles are "warn".
    page numbers are fixed in step 5, so the book can follow without changing the papers.
 
 A paper replaced after step 5 goes through step 3 again; before publication, the following
-papers are renumbered automatically.
+papers are renumbered automatically. After publication the page numbers are cited and never
+change: a correction must fit the paper's page range (see Corrections below).
+
+## Corrections after publication
+
+Errors are sometimes found after the papers are published. The editor uploads the corrected
+Word file and PDF on the paper's page as usual; a chief editor then publishes the correction
+with a short public note on what was corrected.
+
+- The DOI and first page stay. The corrected paper may be shorter, but not longer, than its
+  published page range: the following papers' page numbers are already cited.
+- The new PDF gets the same running heads; the old PDF and all versions are kept.
+- The archive record is updated from the corrected Word file (title, authors, affiliations,
+  abstract, keywords), and the paper's page says "Corrected <date>" with the note.
+- The ZIP of all papers is rebuilt. Once the Crossref deposit exists (step 6 in the build
+  list), a changed title or author list is deposited again.
 
 ## Support for editors
 
@@ -150,11 +165,38 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
 - Editors see only their tracks' papers; chief editors see all. Files are private and only
   downloaded through the site.
 
+**Step 3 (order and page numbers):** /production/<n>/arrange/
+
+- Chief editors drag tracks and papers (also between tracks); page numbers run consecutively
+  from the first page, from the PDFs' page counts, and are recalculated after every upload.
+  Numbering stops at the first paper without a PDF.
+- Tested on IGLC 34: in the published order, all 156 page ranges came out as in the book
+  (one paper, 131, was corrected after publication and is one page shorter there).
+
+**Step 4 (publishing the papers):** /production/<n>/publish/
+
+- Ready when every paper is approved, has a PDF, and has its title in sentence case, and the
+  conference has its dates and city. The page lists what is missing.
+- *Title and names* on each paper's page: the title as the reference prints it (sentence
+  case; a suggestion is made, or the editors' own header text on older files is used) and how
+  each name splits into first and last name. Kept across new versions while the Word title
+  and the names are unchanged.
+- Publishing runs ten papers per request (the page repeats until done, and can be resumed).
+  Each paper gets its archive record (matched by DOI, so publishing again updates it) and its
+  PDF: Word's headers and footers removed, the IGLC running heads and page numbers printed,
+  PDF metadata set. The PDF is public (papers/iglc<n>/<id>.pdf).
+- From the first published paper, the order is locked. When all are published: new authors
+  are linked to the people in the archive, the conference is shown in the proceedings list,
+  and a ZIP of all papers is linked from its page.
+- Tested on IGLC 34 (156 papers, about 0.6 s per paper, 20 s for the ZIP and author linking).
+- Corrections as described above, on the paper's page.
+
 ## Open
 
 - Template for IGLC 35: Title style 40 pt space before (was 18 pt) and a one-line note in the
   first-page header (tools/reserve_reference_space.py). Tested on five IGLC 34 papers with 3-5
   line references: the title always starts at the same place, 18 pt below a 5-line reference,
   and no page count changed.
-- Fonts on the server: Times New Roman from Microsoft's redistributable core fonts in the
-  container image.
+- Fonts on the server: copy times.ttf and timesi.ttf from a Windows PC (C:\Windows\Fonts) into
+  the private files under fonts/ (Unraid: /mnt/user/appdata/iglc/private/fonts/; Azure: the
+  "production" container, folder fonts). Without them the publish page says so.

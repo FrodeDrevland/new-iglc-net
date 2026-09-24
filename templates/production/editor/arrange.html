@@ -5,22 +5,22 @@
 <div class="page-head">
   <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
   <h1>Order and page numbers</h1>
-  <p class="lead">{% if role == "chief" %}Drag the tracks and the papers into the order of the proceedings; papers can also be dragged to another track. The page numbers follow and are saved with the order.{% else %}The order of the proceedings. Only chief editors can change it.{% endif %}</p>
+  <p class="lead">{% if production.pages_frozen %}The papers are published, so their order and page numbers are fixed: they are cited. A corrected paper must fit its page range.{% elif can_edit %}Drag the tracks and the papers into the order of the proceedings; papers can also be dragged to another track. The page numbers follow and are saved with the order.{% else %}The order of the proceedings. Only chief editors can change it.{% endif %}</p>
 </div>
 {% if unknown %}
 <p class="upload-report">Page numbers are exact up to the first paper without a PDF. Waiting for a PDF: {% for p in unknown %}<a href="{% url 'production:paper' n p.conftool_id %}">{{ p.conftool_id }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
 {% endif %}
 <form method="post" id="arrange-form">
   {% csrf_token %}
-  <p><label>First page of the first paper <input type="number" name="first_page" min="1" value="{{ production.first_page }}" id="first-page" style="width:6rem"{% if role != "chief" %} disabled{% endif %}></label></p>
+  <p><label>First page of the first paper <input type="number" name="first_page" min="1" value="{{ production.first_page }}" id="first-page" style="width:6rem"{% if not can_edit %} disabled{% endif %}></label></p>
   <div id="tracks">
   {% for track, placed in layout %}
-    <section class="arrange-track" data-track="{{ track.pk|default:'' }}"{% if role == "chief" and track %} draggable="true"{% endif %}>
-      <h2>{% if role == "chief" and track %}<span class="grip" title="Drag to move the track">⠿</span> {% endif %}{{ track.title|default:"No track" }}</h2>
+    <section class="arrange-track" data-track="{{ track.pk|default:'' }}"{% if can_edit and track %} draggable="true"{% endif %}>
+      <h2>{% if can_edit and track %}<span class="grip" title="Drag to move the track">⠿</span> {% endif %}{{ track.title|default:"No track" }}</h2>
       <ol class="arrange-papers">
         {% for item in placed %}
-        <li data-id="{{ item.submission.conftool_id }}" data-pages="{{ item.pages|default:'' }}"{% if role == "chief" %} draggable="true"{% endif %}>
-          {% if role == "chief" %}<span class="grip">⠿</span>{% endif %}
+        <li data-id="{{ item.submission.conftool_id }}" data-pages="{{ item.pages|default:'' }}"{% if can_edit %} draggable="true"{% endif %}>
+          {% if can_edit %}<span class="grip">⠿</span>{% endif %}
           <span class="pp pages-label">{% if item.first_page %}{{ item.first_page }}–{{ item.last_page }}{% else %}?{% endif %}</span>
           <a href="{% url 'production:paper' n item.submission.conftool_id %}">{{ item.submission.current.metadata.title|default:item.submission.title }}</a>
           <span class="muted small">{{ item.submission.conftool_id }} · {{ item.pages|default:"no PDF" }}{% if item.pages %} pages{% endif %} · {{ item.submission.get_status_display }}</span>
@@ -31,7 +31,7 @@
   {% endfor %}
   </div>
   <input type="hidden" name="layout" id="layout">
-  {% if role == "chief" %}<p><button class="button" type="submit">Save order and page numbers</button></p>{% endif %}
+  {% if can_edit %}<p><button class="button" type="submit">Save order and page numbers</button></p>{% endif %}
 </form>
 {% endwith %}
 {% endblock %}

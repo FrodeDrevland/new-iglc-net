@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -18,6 +18,7 @@ from .access import productions_for, role, submissions_for
 from .arrange import number_pages, save_order
 from .checks import LEVELS
 from .models import Event, Production, Submission
+from . import publish as publishing
 from .uploads import add_version, upload_batch
 
 MAX_UPLOAD = 300 * 1024 * 1024
@@ -152,6 +153,21 @@ def paper(request, number, conftool_id):
             submission.editor = get_user_model().objects.filter(pk=editor).first() if editor else None
             submission.save(update_fields=["track", "editor"])
             Event.objects.create(submission=submission, user=request.user, action="track and editor set")
+        elif action == "metadata":
+            names = {}
+            for index, name in enumerate(request.POST.getlist("author_name")):
+                names[name] = (request.POST.get(f"first_{index}", ""), request.POST.get(f"last_{index}", ""))
+            publishing.save_metadata_edits(submission, request.POST.get("published_title", ""), names, request.user)
+            messages.success(request, "Title and names saved." + (
+                " Publish a correction to put them on the site." if submission.published_version_id else ""))
+        elif action == "correct":
+            if my_role != "chief":
+                raise PermissionDenied
+            try:
+                publishing.correct(submission, request.user, comment)
+                messages.success(request, "The correction is published.")
+            except publishing.PublishError as error:
+                messages.error(request, str(error))
         return redirect("production:paper", number=number, conftool_id=conftool_id)
 
     versions = list(submission.versions.select_related("uploaded_by"))
@@ -166,6 +182,9 @@ def paper(request, number, conftool_id):
         "tracks": production.conference.tracks.all(),
         "editors": [e.user for e in production.editors.select_related("user")],
         "events": submission.events.select_related("user")[:30],
+        "published_meta": publishing.published_metadata(submission) if current else None,
+        "correction_problems": publishing.correction_problems(submission) if submission.published_version_id else [],
+        "corrections": submission.corrections.select_related("user", "version"),
     })
 
 
@@ -188,7 +207,7 @@ def arrange(request, number):
     production = _production(request, number)
     my_role = role(request.user, production)
     if request.method == "POST":
-        if my_role != "chief":
+        if my_role != "chief" or production.pages_frozen:
             raise PermissionDenied
         try:
             layout = json.loads(request.POST.get("layout", "[]"))
@@ -205,4 +224,35 @@ def arrange(request, number):
     layout, unknown = number_pages(production)
     return render(request, "production/editor/arrange.html", {
         "production": production, "layout": layout, "unknown": unknown, "role": my_role,
+        "can_edit": my_role == "chief" and not production.pages_frozen,
+    })
+
+
+@login_required
+def publish(request, number):
+    """Stage 1: publish the papers on the site with DOIs and page numbers. The browser asks
+    for a few papers at a time (each request stays short); the last step freezes the pages."""
+    production = _production(request, number)
+    my_role = role(request.user, production)
+    if request.method == "POST":
+        if my_role != "chief":
+            raise PermissionDenied
+        try:
+            if request.POST.get("action") == "finish":
+                publishing.finish(production, request.user)
+                messages.success(request, "The papers are published, and the ZIP of all papers is on the conference page.")
+                return redirect("production:publish", number=number)
+            return JsonResponse(publishing.publish_next(production, request.user, n=10))
+        except publishing.PublishError as error:
+            if request.POST.get("action") == "finish":
+                messages.error(request, str(error))
+                return redirect("production:publish", number=number)
+            return JsonResponse({"error": str(error)}, status=400)
+    published = production.submissions.filter(published_version__isnull=False).select_related("paper")
+    return render(request, "production/editor/publish.html", {
+        "production": production, "role": my_role,
+        "problems": [] if production.papers_published else publishing.readiness(production),
+        "published": published, "left": 0 if production.papers_published else len(publishing.pending(production)),
+        "corrections": publishing.Correction.objects.filter(submission__production=production)
+                       .select_related("submission", "user"),
     })

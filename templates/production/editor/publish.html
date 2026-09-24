@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Publish | {{ production }}{% endblock %}
+{% block content %}
+{% with n=production.conference.number %}
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
+  <h1>Publish the papers</h1>
+  <p class="lead">Each paper goes on the site with its DOI, its page numbers and the IGLC headers and footers. When the last one is published, the page numbers are fixed, the conference appears in the proceedings list and a ZIP of all papers is made. The full proceedings PDF is a later step.</p>
+</div>
+
+{% if production.papers_published %}
+  <p class="upload-report">Published: {{ published|length }} papers. {% if production.conference.papers_zip_url %}<a href="{{ production.conference.papers_zip_url }}">ZIP of all papers</a> · {% endif %}<a href="{{ production.conference.get_absolute_url }}">Conference page</a></p>
+  <h2>Corrections after publication</h2>
+  <p>To correct a paper, upload the corrected Word file and PDF on the paper's page and publish the correction there. It must fit the paper's page range; the DOI stays, the old PDF is kept and the paper's page says it was corrected.</p>
+  <ul>{% for c in corrections %}<li><a href="{% url 'production:paper' n c.submission.conftool_id %}">{{ c.submission.conftool_id }}</a>, {{ c.time|date:"j M Y" }}{% if c.user %} by {{ c.user.get_full_name|default:c.user.username }}{% endif %}: {{ c.note }}</li>{% empty %}<li>None.</li>{% endfor %}</ul>
+{% else %}
+  {% if problems %}
+    <h2>Not ready yet</h2>
+    <ul>{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>
+  {% else %}
+    <p class="upload-report">Ready: {{ left }} paper{{ left|pluralize }} to publish{% if published %} ({{ published|length }} published already){% endif %}. Check the <a href="{% url 'production:arrange' n %}">order and page numbers</a> first: after publication they cannot change.</p>
+  {% endif %}
+  {% if role == "chief" %}
+    <form method="post" id="publish-form">{% csrf_token %}<input type="hidden" name="action" value="finish">
+      <button class="button" type="button" id="publish-start"{% if problems %} disabled{% endif %}>Publish {{ left }} paper{{ left|pluralize }}</button>
+      <span class="publish-progress muted" id="publish-progress" role="status"></span>
+    </form>
+  {% else %}
+    <p class="muted">A chief editor publishes the papers.</p>
+  {% endif %}
+  {% if published %}<h2>Published so far</h2><ul class="small">{% for s in published %}<li><a href="{{ s.paper.get_absolute_url }}">{{ s.paper.doi }}</a> {{ s.paper.title }} (pp. {{ s.paper.pages }})</li>{% endfor %}</ul>{% endif %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const start = document.getElementById("publish-start");
+  if (!start) return;
+  const form = document.getElementById("publish-form"), status = document.getElementById("publish-progress");
+  const token = form.querySelector("[name=csrfmiddlewaretoken]").value;
+  start.addEventListener("click", async function () {
+    if (!confirm("Publish the papers now? Their page numbers cannot change afterwards.")) return;
+    start.disabled = true;
+    let done = 0;
+    for (;;) {
+      const body = new URLSearchParams({csrfmiddlewaretoken: token, action: "next"});
+      let data;
+      try {
+        const response = await fetch(location.href, {method: "POST", body: body, headers: {"X-CSRFToken": token}});
+        data = await response.json();
+      } catch (e) { data = {error: "The connection failed. Press the button again to go on where it stopped."}; }
+      if (data.error) { status.textContent = data.error; start.disabled = false; return; }
+      done += data.published.length;
+      status.textContent = done + " published, " + data.left + " to go…";
+      if (data.left === 0) break;
+    }
+    status.textContent = "Making the ZIP of all papers…";
+    form.submit();
+  });
+})();
+</script>
+{% endblock %}

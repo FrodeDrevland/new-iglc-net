@@ -20,7 +20,7 @@ class Placed:
 def ordered(production: Production):
     """(track or None, [submissions]) in proceedings order; withdrawn papers left out."""
     papers = (production.submissions.exclude(status=Submission.Status.WITHDRAWN)
-              .select_related("track").prefetch_related("versions"))
+              .select_related("track", "published_version").prefetch_related("versions"))
     groups = {}
     for paper in papers:
         groups.setdefault(paper.track, []).append(paper)
@@ -40,8 +40,9 @@ def number_pages(production: Production) -> tuple[list[tuple], list[Submission]]
     for track, papers in ordered(production):
         placed = []
         for paper in papers:
-            current = paper.current
-            pages = current.pages if current else None
+            # A published paper keeps the pages it was published with, whatever is uploaded later.
+            version = paper.published_version or paper.current
+            pages = version.pages if version else None
             if pages and page is not None:
                 placed.append(Placed(paper, pages, page, page + pages - 1))
                 page += pages
@@ -57,6 +58,8 @@ def number_pages(production: Production) -> tuple[list[tuple], list[Submission]]
 def save_order(production: Production, layout: list[tuple[int | None, list[int]]]):
     """layout: [(track id or None, [ConfTool IDs in order])], tracks in proceedings order.
     Moves papers between tracks if needed, then stores the page numbers."""
+    if production.pages_frozen:
+        raise ValueError("The papers are published: their order and page numbers can no longer change")
     tracks = {t.pk: t for t in production.conference.tracks.all()}
     papers = {s.conftool_id: s for s in production.submissions.all()}
     for track_order, (track_id, ids) in enumerate(layout, 1):
@@ -77,6 +80,8 @@ def store_page_numbers(production: Production):
     layout, _ = number_pages(production)
     for _, placed in layout:
         for item in placed:
+            if item.submission.published_version_id:
+                continue  # published page numbers are cited; a correction must fit its range
             if item.submission.first_page != item.first_page:
                 item.submission.first_page = item.first_page
                 item.submission.save(update_fields=["first_page"])

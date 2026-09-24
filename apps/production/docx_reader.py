@@ -255,12 +255,23 @@ def orcid_checksum_ok(orcid: str) -> bool:
     return digits[-1] == ("X" if check == 10 else str(check))
 
 
+PARTICLES = {"de", "del", "della", "der", "den", "di", "da", "das", "do", "dos", "du", "la", "le", "van", "von",
+             "ter", "ten", "bin", "al", "el", "y"}
+
+
 def split_name(name: str) -> tuple[str, str]:
-    """First and last name. Multi-word last names are left to the author check."""
+    """First and last name. A single name is the last name. The surname takes the particles
+    before it (Garcia de Soto, van der Berg) and a trailing initial (Sanchez R.: the second
+    surname, abbreviated, as in Spanish names). The editors can correct the rest."""
     parts = name.split()
     if len(parts) < 2:
         return "", name
-    return " ".join(parts[:-1]), parts[-1]
+    start = len(parts) - 1
+    if re.fullmatch(r"\w\.", parts[-1]) and len(parts) >= 3:
+        start -= 1
+    while start > 1 and parts[start - 1].lower() in PARTICLES:
+        start -= 1
+    return " ".join(parts[:start]), " ".join(parts[start:])
 
 
 def parse_affiliation(note: str) -> dict:

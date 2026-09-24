@@ -485,3 +485,103 @@ class ArrangeTests(EditorPagesTests):
         self.client.post("/production/35/upload/", {"files": [SimpleUploadedFile("123.docx", self.docx)]})
         layout, unknown = number_pages(self.production)
         self.assertEqual([s.conftool_id for s in unknown], [123, 124])
+
+
+class PublishTests(EditorPagesTests):
+    """Stage 1: papers published with DOIs and page numbers; corrections afterwards."""
+
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        from django.test import override_settings
+
+        super().setUp()
+        conference = self.production.conference
+        conference.city, conference.country = "Oslo", "Norway"
+        conference.save()
+        media = override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+        media.enable()
+        self.addCleanup(media.disable)
+        # The running heads need licensed fonts, so the PDF itself is not built here.
+        for target, value in (("fonts_folder", Path(".")), ("build_pdf", b"%PDF-1.4 published")):
+            patcher = mock.patch(f"apps.production.publish.{target}", return_value=value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def _upload(self, number, pages):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.post(f"/production/35/{number}/", {"action": "upload", "docx": SimpleUploadedFile(
+            f"{number}.docx", self.docx), "pdf": SimpleUploadedFile(f"{number}.pdf", make_word_pdf(pages))})
+
+    def test_publish_freeze_and_correct(self):
+        import json
+
+        from apps.archive.models import Paper
+
+        from .models import Correction, Submission
+
+        self.client.login(username="chief", password="pw")
+        self._upload(123, 3)
+        self._upload(124, 2)
+        self.assertIn("not approved", self.client.get("/production/35/publish/").content.decode())
+        for number in (123, 124):
+            self.client.post(f"/production/35/{number}/", {"action": "approve"})
+        # the editors give the title in sentence case and correct a name
+        first = Submission.objects.get(conftool_id=124).current.metadata["authors"][0]["name"]
+        self.client.post("/production/35/124/", {"action": "metadata", "published_title": "Lean and green: a review",
+                                                  "author_name": [first], "first_0": "", "last_0": first})
+        self.client.login(username="ed", password="pw")
+        self.assertEqual(self.client.post("/production/35/publish/", {"action": "next"}).status_code, 403)
+        self.client.login(username="chief", password="pw")
+        result = self.client.post("/production/35/publish/", {"action": "next"}).json()
+        self.assertEqual((result["published"], result["left"]), (["10.24928/2027/0123", "10.24928/2027/0124"], 0))
+        # the order is fixed as soon as papers are published
+        self.assertEqual(self.client.post("/production/35/arrange/", {"layout": json.dumps([])}).status_code, 403)
+        self.client.post("/production/35/publish/", {"action": "finish"})
+        self.production.refresh_from_db()
+        conference = self.production.conference
+        self.assertEqual(self.production.status, "papers_published")
+        self.assertTrue(conference.is_published and conference.papers_zip_url.endswith(".zip"))
+        paper = Paper.objects.get(doi="10.24928/2027/0123")
+        self.assertEqual((paper.title, paper.pages, paper.track), ("Takt planning in practice", "1-3", self.planning))
+        self.assertTrue(paper.authors.exists())
+        green = Paper.objects.get(doi="10.24928/2027/0124")
+        self.assertEqual((green.pages, green.title), ("4-5", "Lean and green: a review"))
+        self.assertEqual((green.authors.first().first_name, green.authors.first().last_name), ("", first))
+
+        # a correction that is a page too long is refused, and moves nothing
+        self._upload(123, 4)
+        self.assertEqual(Submission.objects.get(conftool_id=124).first_page, 4)
+        page = self.client.get("/production/35/123/").content.decode()
+        self.assertIn("must fit", page)
+        self.client.post("/production/35/123/", {"action": "correct", "comment": "Figure 2"})
+        self.assertFalse(Correction.objects.exists())
+        # one that fits replaces the PDF; the DOI and pages stay, the old PDF is kept
+        old_url = paper.full_text_url
+        self._upload(123, 3)
+        self.client.post("/production/35/123/", {"action": "correct", "comment": "Figure 2 was replaced."})
+        correction = Correction.objects.get()
+        paper.refresh_from_db()
+        self.assertEqual((paper.doi, paper.pages), ("10.24928/2027/0123", "1-3"))
+        self.assertNotEqual(paper.full_text_url, old_url)
+        self.assertEqual(correction.previous_version.number, 1)
+        self.assertIn("Figure 2 was replaced.", self.client.get(paper.get_absolute_url()).content.decode())
+
+
+class PublishedMetadataTests(SimpleTestCase):
+    def test_sentence_case_suggestion(self):
+        from .publish import sentence_case
+
+        self.assertEqual(sentence_case("NEXUS BETWEEN LEAN AND BIM"), "Nexus between Lean and bim")
+        self.assertEqual(sentence_case("When You Meet Lean Construction Gurus: Beware BIM!"),
+                         "When you meet Lean Construction gurus: beware BIM!")
+
+    def test_name_split(self):
+        from .docx_reader import split_name
+
+        self.assertEqual(split_name("Jorge L. Izquierdo R."), ("Jorge L.", "Izquierdo R."))
+        self.assertEqual(split_name("Jan van der Berg"), ("Jan", "van der Berg"))
+        self.assertEqual(split_name("Gunadi"), ("", "Gunadi"))

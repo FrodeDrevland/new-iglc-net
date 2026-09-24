@@ -58,6 +58,15 @@ class Production(models.Model):
         return f"Proceedings IGLC {self.conference.number}"
 
     @property
+    def pages_frozen(self):
+        """Once papers are published (even some of them), their page numbers are cited and never change."""
+        return self.papers_published or self.submissions.filter(published_version__isnull=False).exists()
+
+    @property
+    def papers_published(self):
+        return self.status in (self.Status.PAPERS_PUBLISHED, self.Status.COMPLETE)
+
+    @property
     def doi_year(self):
         return self.conference.year
 
@@ -107,6 +116,15 @@ class Submission(models.Model):
     paper = models.OneToOneField("archive.Paper", null=True, blank=True, on_delete=models.SET_NULL,
                                  related_name="submission", help_text="The published paper, once published.")
     note = models.TextField(blank=True)
+    metadata_edits = models.JSONField(
+        default=dict, blank=True,
+        help_text="The editors' corrections to what is read from the Word file: the title in sentence case "
+                  "and how names split into first and last name.")
+    published_version = models.ForeignKey(
+        "PaperVersion", null=True, blank=True, on_delete=models.PROTECT, related_name="+",
+        help_text="The version whose PDF is on the site.")
+    published_pdf = models.FileField(upload_to="papers/", blank=True, max_length=300,
+                                     help_text="The published PDF (public), with running headers and page numbers.")
 
     class Meta:
         unique_together = [("production", "conftool_id")]
@@ -123,6 +141,12 @@ class Submission(models.Model):
     @property
     def current(self):
         return self.versions.order_by("-number").first()
+
+    @property
+    def published_pages(self):
+        if self.paper_id and self.paper.first_page and self.paper.last_page:
+            return self.paper.last_page - self.paper.first_page + 1
+        return None
 
 
 def private_storage():
@@ -176,3 +200,22 @@ class Event(models.Model):
 
     def __str__(self):
         return f"{self.submission.conftool_id}: {self.action}"
+
+
+class Correction(models.Model):
+    """A correction to a paper after it was published. The DOI and the page numbers stay;
+    the PDF (and the metadata) are replaced, and the paper's page says it was corrected."""
+
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="corrections")
+    time = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    version = models.ForeignKey(PaperVersion, on_delete=models.PROTECT, related_name="+")
+    note = models.TextField(help_text="What was corrected. Shown on the paper's page.")
+    previous_version = models.ForeignKey(PaperVersion, null=True, on_delete=models.PROTECT, related_name="+")
+    previous_pdf = models.CharField(max_length=300, blank=True, help_text="The PDF that was replaced (kept).")
+
+    class Meta:
+        ordering = ["time"]
+
+    def __str__(self):
+        return f"{self.submission.conftool_id}: corrected {self.time:%Y-%m-%d}"

@@ -173,6 +173,10 @@ WAGTAILADMIN_BASE_URL = SITE_URL
 SITE_NOINDEX = env_bool("SITE_NOINDEX", False)
 # Serve uploaded files from Django when no separate file server is set up (previews).
 SERVE_MEDIA = env_bool("SERVE_MEDIA", False)
+# Times New Roman (times.ttf, timesi.ttf) for the running heads on published papers. The fonts
+# are licensed and not in the repository: if they are not here, they are read from the
+# private files under fonts/.
+PRODUCTION_FONTS_DIR = Path(os.environ.get("PRODUCTION_FONTS_DIR", str(BASE_DIR / "_fonts")))
 
 IGLC_DOI_PREFIX = "10.24928"
 # Website of the current conference (menu link "Conference website" and the old ConferenceWebsite URL).

@@ -308,3 +308,7 @@ table.members th:nth-child(4) { width: 7.5rem; }
 .arrange-papers li .pp { min-width: 6.5rem; font-variant-numeric: tabular-nums; color: var(--muted); }
 .grip { cursor: grab; color: var(--muted); user-select: none; }
 .dragging { opacity: .45; }
+
+/* A paper corrected after publication */
+.correction-note { border-left: 3px solid var(--orange); padding: .4rem .8rem; background: var(--soft); font-size: .95rem; }
+.publish-progress { font-variant-numeric: tabular-nums; }
