@@ -63,11 +63,26 @@ The database URL used below:
 $dbUrl = "postgres://iglcadmin:$dbPassword@$db.postgres.database.azure.com:5432/iglc?sslmode=require"
 ```
 
-## 3. Media container
+## 3. Containers for uploaded files
+
+`media` holds the public uploads (images, documents, published paper PDFs); `production` holds
+the proceedings' working files (editors' Word files and PDFs, corrections, the licensed fonts)
+and must never be public.
 
 ```powershell
 az storage container create --account-name iglcstorage -n media --public-access blob --auth-mode key
+az storage container create --account-name iglcstorage -n production --public-access off --auth-mode key
 $storage = az storage account show-connection-string -n iglcstorage -g $rg -o tsv
+```
+
+The running heads on published papers need Times New Roman (licensed, not in the repository).
+Upload `times.ttf`, `timesi.ttf` and `timesbd.ttf` from `C:\Windows\Fonts` into `fonts/` in the
+private container:
+
+```powershell
+foreach ($f in "times.ttf","timesi.ttf","timesbd.ttf") {
+  az storage blob upload --account-name iglcstorage -c production -n "fonts/$f" -f "C:\Windows\Fonts\$f" --auth-mode key --overwrite
+}
 ```
 
 ## 4. Web app
@@ -168,6 +183,8 @@ docker run --rm -v "$PWD":/d postgres:16 pg_restore --no-owner --no-privileges -
   -d "postgres://iglcadmin:PASSWORD@iglc-net-db.postgres.database.azure.com:5432/iglc?sslmode=require" /d/iglc.dump
 docker run --rm -v "$PWD/media":/media mcr.microsoft.com/azure-cli \
   az storage blob upload-batch -d media -s /media --overwrite --connection-string "CONNECTION STRING"
+docker run --rm -v "$PWD/private":/private mcr.microsoft.com/azure-cli \
+  az storage blob upload-batch -d production -s /private --overwrite --connection-string "CONNECTION STRING"
 rm iglc.dump
 ```
 
