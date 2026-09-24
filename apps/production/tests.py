@@ -243,3 +243,22 @@ class PaperCheckPageTests(TestCase):
         response = self.client.post("/for-authors/check-your-paper/", {
             "stage": "camera_ready", "paper": SimpleUploadedFile("paper.pdf", b"%PDF-1.4")})
         self.assertContains(response, "Please upload the paper as a Word file")
+
+
+class AuthorSkillTests(TestCase):
+    def test_skill_zip_runs_on_its_own(self):
+        import io
+        import subprocess
+        import sys
+
+        response = self.client.get("/for-authors/check-your-paper/iglc-paper-check-skill.zip")
+        self.assertEqual(response["Content-Type"], "application/zip")
+        folder = Path(tempfile.mkdtemp())
+        zipfile.ZipFile(io.BytesIO(response.content)).extractall(folder)
+        self.assertTrue((folder / "iglc-paper-check" / "SKILL.md").read_text().startswith("---\nname: iglc-paper-check"))
+        paper = make_docx(BODY, NOTES, HEADER)
+        out = subprocess.run([sys.executable, "-S", str(folder / "iglc-paper-check/scripts/check_paper.py"), str(paper)],
+                             capture_output=True, text=True, cwd=folder)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertIn("Title:    Takt planning in practice", out.stdout)
+        self.assertIn("No ORCID in the footnote of Cy Lee", out.stdout)

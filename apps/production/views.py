@@ -64,3 +64,21 @@ def check_report_url(check):
     from django.urls import reverse
 
     return reverse("production:check_report", args=[check.pk])
+
+
+def author_skill(request):
+    """The check as an AI skill (SKILL.md + scripts), built from the site's own code so the
+    two never disagree."""
+    import zipfile
+
+    here = Path(__file__).resolve().parent
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.write(here / "skill" / "SKILL.md", "iglc-paper-check/SKILL.md")
+        archive.write(here / "skill" / "check_paper.py", "iglc-paper-check/scripts/check_paper.py")
+        archive.writestr("iglc-paper-check/scripts/iglc_check/__init__.py", "")
+        for name in ("docx_reader.py", "checks.py"):
+            archive.write(here / name, f"iglc-paper-check/scripts/iglc_check/{name}")
+    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = 'attachment; filename="iglc-paper-check-skill.zip"'
+    return response

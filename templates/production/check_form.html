@@ -21,4 +21,8 @@
   <p><label for="{{ form.pdf.id_for_label }}"><b>{{ form.pdf.label }}</b></label><br>{{ form.pdf }}{% for e in form.pdf.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</p>
   <button class="button" type="submit">Check the paper</button>
 </form>
+<section class="prose skill-box">
+  <h2>Check and fix with an AI assistant</h2>
+  <p>The same check is available as a <a href="{% url 'production:author_skill' %}">skill for AI assistants</a> (a ZIP file). In Claude, add it under Settings → Capabilities → Skills; with other assistants that can run Python, upload the ZIP and ask them to follow <code>SKILL.md</code>. The assistant runs the check, explains how to fix each finding, and can make purely mechanical fixes such as applying the template's styles, in a copy of your paper. It never changes your text. The check on this page is the official one.</p>
+</section>
 {% endblock %}
