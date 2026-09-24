@@ -34,9 +34,14 @@ Passwords and keys: use letters and digits only (they go into URLs). This makes 
 function New-Secret { -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 40 | % {[char]$_}) }
 $dbPassword = New-Secret
 $secretKey  = New-Secret
+"Database password: $dbPassword"
+"Django secret key: $secretKey"
 ```
 
-Keep both in your password manager. They are never committed.
+The last two lines print them: copy both into your password manager. They are never committed.
+Do the rest of the steps in the same PowerShell window, which remembers them. In a new window, set
+them again from the password manager (`$dbPassword = "..."`, `$secretKey = "..."`); do not run
+`New-Secret` again, which makes new values.
 
 ## 2. Database
 
