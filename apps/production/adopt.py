@@ -56,7 +56,7 @@ def adopt_published(conference: Conference, user=None) -> tuple[Production, dict
             })
         report["added" if was_created else "updated"] += 1
         if was_created:
-            Event.objects.create(submission=submission, user=user, action="taken from the archive (published before)")
+            Event.objects.create(submission=submission, user=user, action="taken from the archive")
     # tracks in the order of their first page
     firsts = {}
     for paper in papers:

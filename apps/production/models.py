@@ -215,7 +215,7 @@ class Event(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="events")
     time = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
-    action = models.CharField(max_length=40)
+    action = models.CharField(max_length=200)
     comment = models.TextField(blank=True)
 
     class Meta:
