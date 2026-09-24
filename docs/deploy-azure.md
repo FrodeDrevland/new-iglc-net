@@ -49,8 +49,12 @@ them again from the password manager (`$dbPassword = "..."`, `$secretKey = "..."
 az postgres flexible-server create -g $rg -n $db -l $loc `
   --tier Burstable --sku-name Standard_B1ms --storage-size 32 --version 16 `
   --admin-user iglcadmin --admin-password $dbPassword `
-  --database-name iglc --backup-retention 35 --public-access 0.0.0.0
+  --backup-retention 35 --public-access 0.0.0.0
+az postgres flexible-server db create -g $rg -s $db -d iglc
 ```
+
+(Newer versions of the Azure CLI accept `--database-name` only for elastic clusters, so the
+database is made with its own command.)
 
 `--public-access 0.0.0.0` lets Azure services (the web app) connect. Azure keeps automatic
 backups for 35 days and can restore to any point in that time. To reach the database from home
