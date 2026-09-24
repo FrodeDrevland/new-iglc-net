@@ -5,7 +5,7 @@
 .DESCRIPTION
   Word is the only program that lays out the papers exactly as the authors see them, so page
   counts and the final PDFs come from Word. For every .docx in -InputFolder this script opens
-  the file (invisibly, read-only) and writes:
+  the file (invisibly), closes it again without saving, and writes:
     - pages.csv with the file name and Word's page count
     - with -Pdf: <name>.pdf in -OutputFolder
 
@@ -44,12 +44,9 @@ try {
         $i++
         Write-Progress -Activity "Word" -Status $file.Name -PercentComplete (100 * $i / $files.Count)
         Write-Host ("{0,-12} opening..." -f $file.Name) -NoNewline
-        # Open(FileName, ConfirmConversions, ReadOnly, AddToRecentFiles, PasswordDocument,
-        #      PasswordTemplate, Revert, WritePasswordDocument, WritePasswordTemplate, Format,
-        #      Encoding, Visible, OpenAndRepair, DocumentDirection, NoEncodingDialog)
-        # Empty passwords stop Word from waiting for one; NoEncodingDialog avoids another prompt.
-        $doc = $word.Documents.Open($file.FullName, $false, $true, $false, "", "", $true, "", "",
-            0, [Type]::Missing, [bool]$Visible, $false, [Type]::Missing, $true)
+        # Opened the plain way: the read-only open with extra options made Word hang when
+        # saving the PDF. The file is closed without saving, so it is not changed.
+        $doc = $word.Documents.Open([string]$file.FullName)
         try {
             # No field updates: page numbers in headers and footers are filled in when Word lays
             # out the pages, and updating the body's fields (citations, cross-references) could
@@ -67,7 +64,7 @@ try {
             Write-Host (" {0,3} pages" -f $pages)
         }
         finally {
-            $doc.Close([ref]0)
+            $doc.Close(0)  # 0 = do not save
         }
     }
 }
