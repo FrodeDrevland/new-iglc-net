@@ -55,6 +55,9 @@
 - [x] Read metadata from Word files by the template's styles (apps/production/docx_reader.py); tried on all 156 IGLC 34 camera-ready files
 - [x] `read_manuscripts` command: problem report per file, comparison with the archive
 - [x] Fixed HTML entities (&amp;) stored in titles, abstracts and affiliations
+- [x] Write running headers, footers and first page number into papers (apps/production/stamp.py)
+- [x] Page counts: LibreOffice differs from Word for 1 in 6 papers (also with the real fonts); page counts and PDFs come from Word (tools/word_batch.ps1)
+- [ ] Try tools/word_batch.ps1 on the IGLC 34 files
 - [ ] Data model: proceedings volume, submissions, file versions, metadata status
 - [ ] Upload page for camera-ready files, with the problem report shown to the author
 - [ ] Metadata check page for authors (confirm or correct title, authors, affiliations, ORCIDs)
