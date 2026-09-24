@@ -387,7 +387,8 @@ def book(request, number):
             raise PermissionDenied
         try:
             if action == "fetch":
-                return JsonResponse(books.fetch_next(production, n=10))
+                after = request.POST.get("after", "0")
+                return JsonResponse(books.fetch_next(production, n=10, after=int(after) if after.isdigit() else 0))
             if action == "settings":
                 production.conference_chair = request.POST.get("conference_chair", "").strip()
                 production.copyright_holders = request.POST.get("copyright_holders", "").strip()

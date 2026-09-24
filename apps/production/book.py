@@ -298,13 +298,16 @@ def missing_pdfs(production: Production) -> list[Submission]:
             if not s.published_pdf and not storage.exists(_cache_name(s))]
 
 
-def fetch_next(production: Production, n: int = 10) -> dict:
+def fetch_next(production: Production, n: int = 10, after: int = 0) -> dict:
     """Download up to n published PDFs (papers published before the production tools) into the
-    private files, checking that each has as many pages as its page range."""
+    private files, checking that each has as many pages as its page range. Goes through the
+    papers once, in ConfTool ID order after `after`, so a paper that fails is not retried in
+    the same round; returns the last ID tried as `next`."""
     from pypdf import PdfReader
 
-    todo, problems = missing_pdfs(production), []
-    for submission in todo[:n]:
+    todo = sorted((s for s in missing_pdfs(production) if s.conftool_id > after), key=lambda s: s.conftool_id)
+    batch, problems, fetched = todo[:n], [], 0
+    for submission in batch:
         paper = submission.paper
         if not paper.full_text_url:
             problems.append(f"{submission.conftool_id}: no PDF in the archive")
@@ -315,14 +318,16 @@ def fetch_next(production: Production, n: int = 10) -> dict:
                 data = response.read()
             pages = len(PdfReader(io.BytesIO(data)).pages)
         except Exception as error:  # noqa: BLE001 - reported to the editor
-            problems.append(f"{submission.conftool_id}: could not be read ({error})")
+            problems.append(f"{submission.conftool_id}: could not be downloaded or read ({error})")
             continue
         expected = paper.last_page - paper.first_page + 1
         if pages != expected:
             problems.append(f"{submission.conftool_id}: the PDF has {pages} pages, the page range {paper.pages} "
                             f"has {expected}")
         private_storage().save(_cache_name(submission), ContentFile(data))
-    return {"fetched": min(n, len(todo)), "left": max(0, len(todo) - n), "problems": problems}
+        fetched += 1
+    return {"fetched": fetched, "left": len(todo) - len(batch), "problems": problems,
+            "next": batch[-1].conftool_id if batch else after}
 
 
 # ---------------------------------------------------------------- generated pages

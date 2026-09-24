@@ -1,5 +1,7 @@
 {% extends "wagtailadmin/base.html" %}
 {% load static %}
-{% comment %}The editors' pages, inside the back office: Wagtail's sidebar, messages and styles.{% endcomment %}
+{% comment %}The editors' pages, inside the back office: Wagtail's sidebar, messages and styles.
+Page scripts go in "page_js", after the content: Wagtail's own script block is in the head,
+where the page's elements do not exist yet.{% endcomment %}
 {% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/production-admin.css' %}">{% endblock %}
-{% block content %}<div class="nice-padding iglc-prod">{% block main %}{% endblock %}</div>{% endblock %}
+{% block content %}<div class="nice-padding iglc-prod">{% block main %}{% endblock %}</div>{% block page_js %}{% endblock %}{% endblock %}

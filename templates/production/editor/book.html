@@ -105,7 +105,7 @@
 </ol>
 {% endwith %}
 {% endblock %}
-{% block extra_js %}{{ block.super }}
+{% block page_js %}
 <script>
 (function () {
   const start = document.getElementById("fetch-start");
@@ -115,20 +115,23 @@
   const token = form.querySelector("[name=csrfmiddlewaretoken]").value;
   start.addEventListener("click", async function () {
     start.disabled = true;
-    let done = 0;
+    list.innerHTML = "";
+    let done = 0, after = 0, failed = 0;
     for (;;) {
       let data;
       try {
         const response = await fetch(location.href, {method: "POST", headers: {"X-CSRFToken": token},
-          body: new URLSearchParams({csrfmiddlewaretoken: token, action: "fetch"})});
+          body: new URLSearchParams({csrfmiddlewaretoken: token, action: "fetch", after: after})});
         data = await response.json();
       } catch (e) { data = {error: "The connection failed. Press the button again to go on."}; }
       if (data.error) { status.textContent = data.error; start.disabled = false; return; }
-      done += data.fetched;
-      (data.problems || []).forEach(function (p) { const li = document.createElement("li"); li.textContent = p; list.appendChild(li); });
-      status.textContent = done + " fetched, " + data.left + " to go…";
-      if (data.left === 0) { location.reload(); return; }
+      done += data.fetched; after = data.next;
+      (data.problems || []).forEach(function (p) { const li = document.createElement("li"); li.textContent = p; list.appendChild(li); failed += 1; });
+      status.textContent = done + " fetched" + (failed ? ", " + failed + " with problems (listed below)" : "") + ", " + data.left + " to go…";
+      if (data.left === 0) break;
     }
+    status.textContent = done + " fetched" + (failed ? ", " + failed + " with problems (listed below; press the button again to retry those)" : "") + ".";
+    if (!failed) { location.reload(); } else { start.disabled = false; }
   });
 })();
 </script>

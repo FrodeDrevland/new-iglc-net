@@ -717,3 +717,28 @@ class BackOfficeTests(EditorPagesTests):
         self.assertEqual(self.client.get("/manage/").status_code, 200)
         self.assertEqual(self.client.get("/manage/production/35/").status_code, 200)
         self.assertNotEqual(self.client.get("/manage/archive/paper/").status_code, 200)
+
+
+class FetchTests(EditorPagesTests):
+    def test_fetch_goes_through_the_papers_once_and_scripts_come_after_the_page(self):
+        from unittest import mock
+
+        from apps.archive.models import Paper
+
+        from . import book
+        from .models import Submission
+
+        conference = self.production.conference
+        for number, s in ((123, Submission.objects.get(conftool_id=123)), (124, Submission.objects.get(conftool_id=124))):
+            s.paper = Paper.objects.create(conference=conference, title=s.title, first_page=number, last_page=number,
+                                           full_text_url=f"https://example.org/{number}.pdf")
+            s.save()
+        with mock.patch("urllib.request.urlopen", side_effect=OSError("offline")):
+            first = book.fetch_next(self.production, n=1)
+            second = book.fetch_next(self.production, n=1, after=first["next"])
+        self.assertEqual((first["fetched"], first["left"], first["next"]), (0, 1, 123))
+        self.assertEqual((second["left"], second["next"], len(second["problems"])), (0, 124, 1))
+        self.client.login(username="chief", password="pw")
+        page = self.client.get("/manage/production/35/book/").content.decode()
+        if 'id="fetch-start"' in page:
+            self.assertLess(page.index('id="fetch-start"'), page.rindex("<script>"))
