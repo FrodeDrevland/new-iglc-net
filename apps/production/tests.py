@@ -948,3 +948,13 @@ class MetadataCheckTests(FullProceedingsTests):
         self.client.post(f"/for-authors/check-your-details/{check.token}/", {"responder": "Bo", "action": "confirm"})
         check.refresh_from_db()
         self.assertEqual((check.status, check.responder), ("confirmed", "Bo"))
+
+
+class GuideTests(EditorPagesTests):
+    def test_guide_and_script(self):
+        self.client.login(username="ed", password="pw")
+        page = self.client.get("/manage/production/guide/")
+        self.assertContains(page, "Editors’ guide")
+        self.assertContains(self.client.get("/manage/production/35/"), "/manage/production/guide/")
+        script = self.client.get("/manage/production/guide/iglc-word-batch.ps1")
+        self.assertIn(b"ComputeStatistics", b"".join(script.streaming_content))

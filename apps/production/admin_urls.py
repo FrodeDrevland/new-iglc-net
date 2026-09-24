@@ -8,6 +8,8 @@ app_name = "proceedings"
 
 urlpatterns = [
     path("", editor_views.production_list, name="productions"),
+    path("guide/", editor_views.guide, name="guide"),
+    path("guide/iglc-word-batch.ps1", editor_views.conversion_script, name="conversion_script"),
     path("<int:number>/", editor_views.production_detail, name="production"),
     path("<int:number>/download/", editor_views.download, name="download"),
     path("<int:number>/upload/", editor_views.upload, name="upload"),

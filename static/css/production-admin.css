@@ -45,3 +45,8 @@
 .iglc-prod .book-steps h2 { margin-top: 0; }
 .iglc-prod .isbn-form label { margin-right: 1rem; }
 .iglc-prod .linklike { background: none; border: 0; padding: 0; color: var(--w-color-text-link-default, #007d7e); text-decoration: underline; cursor: pointer; font: inherit; }
+.iglc-prod .guide { max-width: 60rem; }
+.iglc-prod .guide h2 { margin-top: 2.25rem; scroll-margin-top: 1rem; }
+.iglc-prod .guide-contents ol { columns: 2; margin: 0; list-style: decimal; padding-left: 1.5rem; }
+@media (max-width: 50rem) { .iglc-prod .guide-contents ol { columns: 1; } }
+.iglc-prod .guide-code { background: var(--w-color-surface-menus, #f6f6f8); padding: .6rem .8rem; border-radius: 4px; overflow-x: auto; font-size: .85rem; }

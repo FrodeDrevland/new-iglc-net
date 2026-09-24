@@ -9,7 +9,8 @@
      <a class="button button-secondary" href="{% url 'proceedings:arrange' production.conference.number %}">Order and page numbers</a>
      <a class="button button-secondary" href="{% url 'proceedings:publish' production.conference.number %}">Publish papers</a>
      <a class="button button-secondary" href="{% url 'proceedings:book' production.conference.number %}">Full proceedings</a>
-     {% if role == "chief" %}<a class="button button-secondary" href="{% url 'production_settings:edit' production.pk %}">Editors and settings</a>{% endif %}</p>
+     {% if role == "chief" %}<a class="button button-secondary" href="{% url 'production_settings:edit' production.pk %}">Editors and settings</a>{% endif %}
+     <a class="button button-secondary" href="{% url 'proceedings:guide' %}">Guide</a></p>
 </div>
 <form class="prod-filters" method="get">
   <label>Track <select name="track"><option value="">all</option>{% for t in tracks %}<option value="{{ t.pk }}"{% if filters.track == t.pk|stringformat:"s" %} selected{% endif %}>{{ t.title }}</option>{% endfor %}</select></label>

@@ -2,7 +2,8 @@
 {% block titletag %}Proceedings production{% endblock %}
 {% block main %}
 <div class="page-head"><p class="kicker">Back office</p><h1>Proceedings production</h1>
-  <p class="lead">Collecting and editing the papers, their order and page numbers, publication, and the full proceedings.</p></div>
+  <p class="lead">Collecting and editing the papers, their order and page numbers, publication, and the full proceedings.</p>
+  <p><a class="button button-secondary" href="{% url 'proceedings:guide' %}">Editors’ guide</a></p></div>
 <ul class="plain-list">
   {% for p in productions %}<li><a href="{% url 'proceedings:production' p.conference.number %}">{{ p }}</a> <span class="muted">· {{ p.get_status_display }}</span></li>
   {% empty %}<li>You are not an editor of any proceedings.</li>{% endfor %}

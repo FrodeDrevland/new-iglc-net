@@ -1,0 +1,124 @@
+{% extends "production/editor/_base.html" %}
+{% block titletag %}Editors’ guide{% endblock %}
+{% block main %}
+<div class="page-head"><p class="kicker"><a href="{% url 'proceedings:productions' %}">Proceedings production</a></p>
+  <h1>Editors’ guide</h1>
+  <p class="lead">How the proceedings are made here: from the accepted papers to the published papers with DOIs, and later the full proceedings. Read sections 1 to 6 before editing your first paper.</p></div>
+
+<div class="guide">
+<nav class="panel guide-contents"><ol>
+  <li><a href="#roles">Who does what</a></li>
+  <li><a href="#start">Before you start</a></li>
+  <li><a href="#overview">The steps</a></li>
+  <li><a href="#editing">Editing a paper</a></li>
+  <li><a href="#pdf">Making the PDF</a></li>
+  <li><a href="#upload">Uploading</a></li>
+  <li><a href="#paper">The paper’s page: checking and approving</a></li>
+  <li><a href="#arrange">Order and page numbers</a></li>
+  <li><a href="#publish">Publishing the papers</a></li>
+  <li><a href="#authors">The authors’ check of the details</a></li>
+  <li><a href="#crossref">DOIs at Crossref</a></li>
+  <li><a href="#corrections">Corrections after publication</a></li>
+  <li><a href="#book">The full proceedings</a></li>
+  <li><a href="#problems">When something is refused</a></li>
+</ol></nav>
+
+<h2 id="roles">1. Who does what</h2>
+<table class="listing prod-table"><thead><tr><th>Role</th><th>Does</th></tr></thead><tbody>
+<tr><td><b>Editor</b></td><td>Edits the papers of their tracks (or all papers): downloads them, edits them in Word, uploads the edited Word file with its PDF, sets the title and names as they will be published, and approves a paper or sends it back.</td></tr>
+<tr><td><b>Chief editor</b></td><td>Everything an editor does, for all papers. Also arranges the order and page numbers, asks the publisher to publish, sends corrections and the full proceedings to the publisher, asks the authors to check their details, and manages the production’s editors (“Editors and settings”).</td></tr>
+<tr><td><b>Publisher</b></td><td>Approves and carries out publication (papers, corrections, full proceedings), enters the ISBNs, and registers the DOIs with Crossref. A permanent IGLC role, not a proceedings editor.</td></tr>
+</tbody></table>
+<p>Nothing goes on the site until a publisher has approved it. Chief editors stage; publishers approve.</p>
+
+<h2 id="start">2. Before you start</h2>
+<ul>
+  <li><b>An account.</b> A superuser creates it (Settings → Users) and a chief editor adds you to the production under “Editors and settings”. That is all: the role gives you access.</li>
+  <li><b>Microsoft Word for Windows.</b> The PDFs must be made by Word for Windows (not Word for Mac, Word online, LibreOffice or a PDF printer): the system uses the marks Word puts on the headers and footers to replace them with the IGLC ones.</li>
+  <li><b>The IGLC template’s rules.</b> The papers must keep the template’s styles; the checks tell you what does not.</li>
+  <li>For many papers at once: <a href="{% url 'proceedings:conversion_script' %}">the conversion script</a> (see <a href="#pdf">5</a>).</li>
+</ul>
+
+<h2 id="overview">3. The steps</h2>
+<ol>
+  <li><b>Collecting and editing</b> (editors): download, edit in Word, make the PDF, upload, check, approve.</li>
+  <li><b>Order and page numbers</b> (chief editors): tracks and papers in the order of the proceedings; the page numbers follow.</li>
+  <li><b>Publication of the papers</b> (chief editor asks, publisher approves): before the conference. This is the deadline that matters.</li>
+  <li><b>The authors’ check</b> (chief editors), then <b>Crossref</b> (publisher).</li>
+  <li><b>The full proceedings</b> (chief editors prepare, publisher approves): later, not urgent.</li>
+</ol>
+<p>The production’s page lists its papers with their status, version, pages, check result and the authors’ check. Filter by track, status or “Only mine”.</p>
+
+<h2 id="editing">4. Editing a paper</h2>
+<ol>
+  <li>Download the Word files: tick papers on the production page (or none for all shown) and choose “Download Word files”. Files are named by ConfTool ID (123.docx): keep the names.</li>
+  <li>Edit in Word with the IGLC template’s styles only. Fix what the check reports (see the paper’s page), and what you see: tables and figures that do not fit, references, language.</li>
+  <li>Do not type headers, footers or page numbers, and do not remove the empty space above the title on the first page: the system prints the running heads, the page numbers and the full reference there.</li>
+  <li>At most {{ max_pages }} pages. Save the file in Word.</li>
+</ol>
+<p>If a paper needs changes you cannot make without changing its content, send it back to the authors (“Needs more work”, with a comment).</p>
+
+<h2 id="pdf">5. Making the PDF</h2>
+<p><b>One paper:</b> in Word for Windows, File → Save As → PDF, with the same name (123.pdf).</p>
+<p><b>Many papers:</b> put the Word files in a folder and run the conversion script in PowerShell (Word must be installed; it runs invisibly):</p>
+<pre class="guide-code">powershell -ExecutionPolicy Bypass -File iglc-word-batch.ps1 -InputFolder "C:\IGLC35\edited" -Pdf</pre>
+<p>It writes 123.pdf next to 123.docx, and pages.csv with each paper’s page count. If it seems to hang, run it again with <code>-Visible</code> to see what Word is asking.</p>
+<p><b>Check the page count.</b> Word’s PDF can come out with a different number of pages than Word shows (one IGLC 34 paper was 12 pages in Word and 13 in its PDF). The script lists such papers in yellow at the end; the upload check refuses them. Adjust the paper in Word (for example tighten the text before the extra page) and make the PDF again.</p>
+
+<h2 id="upload">6. Uploading</h2>
+<p>On the production page, “Upload papers”: any number of Word files and PDFs, or ZIP files of them. They are matched to papers by the ConfTool ID at the start of the file name (123.docx, 123 edited.pdf). Upload the Word file and its PDF together; a PDF alone goes with the paper’s current Word file. One paper can also be uploaded on its own page.</p>
+<p>Every upload becomes a new version (all versions are kept) and is checked at once:</p>
+<ul>
+  <li><b>Must be fixed</b>: the paper cannot be published like this.</li>
+  <li><b>Should be fixed</b>: look at it; send the paper back if needed.</li>
+  <li><b>For information</b>.</li>
+</ul>
+<p>The PDF is checked too: made by Word, nothing typed in the header and footer areas, room for the reference above the title, the same page count as Word. The page count comes from the PDF.</p>
+
+<h2 id="paper">7. The paper’s page: checking and approving</h2>
+<ul>
+  <li><b>The check</b> of the current version.</li>
+  <li><b>Metadata read from the paper</b>, next to what was registered in ConfTool; differences are highlighted. The paper is what will be published (ConfTool’s addresses are used to contact the authors).</li>
+  <li><b>As it will be published</b>: the title in sentence case, as IGLC references print it (a suggestion is made; check it and save), and how each name splits into first and last name (a single name goes in the last name). Kept for later versions while the Word file’s title and names do not change.</li>
+  <li><b>Decision</b>: “Approve”, or “Needs more work” with a comment.</li>
+  <li><b>Track and editor</b>, and the <b>history</b> of everything done to the paper.</li>
+</ul>
+
+<h2 id="arrange">8. Order and page numbers (chief editors)</h2>
+<p>“Order and page numbers”: drag the tracks, and the papers within and between tracks, into the order of the proceedings, set the first page, and save. Page numbers run on from paper to paper and follow every new upload. Numbering stops at the first paper without a PDF. Once papers are published, the order and page numbers are fixed: they are cited.</p>
+
+<h2 id="publish">9. Publishing the papers</h2>
+<p>“Publish papers” lists what is missing (papers not approved, PDFs, titles not checked, the conference’s dates and city). When nothing is missing, a chief editor clicks “Ask the publisher to publish”; the publisher checks and clicks “Approve and publish”. Each paper then goes on the site with its DOI, page numbers and the IGLC headers and footers; the conference appears in the proceedings list with a ZIP of all papers.</p>
+
+<h2 id="authors">10. The authors’ check of the details</h2>
+<p>After publication, “Ask the authors” on the publish page emails each paper’s authors a link to check the title, their names, affiliations and ORCID iDs as published, and to confirm or correct them. “Remind” sends it again where nobody has answered. Corrections arrive on the paper’s page (and by email to the chief editors), published and proposed side by side: “Apply to the published record”, or “Mark as handled”. This does not change the PDF: if the error is printed in the paper, also publish a corrected version (<a href="#corrections">12</a>).</p>
+
+<h2 id="crossref">11. DOIs at Crossref (publisher)</h2>
+<p>A DOI works once Crossref has registered it. On the publish page: “Make a deposit” (the XML can be downloaded and looked at), “Send to Crossref”, and after some minutes “Check result”. Send a new deposit after the authors’ check, after corrections that change a title or the authors, and after the full proceedings get their ISBN: it updates the records.</p>
+
+<h2 id="corrections">12. Corrections after publication</h2>
+<p>Upload the corrected Word file and PDF on the paper’s page as usual; a chief editor sends the correction to the publisher, who approves it. The corrected paper must fit its page range (it may be shorter, not longer): the page numbers of the papers after it are cited. The DOI stays; the old PDF is kept. For papers published before these tools (conferences taken from the archive), upload the replacement PDF instead.</p>
+<p>What was corrected is always recorded. Whether the paper’s page shows “Corrected” with the note is a choice: yes for a substantial change long after publication, no for a small fix soon after.</p>
+
+<h2 id="book">13. The full proceedings</h2>
+<p>On “Full proceedings”:</p>
+<ol>
+  <li>For conferences taken from the archive: fetch the papers’ PDFs.</li>
+  <li>Title page: the conference chair(s); the track chairs, one per line.</li>
+  <li>The sections: download each part’s Word template (conference organisation, message from the conference chair, foreword with its tables filled in, reviewers, sponsors, other), write it keeping the template’s styles and leaving the header and footer empty, save it as PDF from Word and upload it. Uploads that do not follow the template are refused. Put sections in the front or back matter, in the order you want. The covers are one A4 page each, designed by the organisers.</li>
+  <li>“Make a draft”, download it and read it through. The system makes the colophon, title page, table of contents and author index, and numbers the pages.</li>
+  <li>“Submit to the publisher”. The publisher enters the ISBN and approves; the book is published and linked from the conference page. Then a new Crossref deposit.</li>
+</ol>
+
+<h2 id="problems">14. When something is refused</h2>
+<table class="listing prod-table"><thead><tr><th>The check says</th><th>Do this</th></tr></thead><tbody>
+<tr><td>The PDF has no headers or footers marked by Word</td><td>Make the PDF with Word for Windows (Save As → PDF) or the conversion script, not a PDF printer or another program.</td></tr>
+<tr><td>Text in the header or footer area</td><td>Something is typed in the header or footer (or placed there as a text box). Remove it: the running heads come from the system.</td></tr>
+<tr><td>The title starts too high on the first page</td><td>Use the Title style of the current template, which keeps the space for the reference.</td></tr>
+<tr><td>The PDF has N pages, but Word counts M</td><td>See <a href="#pdf">5</a>: adjust the paper so Word’s PDF has the same number of pages, and make the PDF again.</td></tr>
+<tr><td>The paper has more than {{ max_pages }} pages</td><td>Shorten it, or send it back to the authors.</td></tr>
+<tr><td>A correction does not fit the published page range</td><td>Shorten it to the published number of pages.</td></tr>
+</tbody></table>
+<p>For anything else, ask the chief editor or the publisher.</p>
+</div>
+{% endblock %}

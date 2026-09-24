@@ -657,3 +657,22 @@ def book_file(request, number, name):
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
     response["Content-Disposition"] = f'attachment; filename="IGLC{number}-{kind}.docx"'
     return response
+
+
+@login_required
+def guide(request):
+    """The editors' guide to proceedings production."""
+    from .checks import MAX_PAGES
+
+    if not productions_for(request.user).exists() and not request.user.is_superuser:
+        raise PermissionDenied
+    return render(request, "production/editor/guide.html", {"max_pages": MAX_PAGES})
+
+
+@login_required
+def conversion_script(request):
+    """tools/word_batch.ps1: page counts and PDFs of many papers with Word for Windows."""
+    from django.conf import settings
+
+    path = settings.BASE_DIR / "tools" / "word_batch.ps1"
+    return FileResponse(open(path, "rb"), as_attachment=True, filename="iglc-word-batch.ps1")
