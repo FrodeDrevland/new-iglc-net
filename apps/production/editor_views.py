@@ -361,19 +361,33 @@ def book(request, number):
                 if not upload or kind not in BookPart.Kind.values:
                     raise books.BookError("Choose the part and its PDF")
                 data = upload.read()
-                try:
-                    pages = len(PdfReader(io.BytesIO(data)).pages)
-                except Exception:  # noqa: BLE001
-                    raise books.BookError("That is not a PDF that can be read")
-                if kind in (BookPart.Kind.COVER, BookPart.Kind.BACK_COVER) and pages != 1:
-                    raise books.BookError("A cover is one A4 page")
-                if kind != BookPart.Kind.OTHER:
-                    production.book_parts.filter(kind=kind).delete()
+                found = books.check_part(data, kind)
+                if found:
+                    raise books.BookError("Not uploaded: it does not follow the template. " + " ".join(found))
+                if kind in BookPart.COVERS or kind in (BookPart.Kind.FOREWORD, BookPart.Kind.ORGANISATION,
+                                                       BookPart.Kind.REVIEWERS):
+                    production.book_parts.filter(kind=kind).delete()  # a new version replaces the old
+                placement = request.POST.get("placement")
+                if placement not in BookPart.Placement.values:
+                    placement = BookPart.Placement.FRONT
+                last = production.book_parts.filter(placement=placement).order_by("-order").first()
                 part = BookPart(production=production, kind=kind, title=request.POST.get("title", "").strip(),
-                                pages=pages, uploaded_by=request.user)
+                                placement=placement, uploaded_by=request.user,
+                                order=BookPart.DEFAULT_ORDER.get(kind, (last.order + 10) if last else 10),
+                                pages=len(PdfReader(io.BytesIO(data)).pages))
                 part.pdf.save(f"{kind}.pdf", ContentFile(data), save=False)
                 part.save()
-                messages.success(request, f"{part.label} uploaded ({pages} page{'s' if pages != 1 else ''}).")
+                messages.success(request, f"{part.label} uploaded ({part.pages} page{'s' if part.pages != 1 else ''}).")
+            elif action == "arrange_parts":
+                for part in production.book_parts.all():
+                    order = request.POST.get(f"order_{part.pk}", "")
+                    placement = request.POST.get(f"placement_{part.pk}", part.placement)
+                    if order.isdigit():
+                        part.order = int(order)
+                    if placement in BookPart.Placement.values:
+                        part.placement = placement
+                    part.save(update_fields=["order", "placement"])
+                messages.success(request, "Order saved.")
             elif action == "delete_part":
                 production.book_parts.filter(pk=request.POST.get("part")).delete()
             elif action == "draft":
@@ -409,8 +423,10 @@ def book(request, number):
         "production": production, "role": my_role, "can_edit": can_edit, "can_publish": can_publish,
         "problems": books.problems(production), "final_problems": books.problems(production, final=True),
         "missing": len(books.missing_pdfs(production)), "stats": stats,
-        "parts": [(kind, label, parts.get(kind, [])) for kind, label in BookPart.Kind.choices],
-        "kinds": BookPart.Kind.choices,
+        "covers": [(kind, parts.get(kind, [])) for kind in BookPart.COVERS],
+        "sections": production.book_parts.exclude(kind__in=BookPart.COVERS),
+        "kinds": BookPart.Kind.choices, "placements": BookPart.Placement.choices,
+        "templates": [(k, l) for k, l in BookPart.Kind.choices if k not in BookPart.COVERS],
         "tracks": [(t, "\n".join(chairs.get(t.pk, []))) for t in production.conference.tracks.all()],
         "editors": books.editors_of(production),
     })

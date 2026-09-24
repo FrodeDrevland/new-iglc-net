@@ -5,7 +5,7 @@
 <div class="page-head">
   <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
   <h1>Full proceedings</h1>
-  <p class="lead">One PDF in the style of the IGLC 32 proceedings: cover, colophon, title page, the uploaded front matter, the table of contents, the papers as published, an author index and the back cover. Chief editors prepare it and submit it; a publisher enters the ISBNs, approves and publishes it.</p>
+  <p class="lead">One PDF: cover, colophon, title page, front matter sections, the table of contents, the papers as published, the author index, back matter sections and the back cover. Chief editors prepare it and submit it; a publisher enters the ISBNs, approves and publishes it.</p>
 </div>
 
 {% if production.status == "complete" and production.book %}
@@ -51,19 +51,33 @@
 </li>
 
 <li>
-  <h2>Front matter and covers</h2>
-  <p>Make each part from its IGLC template, keep its styles, leave the header and footer empty (the page numbers are added) and upload a PDF saved from Word. Covers are one A4 page, designed by the organisers.</p>
-  <table class="prod-table"><thead><tr><th>Part</th><th>Template</th><th>Uploaded</th></tr></thead><tbody>
-  {% for kind, label, items in parts %}<tr><td>{{ label }}</td>
-    <td>{% if kind != "cover" and kind != "back_cover" %}<a href="{% url 'production:book_file' n kind|add:'.docx' %}">Word template</a>{% if kind == "foreword" %} <span class="muted small">(with the tables filled in)</span>{% endif %}{% else %}<span class="muted small">A4 PDF, one page</span>{% endif %}</td>
-    <td>{% for part in items %}{{ part.label }}, {{ part.pages }} p., {{ part.uploaded|date:"j M Y" }}{% if can_edit %} <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="delete_part"><input type="hidden" name="part" value="{{ part.pk }}"><button class="linklike" type="submit">remove</button></form>{% endif %}<br>{% empty %}<span class="muted">–</span>{% endfor %}</td></tr>
-  {% endfor %}</tbody></table>
+  <h2>Covers, front matter and back matter</h2>
+  <p>Besides what the system makes (colophon, title page, contents, author index), the book can hold any sections: the conference organisation, a message from the conference chair, the foreword, the reviewers, sponsors, or anything else. Every section is made from an IGLC Word template so it looks like the rest of the book: keep the template’s styles and fonts, leave the header and footer empty (the page numbers are printed there) and save as PDF from Word. Uploads are checked and refused if they do not follow the template. Covers are one A4 page, designed by the organisers.</p>
+  <p class="small"><b>Templates:</b> {% for kind, label in templates %}<a href="{% url 'production:book_file' n kind|add:'.docx' %}">{{ label }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}. <span class="muted">The foreword comes with its tables filled in.</span></p>
+
+  <table class="prod-table"><thead><tr><th>Cover</th><th>Uploaded</th></tr></thead><tbody>
+  {% for kind, items in covers %}<tr><td>{% if kind == "cover" %}Front cover{% else %}Back cover{% endif %}</td>
+    <td>{% for part in items %}{{ part.uploaded|date:"j M Y" }}{% if can_edit %} <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="delete_part"><input type="hidden" name="part" value="{{ part.pk }}"><button class="linklike" type="submit">remove</button></form>{% endif %}{% empty %}<span class="muted">–</span>{% endfor %}</td></tr>{% endfor %}
+  </tbody></table>
+
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="arrange_parts">
+  <table class="prod-table"><thead><tr><th>Section</th><th>Template</th><th>Pages</th><th>Where</th><th>Order</th><th></th></tr></thead><tbody>
+  {% for part in sections %}<tr><td>{{ part.label }}</td><td class="small">{{ part.get_kind_display }}</td><td>{{ part.pages }}</td>
+    <td><select name="placement_{{ part.pk }}"{% if not can_edit %} disabled{% endif %}>{% for key, label in placements %}<option value="{{ key }}"{% if part.placement == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
+    <td><input type="number" name="order_{{ part.pk }}" value="{{ part.order }}" min="0" style="width:5rem"{% if not can_edit %} disabled{% endif %}></td>
+    <td>{% if can_edit %}<button class="linklike" type="submit" form="remove-{{ part.pk }}">remove</button>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6">No sections yet.</td></tr>{% endfor %}</tbody></table>
+  {% if can_edit and sections %}<p><button class="button secondary" type="submit">Save order</button> <span class="muted small">Lower numbers come first. The contents always come last in the front matter, the author index first in the back matter.</span></p>{% endif %}
+  </form>
+  {% for part in sections %}<form method="post" id="remove-{{ part.pk }}">{% csrf_token %}<input type="hidden" name="action" value="delete_part"><input type="hidden" name="part" value="{{ part.pk }}"></form>{% endfor %}
+
   {% if can_edit %}
   <form method="post" enctype="multipart/form-data" class="prod-filters">{% csrf_token %}<input type="hidden" name="action" value="upload">
-    <label>Part <select name="kind">{% for key, label in kinds %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
-    <label>Heading (other parts) <input type="text" name="title"></label>
+    <label>Made from <select name="kind">{% for key, label in kinds %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+    <label>Heading <input type="text" name="title" placeholder="for the bookmarks"></label>
+    <label>Where <select name="placement">{% for key, label in placements %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
     <label>PDF <input type="file" name="pdf" accept=".pdf"></label>
-    <button class="button secondary" type="submit">Upload</button>
+    <button class="button secondary" type="submit">Upload and check</button>
   </form>
   {% endif %}
 </li>

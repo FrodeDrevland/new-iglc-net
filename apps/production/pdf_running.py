@@ -98,7 +98,7 @@ def _multiply(a, b):
             a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5]]
 
 
-def _text_positions(page, document=None):
+def _text_positions(page, document=None, with_x=False):
     """(top of the letters, text) for text drawn by the page itself.
 
     A small interpreter of the page's content stream, so positions are exact. Text inside
@@ -110,6 +110,7 @@ def _text_positions(page, document=None):
     ctm, stack = identity[:], []
     tm = line = identity[:]
     size, leading = 12.0, 0.0
+    size_font = [""]
     content = ContentStream(page.get_contents(), document) if page.get_contents() is not None else None
     if content is None:
         return found
@@ -118,7 +119,10 @@ def _text_positions(page, document=None):
         if text.strip():
             m = _multiply(tm, ctm)
             height = abs(size * m[3]) or size
-            found.append((m[5] + 0.75 * height, text.strip()))
+            if with_x:
+                found.append((m[4], m[5] + 0.75 * height, text.strip(), size_font[0]))
+            else:
+                found.append((m[5] + 0.75 * height, text.strip()))
 
     for operands, op in content.operations:
         if op == b"q":
@@ -131,6 +135,7 @@ def _text_positions(page, document=None):
             tm = line = identity[:]
         elif op == b"Tf" and len(operands) == 2:
             size = float(operands[1])
+            size_font[0] = str(operands[0])
         elif op == b"TL":
             leading = float(operands[0])
         elif op in (b"Td", b"TD"):

@@ -265,33 +265,45 @@ def _part_path(instance, filename):
 
 
 class BookPart(models.Model):
-    """A part of the full proceedings made outside the system (from the IGLC templates) and
-    uploaded as a PDF. The system makes the colophon, title page, contents and author index."""
+    """A part of the full proceedings made outside the system from an IGLC template (a message
+    from the conference chair, the foreword, sponsors, ...) or a cover, uploaded as a PDF and
+    checked against the template. The system makes the colophon, title page, contents and
+    author index. Sections go in the front matter or at the back, in the order given."""
 
     class Kind(models.TextChoices):
         COVER = "cover", "Front cover"
         ORGANISATION = "organisation", "Conference organisation"
+        MESSAGE = "message", "Message (e.g. from the conference chair)"
         FOREWORD = "foreword", "Foreword"
         REVIEWERS = "reviewers", "List of reviewers"
-        OTHER = "other", "Other front matter"
+        SPONSORS = "sponsors", "Sponsors"
+        OTHER = "other", "Other section"
         BACK_COVER = "back_cover", "Back cover"
 
-    ORDER = [Kind.COVER, Kind.ORGANISATION, Kind.FOREWORD, Kind.REVIEWERS, Kind.OTHER, Kind.BACK_COVER]
+    class Placement(models.TextChoices):
+        FRONT = "front", "Front matter (before the contents)"
+        BACK = "back", "Back matter (after the author index)"
+
+    COVERS = (Kind.COVER, Kind.BACK_COVER)
+    DEFAULT_ORDER = {Kind.ORGANISATION: 10, Kind.MESSAGE: 20, Kind.FOREWORD: 30, Kind.REVIEWERS: 40,
+                     Kind.SPONSORS: 50, Kind.OTHER: 60}
 
     production = models.ForeignKey(Production, on_delete=models.CASCADE, related_name="book_parts")
-    kind = models.CharField(max_length=20, choices=Kind.choices)
-    title = models.CharField(max_length=200, blank=True, help_text="For 'other': the heading, used in the bookmarks.")
+    kind = models.CharField(max_length=20, choices=Kind.choices, help_text="Which template it is made from.")
+    title = models.CharField(max_length=200, blank=True, help_text="The heading, for the bookmarks.")
+    placement = models.CharField(max_length=10, choices=Placement.choices, default=Placement.FRONT)
+    order = models.PositiveIntegerField(default=0)
     pdf = models.FileField(upload_to=_part_path, storage=private_storage)
     pages = models.PositiveIntegerField(default=0)
     uploaded = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
 
     class Meta:
-        ordering = ["production", "uploaded"]
+        ordering = ["production", "placement", "order", "uploaded"]
 
     def __str__(self):
-        return self.title or self.get_kind_display()
+        return self.label
 
     @property
     def label(self):
-        return self.title or self.get_kind_display()
+        return self.title or self.get_kind_display().split(" (")[0]

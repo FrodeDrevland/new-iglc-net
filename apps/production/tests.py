@@ -674,3 +674,15 @@ class FullProceedingsTests(PublishTests):
         self.assertEqual(country_of("Nottingham Trent University U.K"), "")
         self.assertEqual(country_of("PT Waskita Karya Tbk (Persero) - Jakarta - Indonesia"), "Indonesia")
         self.assertEqual(country_of("University of California, Berkeley, CA, United States"), "USA")
+
+
+class BookPartCheckTests(SimpleTestCase):
+    def test_parts_must_follow_the_template(self):
+        from .book import check_part
+
+        # Helvetica, and text in the header and footer areas
+        problems = " ".join(check_part(make_word_pdf(2), "message"))
+        self.assertIn("Times New Roman", problems)
+        self.assertIn("header and footer must be empty", problems)
+        self.assertEqual(check_part(make_word_pdf(2), "cover"), ["A cover is one page."])
+        self.assertEqual(check_part(b"not a pdf", "sponsors"), ["This is not a PDF that can be read."])

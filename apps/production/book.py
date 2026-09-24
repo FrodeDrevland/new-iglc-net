@@ -65,6 +65,13 @@ def names_joined(names: list[str]) -> str:
     return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1] if names else ""
 
 
+def place_of(conference) -> str:
+    """'Oslo, Norway'; 'Singapore' once."""
+    if conference.city == conference.country:
+        return conference.city
+    return ", ".join(filter(None, [conference.city, conference.country]))
+
+
 def date_line(conference) -> str:
     from .running import _date_range
 
@@ -123,7 +130,26 @@ def _document(heading: str):
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Cm, Pt
 
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
     doc = Document()
+
+    def times(r_pr):
+        fonts = r_pr.find(qn("w:rFonts"))
+        if fonts is None:
+            fonts = OxmlElement("w:rFonts")
+            r_pr.insert(0, fonts)
+        for attr in ("w:asciiTheme", "w:hAnsiTheme", "w:eastAsiaTheme", "w:cstheme"):
+            fonts.attrib.pop(qn(attr), None)
+        for attr in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
+            fonts.set(qn(attr), "Times New Roman")
+
+    defaults = doc.styles.element.find(qn("w:docDefaults"))
+    if defaults is not None:
+        r_pr = defaults.find(qn("w:rPrDefault") + "/" + qn("w:rPr"))
+        if r_pr is not None:
+            times(r_pr)
     section = doc.sections[0]
     section.page_width, section.page_height = Cm(21), Cm(29.7)
     for side in ("left_margin", "right_margin", "top_margin", "bottom_margin"):
@@ -132,14 +158,8 @@ def _document(heading: str):
     normal.font.name, normal.font.size = "Times New Roman", Pt(11)
     normal.paragraph_format.space_after = Pt(6)
     normal.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    from docx.oxml.ns import qn
-
-    for name, size in (("Heading 1", 12), ("Heading 2", 10), ("Title", 14)):
+    for name, size in (("Heading 1", 12), ("Heading 2", 10)):
         style = doc.styles[name]
-        fonts = style.element.rPr.find(qn("w:rFonts")) if style.element.rPr is not None else None
-        if fonts is not None:
-            for attr in ("w:asciiTheme", "w:hAnsiTheme", "w:eastAsiaTheme", "w:cstheme"):
-                fonts.attrib.pop(qn(attr), None)
         style.font.name, style.font.size, style.font.bold = "Times New Roman", Pt(size), True
         style.font.all_caps, style.font.color.rgb = True, None
         style.paragraph_format.space_before, style.paragraph_format.space_after = Pt(12), Pt(6)
@@ -148,6 +168,8 @@ def _document(heading: str):
     caption.font.name, caption.font.size, caption.font.italic, caption.font.bold = "Times New Roman", Pt(10), True, False
     caption.font.color.rgb = None
     caption.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for fonts in doc.styles.element.iter(qn("w:rFonts")):  # every style: no theme fonts (Calibri, Cambria)
+        times(fonts.getparent())
     note = doc.add_paragraph(TEMPLATE_NOTE)
     note.runs[0].italic = True
     doc.add_heading(heading, level=1)
@@ -190,7 +212,7 @@ def template(production: Production, kind: str) -> bytes:
         doc = _document("Foreword")
         doc.add_paragraph(
             f"[Opening: the {ordinal(number)} Annual Conference of the International Group for Lean Construction "
-            f"(IGLC{number}) in {conference.location or '…'}, {date_line(conference)}.]")
+            f"(IGLC{number}) in {place_of(conference) or '…'}, {date_line(conference)}.]")
         doc.add_paragraph(
             f"This year’s proceedings contain {stats['papers']} papers from authors affiliated with institutions in "
             f"{len(stats['countries'])} countries, as detailed in Table 1. [Themes of this year’s papers.]")
@@ -225,9 +247,27 @@ def template(production: Production, kind: str) -> bytes:
         doc.add_paragraph("[One row per reviewer, sorted by last name: “Last name, First name” and the "
                           "affiliation with country. ConfTool’s list of reviewers can be pasted in.]")
         _table(doc, "", ["Reviewer", "Affiliation"], [["Surname, Given name", "University, Country"]])
+    elif kind == BookPart.Kind.MESSAGE:
+        doc = _document("Message from the conference chair")
+        doc.add_paragraph("[Text. The heading can be changed, e.g. “Message from the host institution”.]")
+        signature = doc.add_paragraph()
+        signature.add_run(production.conference_chair or "[Name]").bold = True
+        doc.add_paragraph(f"Conference Chair, IGLC{number}").runs[0].italic = True
+    elif kind == BookPart.Kind.SPONSORS:
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+        doc = _document("Sponsors")
+        doc.add_paragraph("[Thanks to the sponsors (optional).]")
+        for level in ("Platinum sponsors", "Gold sponsors", "Silver sponsors", "Bronze sponsors",
+                      "Supporting partners"):
+            doc.add_heading(level, level=2)
+            logos = doc.add_paragraph("[Logos: Insert → Pictures, “In line with text”, at most 4 cm high. "
+                                      "Delete the levels not used.]")
+            logos.alignment = WD_ALIGN_PARAGRAPH.CENTER
     else:
         doc = _document("[Heading]")
-        doc.add_paragraph("[Text]")
+        doc.add_paragraph("[Text. Use the styles of this template only: Heading 1 for the heading, Heading 2 "
+                          "for subheadings, Normal for text, Caption for table and figure captions.]")
     buffer = io.BytesIO()
     doc.save(buffer)
     return buffer.getvalue()
@@ -535,6 +575,64 @@ def _numbers_overlay(pages: list[tuple[tuple, str]]) -> bytes:
     return buffer.getvalue()
 
 
+# ---------------------------------------------------------------- checking uploaded parts
+
+ALLOWED_FONTS = re.compile(r"times|symbol|wingding", re.I)
+
+
+def _page_fonts(page) -> dict[str, str]:
+    """Resource name -> base font of the fonts the page's own text uses (not those in figures)."""
+    fonts = {}
+    resources = page.get("/Resources") or {}
+    for name, ref in (resources.get("/Font") or {}).items():
+        font = ref.get_object()
+        fonts[str(name)] = str(font.get("/BaseFont", "")).lstrip("/").split("+")[-1]
+    return fonts
+
+
+def check_part(data: bytes, kind: str) -> list[str]:
+    """Problems with an uploaded part: covers are one A4 page; sections must follow the IGLC
+    template: A4, Times New Roman, text within the margins, header and footer empty (the page
+    numbers go there). Logos and figures are pictures and not checked."""
+    from pypdf import PdfReader
+
+    from .pdf_running import FOOTER_ZONE, HEADER_ZONE, _text_positions
+
+    try:
+        reader = PdfReader(io.BytesIO(data))
+        pages = list(reader.pages)
+    except Exception:  # noqa: BLE001
+        return ["This is not a PDF that can be read."]
+    problems = []
+    if any(abs(float(p.mediabox.width) - PAGE[0]) > 3 or abs(float(p.mediabox.height) - PAGE[1]) > 3 for p in pages):
+        problems.append("The pages must be A4 (21 × 29.7 cm).")
+    if kind in BookPart.COVERS:
+        if len(pages) != 1:
+            problems.append("A cover is one page.")
+        return problems
+    fonts, outside, running = Counter(), set(), set()
+    for number, page in enumerate(pages, 1):
+        names = _page_fonts(page)
+        width, height = float(page.mediabox.width), float(page.mediabox.height)
+        for x, y, text, font in _text_positions(page, reader, with_x=True):
+            base = names.get(font, font)
+            if base and not ALLOWED_FONTS.search(base):
+                fonts[base] += len(text)
+            if y > height - HEADER_ZONE or y < FOOTER_ZONE:
+                running.add(number)
+            elif x < MARGIN - 8 or x > width - MARGIN:
+                outside.add(number)
+    fonts = sorted(f for f, characters in fonts.items() if characters >= 20)  # a stray symbol is tolerated
+    if fonts:
+        problems.append("Only Times New Roman may be used (the template's styles); found: " + ", ".join(fonts) + ".")
+    if running:
+        problems.append("The header and footer must be empty – the page numbers are printed there (page "
+                        + ", ".join(map(str, sorted(running))) + ").")
+    if outside:
+        problems.append("Text outside the template's margins (page " + ", ".join(map(str, sorted(outside))) + ").")
+    return problems
+
+
 # ---------------------------------------------------------------- joining
 
 def parts_of(production: Production) -> dict[str, list[BookPart]]:
@@ -617,10 +715,10 @@ def build(production: Production) -> bytes:
     base = lambda: len(writer.pages) - front_start + 1  # noqa: E731
     b = base()
     add(PdfReader(io.BytesIO(title_page(production))), lambda i, b=b: roman(b + i), "Title page")
-    for kind in (BookPart.Kind.ORGANISATION, BookPart.Kind.FOREWORD, BookPart.Kind.REVIEWERS, BookPart.Kind.OTHER):
-        for part in parts.get(kind, []):
-            b = base()
-            add(_read(part), lambda i, b=b: roman(b + i), part.label)
+    sections = [p for p in production.book_parts.all() if p.kind not in BookPart.COVERS]
+    for part in [p for p in sections if p.placement == BookPart.Placement.FRONT]:
+        b = base()
+        add(_read(part), lambda i, b=b: roman(b + i), part.label)
     toc_pdf, toc_links = contents(production, {})
     b = base()
     toc_start = add(PdfReader(io.BytesIO(toc_pdf)), lambda i, b=b: roman(b + i), "Table of contents")
@@ -649,6 +747,13 @@ def build(production: Production) -> bytes:
         index_first_number += 1
     index_pdf, index_links = author_index(production)
     index_start = add(PdfReader(io.BytesIO(index_pdf)), lambda i: str(index_first_number + i), "Author index")
+    next_number = index_first_number + (len(writer.pages) - index_start)
+    for part in [p for p in sections if p.placement == BookPart.Placement.BACK]:
+        if len(writer.pages) % 2:
+            blank()  # each back section starts on a right-hand page (the blank one is not numbered)
+            next_number += 1
+        start = add(_read(part), lambda i, f=next_number: str(f + i), part.label)
+        next_number += len(writer.pages) - start
     if parts.get(BookPart.Kind.BACK_COVER):
         if len(writer.pages) % 2 == 0:
             blank()  # the back cover is a left-hand page

@@ -204,15 +204,20 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
 
 **Step 5 (the full proceedings):** /production/<n>/book/
 
-- In the style of the IGLC 32 proceedings: front cover (uploaded), colophon (generated: editors,
-  copyright, ISSN/ISBN), title page (generated), conference organisation, foreword, list of
-  reviewers and other front matter (uploaded, made from the IGLC Word templates), table of
-  contents (generated, by track with track chairs, linked to the papers), the papers as
-  published, author index (generated, linked), back cover (uploaded).
-- Templates: Word files with the IGLC styles, empty header and footer (the system prints the
-  page numbers, roman in the front matter). The foreword template is prefilled: papers per
-  country (the first author's), papers per track (submitted column to fill in from ConfTool),
-  track chairs, the editors' signature.
+- Structure (based on IGLC 32): front cover (uploaded), colophon (generated: editors,
+  copyright, ISSN/ISBN), title page (generated), front matter sections, table of contents
+  (generated, by track with track chairs, linked to the papers), the papers as published,
+  author index (generated, linked), back matter sections, back cover (uploaded).
+- Sections are open-ended: any number, in the front or back matter, in the order the editors
+  set. Templates: conference organisation, message (e.g. from the conference chair or the host
+  institution), foreword, list of reviewers, sponsors, and a general one for anything else.
+- Every section must be made from its IGLC Word template (Times New Roman throughout, the
+  template's styles, empty header and footer: the system prints the page numbers, roman in the
+  front matter). Uploads are checked and refused if they do not comply: A4, only Times New
+  Roman in the text (logos and figures are pictures and not checked), nothing in the header or
+  footer areas, text within the margins. Covers must be one A4 page. The foreword template is
+  prefilled: papers per country (the first author's), papers per track (submitted column to fill
+  in from ConfTool), track chairs, the editors' signature.
 - Blank pages are added so the title page and page 1 are right-hand pages. Page labels make a
   viewer show the printed numbers; bookmarks for the parts, tracks and papers.
 - Chief editors make drafts (private) and submit one; the publisher enters the ISBNs and
