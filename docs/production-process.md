@@ -86,6 +86,9 @@ the reference's length.
 ## Open
 
 - The 2027 process with ConfTool, as a subset of this.
-- Template: fixed-height first-page header (above).
+- Template for IGLC 35: Title style 40 pt space before (was 18 pt) and a one-line note in the
+  first-page header (tools/reserve_reference_space.py). Tested on five IGLC 34 papers with 3-5
+  line references: the title always starts at the same place, 18 pt below a 5-line reference,
+  and no page count changed.
 - Fonts on the server: Times New Roman from Microsoft's redistributable core fonts in the
   container image.
