@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.governance",
     "apps.core",
     "apps.production",
+    "apps.crossref",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -231,3 +232,16 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "0"))
     SECURE_REDIRECT_EXEMPT = [r"^healthz$"]
+
+# Crossref (DOI registration). Deposits go to Crossref's test system unless CROSSREF_TEST=false.
+DOI_PREFIX = os.environ.get("DOI_PREFIX", "10.24928")
+CROSSREF_LOGIN = os.environ.get("CROSSREF_LOGIN", "")        # user, or email/role
+CROSSREF_PASSWORD = os.environ.get("CROSSREF_PASSWORD", "")
+CROSSREF_TEST = env_bool("CROSSREF_TEST", True)
+CROSSREF_DEPOSITOR_NAME = os.environ.get("CROSSREF_DEPOSITOR_NAME", "International Group for Lean Construction")
+CROSSREF_DEPOSITOR_EMAIL = os.environ.get("CROSSREF_DEPOSITOR_EMAIL", "")
+CROSSREF_REGISTRANT = os.environ.get("CROSSREF_REGISTRANT", "IGLC")
+CROSSREF_ISSN_PRINT = "2309-0979"
+CROSSREF_ISSN_ELECTRONIC = "2789-0015"
+# The address DOIs resolve to. The preview must not register its own address.
+CROSSREF_SITE_URL = os.environ.get("CROSSREF_SITE_URL", "https://www.iglc.net")

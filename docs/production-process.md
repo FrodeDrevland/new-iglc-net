@@ -248,6 +248,18 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
   read from the PDFs' footers first: `read_tracks --conference 28` and `import_tracks`.
 - Tested on IGLC 34: 1,878 pages in 29 s; 125 MB (the papers' own PDFs take 140 MB).
 
+**Step 6 (Crossref):** the publish page, "DOIs at Crossref" (publishers)
+
+- A deposit holds the whole conference (schema 5.3.1): the series (ISSN), the proceedings DOI
+  10.24928/<year> (to the conference page), and every paper: authors with affiliations (their
+  position left out, "/"-joined affiliations split) and ORCID iDs, title, abstract, pages, DOI
+  (to the paper's page on www.iglc.net). The ISBN is added once the publisher has entered it.
+- Made first (the XML can be downloaded and checked), then sent; Crossref queues it, and
+  "Check result" fetches the outcome (registered, warnings, failures with messages).
+- Depositing again updates the records: after corrections that change the title or authors,
+  and after the full proceedings are published (ISBN).
+- Replaces the old site's CrossrefXmlCreator (schema 4.4.0, names only).
+
 ## Open
 
 - Template for IGLC 35: Title style 40 pt space before (was 18 pt) and a one-line note in the

@@ -261,7 +261,8 @@ def paper(request, number, conftool_id):
                                    public=request.POST.get("public") == "1")
                 submission.correction_note, submission.correction_requested_by = "", None
                 submission.save(update_fields=["correction_note", "correction_requested_by"])
-                messages.success(request, "The correction is published.")
+                messages.success(request, "The correction is published. If the title or authors changed, "
+                                          "send a new Crossref deposit (publish page).")
             except publishing.PublishError as error:
                 messages.error(request, str(error))
         return redirect("proceedings:paper", number=number, conftool_id=conftool_id)
@@ -346,6 +347,8 @@ def publish(request, number):
     production = _production(request, number)
     my_role = role(request.user, production)
     action = request.POST.get("action")
+    if request.method == "POST" and action and action.startswith("crossref_"):
+        return _crossref_action(request, production, action)
     if request.method == "POST" and action == "request":
         if my_role != "chief":
             raise PermissionDenied
@@ -381,7 +384,60 @@ def publish(request, number):
         "corrections": publishing.Correction.objects.filter(submission__production=production)
                        .select_related("submission", "user"),
         "waiting_corrections": production.submissions.exclude(correction_note="").select_related("correction_requested_by"),
+        "deposits": production.conference.crossref_deposits.select_related("user")[:10],
+        "crossref": _crossref_settings(),
     })
+
+
+def _crossref_settings():
+    from django.conf import settings
+
+    from apps.crossref.deposit import configured
+
+    return {"configured": configured(), "test": settings.CROSSREF_TEST, "site": settings.CROSSREF_SITE_URL}
+
+
+def _crossref_action(request, production, action):
+    """Register (or update) the DOIs of the production's papers with Crossref. Publishers only."""
+    from apps.crossref import deposit as crossref
+
+    if not is_publisher(request.user):
+        raise PermissionDenied
+    number = production.conference.number
+    try:
+        if action == "crossref_make":
+            papers = [s.paper for s in production.submissions.filter(paper__isnull=False)
+                      .select_related("paper").order_by("paper__first_page")]
+            if not papers:
+                raise crossref.DepositError("No published papers yet")
+            made = crossref.make(production.conference, papers, request.user, isbn=production.isbn_pdf)
+            messages.success(request, f"Deposit made for {made.papers} papers. Download the XML to look at it, then send it.")
+        else:
+            item = production.conference.crossref_deposits.get(pk=request.POST.get("deposit"))
+            if action == "crossref_send":
+                crossref.send(item)
+                messages.success(request, "Sent. Crossref processes deposits in a queue: check the result in a few minutes.")
+            elif action == "crossref_check":
+                crossref.check(item)
+                messages.info(request, f"{item.get_status_display()}.")
+    except crossref.DepositError as error:
+        messages.error(request, str(error))
+    except Exception as error:  # noqa: BLE001 - e.g. missing conference dates
+        messages.error(request, f"Could not make the deposit: {error}")
+    return redirect("proceedings:publish", number=number)
+
+
+@login_required
+def deposit_file(request, number, pk, kind):
+    """A deposit's XML, or Crossref's result for it."""
+    production = _production(request, number)
+    if not is_publisher(request.user):
+        raise PermissionDenied
+    item = get_object_or_404(production.conference.crossref_deposits, pk=pk)
+    content = item.xml if kind == "xml" else item.result
+    response = HttpResponse(content, content_type="application/xml")
+    response["Content-Disposition"] = f'attachment; filename="{item.batch_id}{"" if kind == "xml" else "-result"}.xml"'
+    return response
 
 
 # ---------------------------------------------------------------- the full proceedings
@@ -500,7 +556,8 @@ def book(request, number):
                 if not production.book_requested_at:
                     raise books.BookError("A chief editor has not submitted the proceedings yet")
                 books.publish_book(production, request.user)
-                messages.success(request, "The full proceedings are published and linked from the conference page.")
+                messages.success(request, "The full proceedings are published and linked from the conference page. "
+                                          "Send a new Crossref deposit (publish page) to register the ISBN.")
         except books.BookError as error:
             if action == "fetch":
                 return JsonResponse({"error": str(error)}, status=400)

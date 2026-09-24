@@ -288,6 +288,8 @@ def _parse(raw: bytes):
 
 
 def _xml(root, start_tag: str | None = None) -> bytes:
+    if root.tag.startswith("{" + PKG_NS + "}"):
+        ET.register_namespace("", PKG_NS)  # .rels parts must use the default namespace (others register it too)
     body = ET.tostring(root, encoding="unicode")
     if start_tag:
         body = start_tag + body[re.search(r"<[^>]+>", body).end():]

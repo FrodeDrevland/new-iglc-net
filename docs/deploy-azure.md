@@ -187,6 +187,20 @@ weekly from Unraid's **User Scripts** plugin:
 /mnt/user/appdata/iglc/src/deploy/unraid/pull-production.sh --restore
 ```
 
+## Crossref (DOI registration)
+
+Deposits are made and sent on a production's publish page (publishers only). Settings:
+
+    CROSSREF_LOGIN=<Crossref user, or email/role>
+    CROSSREF_PASSWORD=<password>
+    CROSSREF_DEPOSITOR_EMAIL=<address Crossref sends results to>
+    CROSSREF_TEST=false          # only on the live site; everywhere else deposits go to the test system
+    CROSSREF_SITE_URL=https://www.iglc.net   # the address DOIs point to (the default)
+
+Try it first with the test system (test.crossref.org needs its own test account, asked from
+Crossref support). The preview must never send to the live system: DOIs would point to the
+address in CROSSREF_SITE_URL, and a wrong deposit changes the published record.
+
 ## Everyday use
 
 - **Deploy:** push to `main`. Nothing else.

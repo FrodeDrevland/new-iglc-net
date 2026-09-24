@@ -853,3 +853,25 @@ class RoleGapTests(EditorPagesTests):
         # DOIs point to papers: no deleting, and no production pages
         self.assertNotEqual(self.client.get(f"/manage/archive/paper/delete/{paper.pk}/").status_code, 200)
         self.assertNotEqual(self.client.get("/manage/production/35/").status_code, 200)
+
+
+class CrossrefPageTests(FullProceedingsTests):
+    def test_publisher_makes_a_deposit(self):
+        self._publish_all()
+        self.client.login(username="chief", password="pw")  # chief editors do not deposit
+        self.assertIn(self.client.post("/manage/production/35/publish/", {"action": "crossref_make"}).status_code,
+                      (302, 403))
+        self.assertFalse(self.production.conference.crossref_deposits.exists())
+        self.client.login(username="pub", password="pw")
+        page = self.client.get("/manage/production/35/publish/").content.decode()
+        self.assertIn("DOIs at Crossref", page)
+        self.assertIn("not set up on this server", page)
+        self.client.post("/manage/production/35/publish/", {"action": "crossref_make"})
+        deposit = self.production.conference.crossref_deposits.get()
+        self.assertEqual(deposit.papers, 2)
+        xml = self.client.get(f"/manage/production/35/crossref/{deposit.pk}.xml").content.decode()
+        self.assertIn("<doi>10.24928/2027/0123</doi>", xml)
+        # without a login on the server, sending is refused politely
+        self.client.post("/manage/production/35/publish/", {"action": "crossref_send", "deposit": deposit.pk})
+        deposit.refresh_from_db()
+        self.assertEqual(deposit.status, "made")

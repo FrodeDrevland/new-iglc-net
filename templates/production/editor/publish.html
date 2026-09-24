@@ -39,6 +39,26 @@
   {% endif %}
   {% if published %}<h2>Published so far</h2><ul class="small">{% for s in published %}<li><a href="{{ s.paper.get_absolute_url }}">{{ s.paper.doi }}</a> {{ s.paper.title }} (pp. {{ s.paper.pages }})</li>{% endfor %}</ul>{% endif %}
 {% endif %}
+
+{% if can_publish and production.papers_published %}
+<h2>DOIs at Crossref</h2>
+<p>The papers’ DOIs work once Crossref has registered them. A deposit sends the metadata of all published papers (authors with affiliations and ORCID iDs, titles, abstracts, pages) and of the proceedings; sending a new one updates the records, for example after a correction or when the full proceedings get their ISBN.</p>
+{% if not crossref.configured %}<p class="upload-report">The Crossref login is not set up on this server (CROSSREF_LOGIN and CROSSREF_PASSWORD). Deposits can be made and downloaded, not sent.</p>
+{% elif crossref.test %}<p class="upload-report">Deposits go to Crossref’s <b>test system</b>: nothing is registered. Set CROSSREF_TEST=false on the live site.</p>{% endif %}
+<p class="small muted">DOIs will point to {{ crossref.site }}.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="crossref_make">
+  <button class="button button-secondary" type="submit">Make a deposit</button></form>
+<table class="listing prod-table"><thead><tr><th>Made</th><th>Papers</th><th>Status</th><th>Files</th><th></th></tr></thead><tbody>
+{% for d in deposits %}<tr>
+  <td>{{ d.created|date:"j M Y H:i" }}{% if d.user %}<br><span class="small muted">{{ d.user.get_full_name|default:d.user.username }}</span>{% endif %}</td>
+  <td>{{ d.papers }}</td>
+  <td>{{ d.get_status_display }}{% if d.test %} <span class="badge">test</span>{% endif %}{% if d.successes or d.failures or d.warnings %}<br><span class="small">{{ d.successes }} registered{% if d.warnings %}, {{ d.warnings }} warnings{% endif %}{% if d.failures %}, <span class="fail">{{ d.failures }} failed</span>{% endif %}</span>{% endif %}</td>
+  <td><a href="{% url 'proceedings:deposit_file' production.conference.number d.pk 'xml' %}">XML</a>{% if d.result %} · <a href="{% url 'proceedings:deposit_file' production.conference.number d.pk 'result' %}">result</a>{% endif %}</td>
+  <td>{% if d.status == "made" %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="crossref_send"><input type="hidden" name="deposit" value="{{ d.pk }}"><button class="button button-small" type="submit"{% if not crossref.configured %} disabled{% endif %}>Send to Crossref</button></form>
+      {% elif d.status == "sent" or d.status == "failed" or d.status == "warning" %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="crossref_check"><input type="hidden" name="deposit" value="{{ d.pk }}"><button class="button button-small button-secondary" type="submit">Check result</button></form>{% endif %}</td>
+</tr>{% empty %}<tr><td colspan="5">No deposits yet.</td></tr>{% endfor %}
+</tbody></table>
+{% endif %}
 {% endwith %}
 {% endblock %}
 {% block page_js %}
