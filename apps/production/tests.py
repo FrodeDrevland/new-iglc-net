@@ -262,3 +262,57 @@ class AuthorSkillTests(TestCase):
         self.assertEqual(out.returncode, 0, out.stderr)
         self.assertIn("Title:    Takt planning in practice", out.stdout)
         self.assertIn("No ORCID in the footnote of Cy Lee", out.stdout)
+
+
+# ---------------------------------------------------------------- volumes and ConfTool
+
+class ConfToolImportTests(TestCase):
+    def setUp(self):
+        from datetime import date
+
+        from apps.archive.models import Conference
+
+        Conference.objects.create(pk=40, number=35, start_date=date(2027, 7, 12))
+
+    def write(self, text, suffix=".csv"):
+        path = Path(tempfile.mkdtemp()) / f"export{suffix}"
+        path.write_text(text, encoding="utf-8")
+        return str(path)
+
+    def test_semicolon_lists_and_status(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from .models import Submission
+
+        path = self.write(
+            "Paper ID;Title;Track;Acceptance Status;Authors;Organisations;Emails\n"
+            "12;Takt in practice;Production Planning;accepted;Ann Smith, Bo Jones;NTNU, UCL;a@x.no, b@y.uk\n"
+            "13;Rejected one;Lean Theory;rejected;Cy Lee;X;c@z.org\n"
+            '14;Flow;Lean Theory;Accepted (Paper);"Dee Brown; Ed Green";"TUM; ETH";"d@t.de; e@e.ch"\n')
+        call_command("import_conftool", "35", path, stdout=StringIO())
+        self.assertEqual(sorted(Submission.objects.values_list("conftool_id", flat=True)), [12, 14])
+        paper = Submission.objects.get(conftool_id=14)
+        self.assertEqual(paper.track.title, "Lean Theory")
+        self.assertEqual(paper.registered_authors[1], {"name": "Ed Green", "organisation": "ETH", "email": "e@e.ch"})
+        self.assertEqual(paper.doi, "10.24928/2027/0014")
+        # the comma-separated single cell (paper 12) is split into authors too
+        self.assertEqual([a["name"] for a in Submission.objects.get(conftool_id=12).registered_authors],
+                         ["Ann Smith", "Bo Jones"])
+
+    def test_numbered_author_columns(self):
+        from .conftool import read_accepted
+
+        path = self.write("ID,Title,Author 1 Name,Author 1 Email,Author 1 Organisation,Author 2 Name,Author 2 Email\n"
+                          "7,Paper,Ann Smith,a@x.no,NTNU,Bo Jones,b@y.uk\n")
+        papers, _ = read_accepted(path)
+        self.assertEqual(papers[0]["authors"], [
+            {"name": "Ann Smith", "organisation": "NTNU", "email": "a@x.no"},
+            {"name": "Bo Jones", "organisation": "", "email": "b@y.uk"}])
+
+    def test_editor_group_exists(self):
+        from django.contrib.auth.models import Group
+
+        group = Group.objects.get(name="Proceedings editors")
+        self.assertTrue(group.permissions.filter(codename="add_paperversion").exists())

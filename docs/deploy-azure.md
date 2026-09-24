@@ -100,7 +100,16 @@ az webapp config appsettings set -g $rg -n $app --settings `
 `SITE_NOINDEX=1` keeps search engines away until the switch-over, when `SITE_URL` changes to
 `https://www.iglc.net` (see switch-over.md).
 
-Optional, for password-reset mails and error reports by email: `EMAIL_HOST`, `EMAIL_PORT`,
+**Email: Azure Communication Services Email** (decided September 2026). The site sends
+(password resets, error reports, and from 2027 the authors' metadata-check links) through an
+Email Communication Service with iglc.net as a verified custom domain: add the domain in the
+portal and create the DNS records it lists (TXT for verification, SPF and two DKIM CNAMEs) at
+the DNS provider. Sender e.g. `noreply@iglc.net`, with replies to the General Secretary. Connect
+it to a Communication Services resource and use its SMTP credentials (an Entra app with the
+"Communication and Email Service Owner" role on that resource) in the settings below. Needs
+access to the iglc.net DNS, like the switch-over.
+
+The settings (without them, mails are only written to the log): `EMAIL_HOST`, `EMAIL_PORT`,
 `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`. Without them, mails are only
 written to the log.
 

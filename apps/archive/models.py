@@ -75,9 +75,10 @@ class ConferenceTrack(models.Model):
     conference = models.ForeignKey(Conference, on_delete=models.CASCADE, related_name="tracks")
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0, help_text="Position of the track in the proceedings.")
 
     class Meta:
-        ordering = ["conference", "title"]
+        ordering = ["conference", "order", "title"]
 
     def __str__(self):
         return self.title
