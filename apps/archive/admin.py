@@ -43,6 +43,21 @@ class ConferenceAdmin(TrackedAdmin):
     list_filter = ("is_published",)
     search_fields = ("city", "country", "conference_title", "proceedings_title")
     inlines = [EditorInline, VolumeInline, ProceedingsFileInline, TrackInline]
+    actions = ["make_production"]
+
+    @admin.action(description="Make the full proceedings here (take the published papers into production)")
+    def make_production(self, request, queryset):
+        from django.contrib import messages
+
+        from apps.production.adopt import AdoptError, adopt_published
+
+        for conference in queryset:
+            try:
+                production, report = adopt_published(conference, request.user)
+                self.message_user(request, f"{production}: {report['added']} papers taken from the archive, "
+                                           f"{report['updated']} updated. Open it under Proceedings production.")
+            except AdoptError as error:
+                self.message_user(request, f"{conference}: {error}", messages.ERROR)
 
 
 class AuthorInline(admin.TabularInline):

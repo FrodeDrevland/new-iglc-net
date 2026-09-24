@@ -535,12 +535,24 @@ class PublishTests(EditorPagesTests):
                                                   "author_name": [first], "first_0": "", "last_0": first})
         self.client.login(username="ed", password="pw")
         self.assertEqual(self.client.post("/production/35/publish/", {"action": "next"}).status_code, 403)
+        # the chief editor asks; only a publisher can publish, and only when asked
         self.client.login(username="chief", password="pw")
+        self.assertEqual(self.client.post("/production/35/publish/", {"action": "next"}).status_code, 403)
+        from django.contrib.auth.models import Group, User
+
+        publisher = User.objects.create_user("pub", password="pw", is_staff=True)
+        publisher.groups.add(Group.objects.get(name="Publishers"))
+        self.client.login(username="pub", password="pw")
+        self.assertEqual(self.client.post("/production/35/publish/", {"action": "next"}).status_code, 400)
+        self.client.login(username="chief", password="pw")
+        self.client.post("/production/35/publish/", {"action": "request"})
+        self.client.login(username="pub", password="pw")
         result = self.client.post("/production/35/publish/", {"action": "next"}).json()
         self.assertEqual((result["published"], result["left"]), (["10.24928/2027/0123", "10.24928/2027/0124"], 0))
         # the order is fixed as soon as papers are published
         self.assertEqual(self.client.post("/production/35/arrange/", {"layout": json.dumps([])}).status_code, 403)
         self.client.post("/production/35/publish/", {"action": "finish"})
+        self.client.login(username="chief", password="pw")
         self.production.refresh_from_db()
         conference = self.production.conference
         self.assertEqual(self.production.status, "papers_published")
@@ -557,11 +569,15 @@ class PublishTests(EditorPagesTests):
         self.assertEqual(Submission.objects.get(conftool_id=124).first_page, 4)
         page = self.client.get("/production/35/123/").content.decode()
         self.assertIn("must fit", page)
-        self.client.post("/production/35/123/", {"action": "correct", "comment": "Figure 2"})
-        self.assertFalse(Correction.objects.exists())
+        self.client.post("/production/35/123/", {"action": "stage_correction", "comment": "Figure 2"})
+        self.assertEqual(Submission.objects.get(conftool_id=123).correction_note, "")
         # one that fits replaces the PDF; the DOI and pages stay, the old PDF is kept
         old_url = paper.full_text_url
         self._upload(123, 3)
+        self.assertEqual(self.client.post("/production/35/123/", {"action": "correct"}).status_code, 403)
+        self.client.post("/production/35/123/", {"action": "stage_correction", "comment": "Figure 2 was replaced."})
+        self.assertFalse(Correction.objects.exists())
+        self.client.login(username="pub", password="pw")
         self.client.post("/production/35/123/", {"action": "correct", "comment": "Figure 2 was replaced."})
         correction = Correction.objects.get()
         paper.refresh_from_db()
@@ -585,3 +601,76 @@ class PublishedMetadataTests(SimpleTestCase):
         self.assertEqual(split_name("Jorge L. Izquierdo R."), ("Jorge L.", "Izquierdo R."))
         self.assertEqual(split_name("Jan van der Berg"), ("Jan", "van der Berg"))
         self.assertEqual(split_name("Gunadi"), ("", "Gunadi"))
+
+
+class FullProceedingsTests(PublishTests):
+    """Stage 2: adopting a published conference, the templates, roles and the book itself."""
+
+    def _publish_all(self):
+        from django.contrib.auth.models import Group, User
+
+        self.client.login(username="chief", password="pw")
+        self._upload(123, 3)
+        self._upload(124, 2)
+        for number in (123, 124):
+            self.client.post(f"/production/35/{number}/", {"action": "approve"})
+        self.client.post("/production/35/publish/", {"action": "request"})
+        publisher = User.objects.create_user("pub", password="pw", is_staff=True)
+        publisher.groups.add(Group.objects.get(name="Publishers"))
+        self.client.login(username="pub", password="pw")
+        self.client.post("/production/35/publish/", {"action": "next"})
+        self.client.post("/production/35/publish/", {"action": "finish"})
+
+    def test_adopt_a_published_conference(self):
+        from datetime import date
+
+        from apps.archive.models import Conference, Paper
+
+        from .adopt import adopt_published
+
+        old = Conference.objects.create(pk=30, number=28, start_date=date(2020, 7, 6), city="Berkeley")
+        Paper.objects.create(conference=old, title="B", doi="10.24928/2020/0136", first_page=13, last_page=24,
+                             full_text_url="https://example.org/b.pdf")
+        Paper.objects.create(conference=old, title="A", doi="10.24928/2020/0065", first_page=1, last_page=12)
+        production, report = adopt_published(old)
+        self.assertEqual((production.status, report["added"], production.first_page), ("papers_published", 2, 1))
+        self.assertEqual([s.conftool_id for s in production.submissions.order_by("first_page")], [65, 136])
+        self.assertTrue(production.pages_frozen)
+        adopt_published(old)  # again: updates, adds nothing
+        self.assertEqual(production.submissions.count(), 2)
+
+    def test_templates_isbn_and_roles(self):
+        import io
+
+        from docx import Document
+
+        self._publish_all()
+        self.client.login(username="chief", password="pw")
+        self.assertEqual(self.client.get("/production/35/book/").status_code, 200)
+        foreword = self.client.get("/production/35/book/foreword.docx")
+        text = "\n".join(p.text for p in Document(io.BytesIO(foreword.content)).paragraphs)
+        self.assertIn("Table 1 Papers published per country", text)
+        self.assertIn("2 papers", text)
+        # only a publisher sets the ISBN, and it must be valid
+        self.assertEqual(self.client.post("/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-8"})
+                         .status_code, 403)
+        self.client.login(username="pub", password="pw")
+        self.client.post("/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-9"})
+        self.production.refresh_from_db()
+        self.assertEqual(self.production.isbn_pdf, "")
+        self.client.post("/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-8"})
+        self.production.refresh_from_db()
+        self.assertEqual(self.production.isbn_pdf, "978-82-692499-5-8")
+        # the publisher cannot publish what was not submitted
+        self.client.post("/production/35/book/", {"action": "publish"})
+        self.production.refresh_from_db()
+        self.assertEqual(self.production.status, "papers_published")
+
+    def test_country_of(self):
+        from .book import country_of
+
+        self.assertEqual(country_of("Professor, NTNU, Trondheim, Norway, a@b.no, orcid.org/0000-0001-2345-6789"),
+                         "Norway")
+        self.assertEqual(country_of("Nottingham Trent University U.K"), "")
+        self.assertEqual(country_of("PT Waskita Karya Tbk (Persero) - Jakarta - Indonesia"), "Indonesia")
+        self.assertEqual(country_of("University of California, Berkeley, CA, United States"), "USA")

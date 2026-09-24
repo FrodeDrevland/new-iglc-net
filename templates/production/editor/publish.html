@@ -5,13 +5,15 @@
 <div class="page-head">
   <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
   <h1>Publish the papers</h1>
-  <p class="lead">Each paper goes on the site with its DOI, its page numbers and the IGLC headers and footers. When the last one is published, the page numbers are fixed, the conference appears in the proceedings list and a ZIP of all papers is made. The full proceedings PDF is a later step.</p>
+  <p class="lead">A chief editor asks for publication; a publisher approves it. Each paper goes on the site with its DOI, its page numbers and the IGLC headers and footers. When the last one is published, the page numbers are fixed, the conference appears in the proceedings list and a ZIP of all papers is made. The full proceedings PDF is a later step.</p>
 </div>
 
 {% if production.papers_published %}
   <p class="upload-report">Published: {{ published|length }} papers. {% if production.conference.papers_zip_url %}<a href="{{ production.conference.papers_zip_url }}">ZIP of all papers</a> · {% endif %}<a href="{{ production.conference.get_absolute_url }}">Conference page</a></p>
+  {% if waiting_corrections %}<h2>Corrections waiting for the publisher</h2>
+  <ul>{% for s in waiting_corrections %}<li><a href="{% url 'production:paper' n s.conftool_id %}">{{ s.conftool_id }}</a>: {{ s.correction_note }}{% if s.correction_requested_by %} ({{ s.correction_requested_by.get_full_name|default:s.correction_requested_by.username }}){% endif %}</li>{% endfor %}</ul>{% endif %}
   <h2>Corrections after publication</h2>
-  <p>To correct a paper, upload the corrected Word file and PDF on the paper's page and publish the correction there. It must fit the paper's page range; the DOI stays, the old PDF is kept and the paper's page says it was corrected.</p>
+  <p>To correct a paper, upload the corrected Word file and PDF on the paper's page and send the correction to the publisher there. It must fit the paper's page range; the DOI stays, the old PDF is kept and the paper's page says it was corrected.</p>
   <ul>{% for c in corrections %}<li><a href="{% url 'production:paper' n c.submission.conftool_id %}">{{ c.submission.conftool_id }}</a>, {{ c.time|date:"j M Y" }}{% if c.user %} by {{ c.user.get_full_name|default:c.user.username }}{% endif %}: {{ c.note }}</li>{% empty %}<li>None.</li>{% endfor %}</ul>
 {% else %}
   {% if problems %}
@@ -20,13 +22,20 @@
   {% else %}
     <p class="upload-report">Ready: {{ left }} paper{{ left|pluralize }} to publish{% if published %} ({{ published|length }} published already){% endif %}. Check the <a href="{% url 'production:arrange' n %}">order and page numbers</a> first: after publication they cannot change.</p>
   {% endif %}
-  {% if role == "chief" %}
+  {% if production.papers_requested_at %}
+    <p>Publication asked for by {{ production.papers_requested_by.get_full_name|default:production.papers_requested_by.username }} on {{ production.papers_requested_at|date:"j F Y H:i" }}.</p>
+    {% if can_publish %}
     <form method="post" id="publish-form">{% csrf_token %}<input type="hidden" name="action" value="finish">
-      <button class="button" type="button" id="publish-start"{% if problems %} disabled{% endif %}>Publish {{ left }} paper{{ left|pluralize }}</button>
+      <button class="button" type="button" id="publish-start"{% if problems %} disabled{% endif %}>Approve and publish {{ left }} paper{{ left|pluralize }}</button>
       <span class="publish-progress muted" id="publish-progress" role="status"></span>
     </form>
+    {% else %}<p class="muted">Waiting for a publisher to approve and publish.</p>{% endif %}
+  {% elif role == "chief" %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="request">
+      <button class="button" type="submit"{% if problems %} disabled{% endif %}>Ask the publisher to publish</button>
+    </form>
   {% else %}
-    <p class="muted">A chief editor publishes the papers.</p>
+    <p class="muted">A chief editor asks for publication; a publisher approves it.</p>
   {% endif %}
   {% if published %}<h2>Published so far</h2><ul class="small">{% for s in published %}<li><a href="{{ s.paper.get_absolute_url }}">{{ s.paper.doi }}</a> {{ s.paper.title }} (pp. {{ s.paper.pages }})</li>{% endfor %}</ul>{% endif %}
 {% endif %}

@@ -9,3 +9,5 @@ django-storages[azure]>=1.14
 # Reading and writing PDFs (tracks from footers, headers and footers on proceedings)
 pypdf>=6.0
 reportlab>=4.2
+# Word templates for the full proceedings
+python-docx>=1.1

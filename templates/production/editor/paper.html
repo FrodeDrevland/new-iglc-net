@@ -65,16 +65,24 @@
     <p class="small">Version {{ submission.published_version.number }}, pages {{ submission.paper.pages }}.
       <a href="{{ submission.paper.get_absolute_url }}">Paper page</a> · <a href="{% url 'archive:paper_pdf' submission.paper.pk %}">PDF</a></p>
     {% for c in corrections %}<p class="small muted">Corrected {{ c.time|date:"j M Y" }} (version {{ c.version.number }}): {{ c.note }}</p>{% endfor %}
-    {% if correction_problems %}
+    {% if submission.correction_note %}
+      <p class="small"><b>Correction waiting for the publisher</b> (version {{ current.number }}, {{ current.pages }} pages): {{ submission.correction_note }}</p>
+      {% if can_publish %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct">
+        <p><label>Public note<br><textarea name="comment" rows="3" style="width:100%">{{ submission.correction_note }}</textarea></label></p>
+        <button class="button" type="submit">Approve and publish the correction</button>
+      </form>
+      {% endif %}
+    {% elif correction_problems %}
       <p class="small">To correct the paper after publication, upload the corrected Word file and PDF below; the DOI and page numbers stay.{% if current.pk != submission.published_version_id %} {{ correction_problems|join:" " }}{% endif %}</p>
     {% elif role == "chief" %}
-      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct">
-        <p class="small">Version {{ current.number }} ({{ current.pages }} pages) can replace the published paper. The DOI and first page stay; the paper's page will say it was corrected.</p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="stage_correction">
+        <p class="small">Version {{ current.number }} ({{ current.pages }} pages) can replace the published paper. The DOI and first page stay; the paper's page will say it was corrected. A publisher approves it.</p>
         <p><label>What was corrected (shown publicly)<br><textarea name="comment" rows="3" style="width:100%" required></textarea></label></p>
-        <button class="button" type="submit">Publish correction</button>
+        <button class="button" type="submit">Send the correction to the publisher</button>
       </form>
     {% else %}
-      <p class="small">Version {{ current.number }} is ready to replace the published paper; a chief editor publishes the correction.</p>
+      <p class="small">Version {{ current.number }} is ready to replace the published paper; a chief editor sends the correction to the publisher.</p>
     {% endif %}
   </div>
   {% endif %}

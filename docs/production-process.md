@@ -191,12 +191,46 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
 - Tested on IGLC 34 (156 papers, about 0.6 s per paper, 20 s for the ZIP and author linking).
 - Corrections as described above, on the paper's page.
 
+**Roles**
+
+- *Editors* (per production): the papers of their tracks, or all papers.
+- *Chief editors* (per production): everything in the production. They stage publication:
+  they ask for the papers to be published, send corrections, and submit the full proceedings.
+- *Publishers* (site-wide, group "Publishers"): every production. They approve and carry out
+  publication of the papers, corrections and the full proceedings, and enter the ISBNs. IGLC is
+  registered as a publisher in Norway; the ISBNs are requested by whoever holds this role,
+  a more permanent position than a proceedings editor.
+- *Superusers*: everything, as chief editor and publisher.
+
+**Step 5 (the full proceedings):** /production/<n>/book/
+
+- In the style of the IGLC 32 proceedings: front cover (uploaded), colophon (generated: editors,
+  copyright, ISSN/ISBN), title page (generated), conference organisation, foreword, list of
+  reviewers and other front matter (uploaded, made from the IGLC Word templates), table of
+  contents (generated, by track with track chairs, linked to the papers), the papers as
+  published, author index (generated, linked), back cover (uploaded).
+- Templates: Word files with the IGLC styles, empty header and footer (the system prints the
+  page numbers, roman in the front matter). The foreword template is prefilled: papers per
+  country (the first author's), papers per track (submitted column to fill in from ConfTool),
+  track chairs, the editors' signature.
+- Blank pages are added so the title page and page 1 are right-hand pages. Page labels make a
+  viewer show the printed numbers; bookmarks for the parts, tracks and papers.
+- Chief editors make drafts (private) and submit one; the publisher enters the ISBNs and
+  approves: the final book is made with the ISBNs, published, linked from the conference page
+  (as "Full proceedings") and recorded as volume 1 with its ISBN.
+- Conferences published before these tools (e.g. IGLC 28, IGLC 34): Manage → Conferences, tick
+  the conference, action "Make the full proceedings here", or `adopt_published 28`. The papers
+  come from the archive as published (pages, tracks, PDFs); the PDFs are fetched on the Full
+  proceedings page, checking each page count. Tracks missing in the archive (IGLC 28) can be
+  read from the PDFs' footers first: `read_tracks --conference 28` and `import_tracks`.
+- Tested on IGLC 34: 1,878 pages in 29 s; 125 MB (the papers' own PDFs take 140 MB).
+
 ## Open
 
 - Template for IGLC 35: Title style 40 pt space before (was 18 pt) and a one-line note in the
   first-page header (tools/reserve_reference_space.py). Tested on five IGLC 34 papers with 3-5
   line references: the title always starts at the same place, 18 pt below a 5-line reference,
   and no page count changed.
-- Fonts on the server: copy times.ttf and timesi.ttf from a Windows PC (C:\Windows\Fonts) into
+- Fonts on the server: copy times.ttf, timesi.ttf and timesbd.ttf from a Windows PC (C:\Windows\Fonts) into
   the private files under fonts/ (Unraid: /mnt/user/appdata/iglc/private/fonts/; Azure: the
   "production" container, folder fonts). Without them the publish page says so.

@@ -28,7 +28,7 @@ from apps.archive.models import Author, Paper
 from .arrange import number_pages
 from .models import Correction, Event, Production, Submission, private_storage
 
-FONT_FILES = ("times.ttf", "timesi.ttf")
+FONT_FILES = ("times.ttf", "timesi.ttf", "timesbd.ttf")
 
 
 class PublishError(Exception):
@@ -53,7 +53,7 @@ def fonts_folder() -> Path:
             with storage.open(f"fonts/{name}", "rb") as source, open(cache / name, "wb") as target:
                 shutil.copyfileobj(source, target)
         return cache
-    raise PublishError("Times New Roman is missing on the server: put times.ttf and timesi.ttf in the "
+    raise PublishError("Times New Roman is missing on the server: put times.ttf, timesi.ttf and timesbd.ttf in the "
                        "private files under fonts/ (or in PRODUCTION_FONTS_DIR)")
 
 

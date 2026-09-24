@@ -7,7 +7,8 @@
   <p class="lead">{{ production.get_status_display }}. {% for label, n in summary %}{{ n }} {{ label|lower }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
   <p><a class="button" href="{% url 'production:upload' production.conference.number %}">Upload papers</a>
      <a class="button secondary" href="{% url 'production:arrange' production.conference.number %}">Order and page numbers</a>
-     <a class="button secondary" href="{% url 'production:publish' production.conference.number %}">Publish papers</a></p>
+     <a class="button secondary" href="{% url 'production:publish' production.conference.number %}">Publish papers</a>
+     <a class="button secondary" href="{% url 'production:book' production.conference.number %}">Full proceedings</a></p>
 </div>
 <form class="prod-filters" method="get">
   <label>Track <select name="track"><option value="">all</option>{% for t in tracks %}<option value="{{ t.pk }}"{% if filters.track == t.pk|stringformat:"s" %} selected{% endif %}>{{ t.title }}</option>{% endfor %}</select></label>

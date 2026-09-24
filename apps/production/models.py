@@ -49,10 +49,30 @@ class Production(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.COLLECTING)
     first_page = models.PositiveIntegerField(default=1, help_text="Page number of the first paper.")
     created = models.DateTimeField(auto_now_add=True)
+    # The full proceedings (the book)
+    conference_chair = models.CharField(max_length=300, blank=True, help_text="Printed on the title page.")
+    copyright_holders = models.CharField(
+        max_length=500, blank=True, help_text="For the colophon; the editors if empty.")
+    issn_print = models.CharField("ISSN (printed)", max_length=20, blank=True, default="2309-0979")
+    issn_electronic = models.CharField("ISSN (electronic)", max_length=20, blank=True, default="2789-0015")
+    isbn_print = models.CharField("ISBN (printed)", max_length=30, blank=True)
+    isbn_pdf = models.CharField("ISBN (PDF)", max_length=30, blank=True)
+    book = models.FileField(upload_to="proceedings/", blank=True, max_length=300,
+                            help_text="The published full proceedings PDF.")
+    # Chief editors stage publication; a publisher approves it.
+    papers_requested_at = models.DateTimeField(null=True, blank=True)
+    papers_requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                            on_delete=models.SET_NULL, related_name="+")
+    book_requested_at = models.DateTimeField(null=True, blank=True)
+    book_requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                          on_delete=models.SET_NULL, related_name="+")
+    draft_built = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-conference__number"]
         verbose_name = "proceedings production"
+        permissions = [("publish_production",
+                        "Can approve publication and set ISBNs (publisher)")]
 
     def __str__(self):
         return f"Proceedings IGLC {self.conference.number}"
@@ -120,6 +140,9 @@ class Submission(models.Model):
         default=dict, blank=True,
         help_text="The editors' corrections to what is read from the Word file: the title in sentence case "
                   "and how names split into first and last name.")
+    correction_note = models.TextField(blank=True, help_text="A correction waiting for the publisher.")
+    correction_requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                                on_delete=models.SET_NULL, related_name="+")
     published_version = models.ForeignKey(
         "PaperVersion", null=True, blank=True, on_delete=models.PROTECT, related_name="+",
         help_text="The version whose PDF is on the site.")
@@ -219,3 +242,56 @@ class Correction(models.Model):
 
     def __str__(self):
         return f"{self.submission.conftool_id}: corrected {self.time:%Y-%m-%d}"
+
+
+class TrackChair(models.Model):
+    """A track's chair(s), for the table of contents and the foreword."""
+
+    production = models.ForeignKey(Production, on_delete=models.CASCADE, related_name="track_chairs")
+    track = models.ForeignKey("archive.ConferenceTrack", on_delete=models.CASCADE, related_name="chairs")
+    name = models.CharField(max_length=200)
+    affiliation = models.CharField(max_length=300, blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["track__order", "order", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.track})"
+
+
+def _part_path(instance, filename):
+    return f"production/iglc{instance.production.conference.number}/book/{instance.kind}-{filename}"
+
+
+class BookPart(models.Model):
+    """A part of the full proceedings made outside the system (from the IGLC templates) and
+    uploaded as a PDF. The system makes the colophon, title page, contents and author index."""
+
+    class Kind(models.TextChoices):
+        COVER = "cover", "Front cover"
+        ORGANISATION = "organisation", "Conference organisation"
+        FOREWORD = "foreword", "Foreword"
+        REVIEWERS = "reviewers", "List of reviewers"
+        OTHER = "other", "Other front matter"
+        BACK_COVER = "back_cover", "Back cover"
+
+    ORDER = [Kind.COVER, Kind.ORGANISATION, Kind.FOREWORD, Kind.REVIEWERS, Kind.OTHER, Kind.BACK_COVER]
+
+    production = models.ForeignKey(Production, on_delete=models.CASCADE, related_name="book_parts")
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    title = models.CharField(max_length=200, blank=True, help_text="For 'other': the heading, used in the bookmarks.")
+    pdf = models.FileField(upload_to=_part_path, storage=private_storage)
+    pages = models.PositiveIntegerField(default=0)
+    uploaded = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        ordering = ["production", "uploaded"]
+
+    def __str__(self):
+        return self.title or self.get_kind_display()
+
+    @property
+    def label(self):
+        return self.title or self.get_kind_display()

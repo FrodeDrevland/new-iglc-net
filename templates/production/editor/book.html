@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Full proceedings | {{ production }}{% endblock %}
+{% block content %}
+{% with n=production.conference.number %}
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
+  <h1>Full proceedings</h1>
+  <p class="lead">One PDF in the style of the IGLC 32 proceedings: cover, colophon, title page, the uploaded front matter, the table of contents, the papers as published, an author index and the back cover. Chief editors prepare it and submit it; a publisher enters the ISBNs, approves and publishes it.</p>
+</div>
+
+{% if production.status == "complete" and production.book %}
+  <p class="upload-report">Published: <a href="{{ production.book.url }}">the full proceedings</a>, linked from the <a href="{{ production.conference.get_absolute_url }}">conference page</a>. Making and publishing it again replaces it.</p>
+{% endif %}
+
+<ol class="book-steps">
+<li>
+  <h2>The papers’ PDFs</h2>
+  <p>{{ stats.papers }} papers. {% if missing %}{{ missing }} PDF{{ missing|pluralize }} published before these tools must be fetched from the archive (the page counts are checked).{% else %}All PDFs are at hand.{% endif %}</p>
+  {% if missing and can_edit %}<form method="post" id="fetch-form">{% csrf_token %}
+    <button class="button secondary" type="button" id="fetch-start">Fetch {{ missing }} PDF{{ missing|pluralize }}</button>
+    <span class="publish-progress muted" id="fetch-progress" role="status"></span>
+    <ul class="small" id="fetch-problems"></ul></form>{% endif %}
+</li>
+
+<li>
+  <h2>Title page and track chairs</h2>
+  <p class="small">Editors: {{ editors|join:", "|default:"none in the archive yet (Manage → Conferences → editors)" }}.</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="settings">
+    <p><label>Conference chair(s), separated by ; <br><input type="text" name="conference_chair" value="{{ production.conference_chair }}" style="width:100%"{% if not can_edit %} disabled{% endif %}></label></p>
+    <p><label>Copyright holders (the editors if empty)<br><input type="text" name="copyright_holders" value="{{ production.copyright_holders }}" style="width:100%"{% if not can_edit %} disabled{% endif %}></label></p>
+    <table class="prod-table"><thead><tr><th>Track</th><th>Track chair(s): one per line, “Name, affiliation”</th></tr></thead><tbody>
+    {% for track, chairs in tracks %}<tr><td>{{ track.title }}</td><td><textarea name="chairs_{{ track.pk }}" rows="2" style="width:100%"{% if not can_edit %} disabled{% endif %}>{{ chairs }}</textarea></td></tr>
+    {% empty %}<tr><td colspan="2">No tracks.</td></tr>{% endfor %}</tbody></table>
+    {% if can_edit %}<p><button class="button secondary" type="submit">Save</button></p>{% endif %}
+  </form>
+</li>
+
+<li>
+  <h2>ISBN and ISSN</h2>
+  {% if can_publish %}
+  <form method="post" class="isbn-form">{% csrf_token %}<input type="hidden" name="action" value="isbn">
+    <p><label>ISBN (PDF) <input type="text" name="isbn_pdf" value="{{ production.isbn_pdf }}"></label>
+       <label>ISBN (printed) <input type="text" name="isbn_print" value="{{ production.isbn_print }}"></label></p>
+    <p><label>ISSN (printed) <input type="text" name="issn_print" value="{{ production.issn_print }}"></label>
+       <label>ISSN (electronic) <input type="text" name="issn_electronic" value="{{ production.issn_electronic }}"></label></p>
+    <button class="button secondary" type="submit">Save</button>
+  </form>
+  {% else %}
+  <p>ISBN (PDF): {{ production.isbn_pdf|default:"–" }} · ISBN (printed): {{ production.isbn_print|default:"–" }} · ISSN: {{ production.issn_print }} (printed), {{ production.issn_electronic }} (electronic). <span class="muted">The publisher requests and enters the ISBNs.</span></p>
+  {% endif %}
+</li>
+
+<li>
+  <h2>Front matter and covers</h2>
+  <p>Make each part from its IGLC template, keep its styles, leave the header and footer empty (the page numbers are added) and upload a PDF saved from Word. Covers are one A4 page, designed by the organisers.</p>
+  <table class="prod-table"><thead><tr><th>Part</th><th>Template</th><th>Uploaded</th></tr></thead><tbody>
+  {% for kind, label, items in parts %}<tr><td>{{ label }}</td>
+    <td>{% if kind != "cover" and kind != "back_cover" %}<a href="{% url 'production:book_file' n kind|add:'.docx' %}">Word template</a>{% if kind == "foreword" %} <span class="muted small">(with the tables filled in)</span>{% endif %}{% else %}<span class="muted small">A4 PDF, one page</span>{% endif %}</td>
+    <td>{% for part in items %}{{ part.label }}, {{ part.pages }} p., {{ part.uploaded|date:"j M Y" }}{% if can_edit %} <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="delete_part"><input type="hidden" name="part" value="{{ part.pk }}"><button class="linklike" type="submit">remove</button></form>{% endif %}<br>{% empty %}<span class="muted">–</span>{% endfor %}</td></tr>
+  {% endfor %}</tbody></table>
+  {% if can_edit %}
+  <form method="post" enctype="multipart/form-data" class="prod-filters">{% csrf_token %}<input type="hidden" name="action" value="upload">
+    <label>Part <select name="kind">{% for key, label in kinds %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+    <label>Heading (other parts) <input type="text" name="title"></label>
+    <label>PDF <input type="file" name="pdf" accept=".pdf"></label>
+    <button class="button secondary" type="submit">Upload</button>
+  </form>
+  {% endif %}
+</li>
+
+<li>
+  <h2>Draft, approval and publication</h2>
+  {% if problems %}<ul>{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>{% endif %}
+  {% if can_edit %}
+  <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="draft">
+    <button class="button secondary" type="submit"{% if problems %} disabled{% endif %} onclick="this.textContent='Making the draft… (up to a minute)'">Make a draft</button></form>
+  {% endif %}
+  {% if production.draft_built %}<a class="button secondary" href="{% url 'production:book_file' n 'draft.pdf' %}">Download the draft</a> <span class="muted small">made {{ production.draft_built|date:"j M Y H:i" }}</span>{% endif %}
+  {% if production.book_requested_at %}
+    <p>Submitted for approval by {{ production.book_requested_by.get_full_name|default:production.book_requested_by.username }} on {{ production.book_requested_at|date:"j F Y H:i" }}.</p>
+    {% if can_publish %}
+      {% if final_problems %}<ul>{% for p in final_problems %}<li>{{ p }}</li>{% endfor %}</ul>{% endif %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="publish">
+        <button class="button" type="submit"{% if final_problems %} disabled{% endif %} onclick="this.textContent='Publishing… (up to a minute)'">Approve and publish the full proceedings</button></form>
+    {% else %}<p class="muted">Waiting for a publisher.</p>{% endif %}
+  {% elif role == "chief" %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="submit">
+      <p><button class="button" type="submit"{% if not production.draft_built %} disabled{% endif %}>Submit to the publisher</button> <span class="muted small">after checking the draft</span></p></form>
+  {% endif %}
+</li>
+</ol>
+{% endwith %}
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const start = document.getElementById("fetch-start");
+  if (!start) return;
+  const form = document.getElementById("fetch-form"), status = document.getElementById("fetch-progress");
+  const list = document.getElementById("fetch-problems");
+  const token = form.querySelector("[name=csrfmiddlewaretoken]").value;
+  start.addEventListener("click", async function () {
+    start.disabled = true;
+    let done = 0;
+    for (;;) {
+      let data;
+      try {
+        const response = await fetch(location.href, {method: "POST", headers: {"X-CSRFToken": token},
+          body: new URLSearchParams({csrfmiddlewaretoken: token, action: "fetch"})});
+        data = await response.json();
+      } catch (e) { data = {error: "The connection failed. Press the button again to go on."}; }
+      if (data.error) { status.textContent = data.error; start.disabled = false; return; }
+      done += data.fetched;
+      (data.problems || []).forEach(function (p) { const li = document.createElement("li"); li.textContent = p; list.appendChild(li); });
+      status.textContent = done + " fetched, " + data.left + " to go…";
+      if (data.left === 0) { location.reload(); return; }
+    }
+  });
+})();
+</script>
+{% endblock %}

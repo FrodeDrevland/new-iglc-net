@@ -8,13 +8,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
+from django.core.files.base import ContentFile
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.archive.management.commands.group_authors import fold
 
-from .access import productions_for, role, submissions_for
+from .access import is_publisher, productions_for, role, submissions_for
 from .arrange import number_pages, save_order
 from .checks import LEVELS
 from .models import Event, Production, Submission
@@ -160,11 +161,25 @@ def paper(request, number, conftool_id):
             publishing.save_metadata_edits(submission, request.POST.get("published_title", ""), names, request.user)
             messages.success(request, "Title and names saved." + (
                 " Publish a correction to put them on the site." if submission.published_version_id else ""))
-        elif action == "correct":
+        elif action == "stage_correction":
             if my_role != "chief":
                 raise PermissionDenied
+            problems = publishing.correction_problems(submission)
+            if problems or not comment:
+                messages.error(request, problems[0] if problems else "Say what was corrected.")
+            else:
+                submission.correction_note, submission.correction_requested_by = comment, request.user
+                submission.save(update_fields=["correction_note", "correction_requested_by"])
+                Event.objects.create(submission=submission, user=request.user,
+                                     action="correction sent to the publisher", comment=comment)
+                messages.success(request, "The correction waits for the publisher's approval.")
+        elif action == "correct":
+            if not is_publisher(request.user):
+                raise PermissionDenied
             try:
-                publishing.correct(submission, request.user, comment)
+                publishing.correct(submission, request.user, comment or submission.correction_note)
+                submission.correction_note, submission.correction_requested_by = "", None
+                submission.save(update_fields=["correction_note", "correction_requested_by"])
                 messages.success(request, "The correction is published.")
             except publishing.PublishError as error:
                 messages.error(request, str(error))
@@ -183,6 +198,7 @@ def paper(request, number, conftool_id):
         "editors": [e.user for e in production.editors.select_related("user")],
         "events": submission.events.select_related("user")[:30],
         "published_meta": publishing.published_metadata(submission) if current else None,
+        "can_publish": is_publisher(request.user),
         "correction_problems": publishing.correction_problems(submission) if submission.published_version_id else [],
         "corrections": submission.corrections.select_related("user", "version"),
     })
@@ -230,29 +246,193 @@ def arrange(request, number):
 
 @login_required
 def publish(request, number):
-    """Stage 1: publish the papers on the site with DOIs and page numbers. The browser asks
-    for a few papers at a time (each request stays short); the last step freezes the pages."""
+    """Stage 1: publish the papers on the site with DOIs and page numbers. A chief editor asks for
+    it; a publisher approves, and the browser then asks for a few papers at a time (each request
+    stays short); the last step freezes the pages."""
+    from django.utils import timezone
+
     production = _production(request, number)
     my_role = role(request.user, production)
-    if request.method == "POST":
+    action = request.POST.get("action")
+    if request.method == "POST" and action == "request":
         if my_role != "chief":
             raise PermissionDenied
+        problems = publishing.readiness(production)
+        if problems:
+            messages.error(request, problems[0])
+        else:
+            production.papers_requested_at, production.papers_requested_by = timezone.now(), request.user
+            production.save(update_fields=["papers_requested_at", "papers_requested_by"])
+            messages.success(request, "The publisher is asked to publish the papers.")
+        return redirect("production:publish", number=number)
+    if request.method == "POST":
+        if not is_publisher(request.user):
+            raise PermissionDenied
         try:
-            if request.POST.get("action") == "finish":
+            if not production.papers_requested_at:
+                raise publishing.PublishError("A chief editor has not asked for publication yet")
+            if action == "finish":
                 publishing.finish(production, request.user)
                 messages.success(request, "The papers are published, and the ZIP of all papers is on the conference page.")
                 return redirect("production:publish", number=number)
             return JsonResponse(publishing.publish_next(production, request.user, n=10))
         except publishing.PublishError as error:
-            if request.POST.get("action") == "finish":
+            if action == "finish":
                 messages.error(request, str(error))
                 return redirect("production:publish", number=number)
             return JsonResponse({"error": str(error)}, status=400)
     published = production.submissions.filter(published_version__isnull=False).select_related("paper")
     return render(request, "production/editor/publish.html", {
-        "production": production, "role": my_role,
+        "production": production, "role": my_role, "can_publish": is_publisher(request.user),
         "problems": [] if production.papers_published else publishing.readiness(production),
         "published": published, "left": 0 if production.papers_published else len(publishing.pending(production)),
         "corrections": publishing.Correction.objects.filter(submission__production=production)
                        .select_related("submission", "user"),
+        "waiting_corrections": production.submissions.exclude(correction_note="").select_related("correction_requested_by"),
     })
+
+
+# ---------------------------------------------------------------- the full proceedings
+
+def _isbn_ok(value: str) -> bool:
+    digits = re.sub(r"[^0-9X]", "", value.upper())
+    if len(digits) == 13 and digits.isdigit():
+        return sum(int(d) * (1 if i % 2 == 0 else 3) for i, d in enumerate(digits)) % 10 == 0
+    if len(digits) == 10:
+        total = sum((10 - i) * (10 if d == "X" else int(d)) for i, d in enumerate(digits) if d.isdigit() or i == 9)
+        return total % 11 == 0
+    return False
+
+
+def _save_track_chairs(production, post):
+    from .models import TrackChair
+
+    for track in production.conference.tracks.all():
+        field = f"chairs_{track.pk}"
+        if field not in post:
+            continue
+        TrackChair.objects.filter(production=production, track=track).delete()
+        for order, line in enumerate([l.strip() for l in post[field].splitlines() if l.strip()], 1):
+            name, _, affiliation = line.partition(",")
+            TrackChair.objects.create(production=production, track=track, name=name.strip(),
+                                      affiliation=affiliation.strip(), order=order)
+
+
+@login_required
+def book(request, number):
+    """Stage 2: the full proceedings. Chief editors prepare it and submit it; a publisher enters
+    the ISBNs, approves and publishes it."""
+    from django.utils import timezone
+    from pypdf import PdfReader
+
+    from . import book as books
+    from .models import BookPart
+
+    production = _production(request, number)
+    my_role = role(request.user, production)
+    can_publish = is_publisher(request.user)
+    can_edit = my_role == "chief" or can_publish
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if not can_edit or (action in ("isbn", "publish") and not can_publish):
+            raise PermissionDenied
+        try:
+            if action == "fetch":
+                return JsonResponse(books.fetch_next(production, n=10))
+            if action == "settings":
+                production.conference_chair = request.POST.get("conference_chair", "").strip()
+                production.copyright_holders = request.POST.get("copyright_holders", "").strip()
+                production.save(update_fields=["conference_chair", "copyright_holders"])
+                _save_track_chairs(production, request.POST)
+                messages.success(request, "Saved.")
+            elif action == "isbn":
+                values = {f: request.POST.get(f, "").strip() for f in ("isbn_print", "isbn_pdf", "issn_print",
+                                                                       "issn_electronic")}
+                bad = [v for f, v in values.items() if f.startswith("isbn") and v and not _isbn_ok(v)]
+                if bad:
+                    raise books.BookError(f"Not a valid ISBN: {bad[0]}")
+                for field, value in values.items():
+                    setattr(production, field, value)
+                production.save(update_fields=list(values))
+                messages.success(request, "ISBN and ISSN saved.")
+            elif action == "upload":
+                upload = request.FILES.get("pdf")
+                kind = request.POST.get("kind")
+                if not upload or kind not in BookPart.Kind.values:
+                    raise books.BookError("Choose the part and its PDF")
+                data = upload.read()
+                try:
+                    pages = len(PdfReader(io.BytesIO(data)).pages)
+                except Exception:  # noqa: BLE001
+                    raise books.BookError("That is not a PDF that can be read")
+                if kind in (BookPart.Kind.COVER, BookPart.Kind.BACK_COVER) and pages != 1:
+                    raise books.BookError("A cover is one A4 page")
+                if kind != BookPart.Kind.OTHER:
+                    production.book_parts.filter(kind=kind).delete()
+                part = BookPart(production=production, kind=kind, title=request.POST.get("title", "").strip(),
+                                pages=pages, uploaded_by=request.user)
+                part.pdf.save(f"{kind}.pdf", ContentFile(data), save=False)
+                part.save()
+                messages.success(request, f"{part.label} uploaded ({pages} page{'s' if pages != 1 else ''}).")
+            elif action == "delete_part":
+                production.book_parts.filter(pk=request.POST.get("part")).delete()
+            elif action == "draft":
+                size = books.save_draft(production)
+                production.draft_built = timezone.now()
+                production.save(update_fields=["draft_built"])
+                messages.success(request, f"Draft made ({size / 1e6:.0f} MB). Download it below.")
+            elif action == "submit":
+                if my_role != "chief":
+                    raise PermissionDenied
+                if not production.draft_built:
+                    raise books.BookError("Make a draft and check it first")
+                production.book_requested_at, production.book_requested_by = timezone.now(), request.user
+                production.save(update_fields=["book_requested_at", "book_requested_by"])
+                messages.success(request, "Sent to the publisher for approval.")
+            elif action == "publish":
+                if not production.book_requested_at:
+                    raise books.BookError("A chief editor has not submitted the proceedings yet")
+                books.publish_book(production, request.user)
+                messages.success(request, "The full proceedings are published and linked from the conference page.")
+        except books.BookError as error:
+            if action == "fetch":
+                return JsonResponse({"error": str(error)}, status=400)
+            messages.error(request, str(error))
+        return redirect("production:book", number=number)
+
+    parts = books.parts_of(production)
+    chairs = {}
+    for chair in production.track_chairs.all():
+        chairs.setdefault(chair.track_id, []).append(f"{chair.name}, {chair.affiliation}".strip(", "))
+    stats = books.statistics(production)
+    return render(request, "production/editor/book.html", {
+        "production": production, "role": my_role, "can_edit": can_edit, "can_publish": can_publish,
+        "problems": books.problems(production), "final_problems": books.problems(production, final=True),
+        "missing": len(books.missing_pdfs(production)), "stats": stats,
+        "parts": [(kind, label, parts.get(kind, [])) for kind, label in BookPart.Kind.choices],
+        "kinds": BookPart.Kind.choices,
+        "tracks": [(t, "\n".join(chairs.get(t.pk, []))) for t in production.conference.tracks.all()],
+        "editors": books.editors_of(production),
+    })
+
+
+@login_required
+def book_file(request, number, name):
+    """The draft of the full proceedings, and the Word templates for its parts."""
+    from . import book as books
+    from .models import BookPart, private_storage
+
+    production = _production(request, number)
+    if name == "draft.pdf":
+        storage = private_storage()
+        if not storage.exists(books.draft_name(production)):
+            raise Http404
+        return FileResponse(storage.open(books.draft_name(production), "rb"), as_attachment=True,
+                            filename=f"IGLC{number}-Proceedings-DRAFT.pdf")
+    kind = name.removesuffix(".docx")
+    if kind not in BookPart.Kind.values or kind in (BookPart.Kind.COVER, BookPart.Kind.BACK_COVER):
+        raise Http404
+    response = HttpResponse(books.template(production, kind), content_type=(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+    response["Content-Disposition"] = f'attachment; filename="IGLC{number}-{kind}.docx"'
+    return response

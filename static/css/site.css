@@ -312,3 +312,7 @@ table.members th:nth-child(4) { width: 7.5rem; }
 /* A paper corrected after publication */
 .correction-note { border-left: 3px solid var(--orange); padding: .4rem .8rem; background: var(--soft); font-size: .95rem; }
 .publish-progress { font-variant-numeric: tabular-nums; }
+.book-steps > li { margin-bottom: 2rem; }
+.book-steps h2 { margin-top: 0; }
+.isbn-form label { margin-right: 1rem; }
+.linklike { background: none; border: 0; padding: 0; color: var(--blue); text-decoration: underline; cursor: pointer; font: inherit; }

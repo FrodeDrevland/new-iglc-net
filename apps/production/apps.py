@@ -13,6 +13,7 @@ class ProductionConfig(AppConfig):
 
 
 EDITOR_GROUP = "Proceedings editors"
+PUBLISHER_GROUP = "Publishers"  # approve publication, enter ISBNs (site-wide)
 
 
 def create_editor_group(sender, **kwargs):
@@ -34,3 +35,6 @@ def create_editor_group(sender, **kwargs):
     permissions = Permission.objects.filter(
         content_type__app_label__in={a for a, _ in wanted}, codename__in=[c for _, c in wanted])
     group.permissions.add(*permissions)
+    publishers, _ = Group.objects.get_or_create(name=PUBLISHER_GROUP)
+    publishers.permissions.add(*permissions, *Permission.objects.filter(
+        content_type__app_label="production", codename__in=["publish_production", "change_production"]))
