@@ -7,6 +7,8 @@ Primary keys keep the values from the old database, because every DOI points to
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
 
 
 class EditTracking(models.Model):
@@ -20,7 +22,7 @@ class EditTracking(models.Model):
         abstract = True
 
 
-class Conference(EditTracking):
+class Conference(EditTracking, ClusterableModel):
     number = models.PositiveIntegerField("conference number", unique=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
@@ -59,7 +61,7 @@ class Conference(EditTracking):
 class ProceedingsFile(models.Model):
     """A full proceedings PDF for a conference, possibly one of several volumes."""
 
-    conference = models.ForeignKey(Conference, on_delete=models.CASCADE, related_name="proceedings_files")
+    conference = ParentalKey(Conference, on_delete=models.CASCADE, related_name="proceedings_files")
     label = models.CharField(max_length=100, help_text="For example 'Full proceedings' or 'Volume 1'.")
     url = models.URLField(max_length=1000)
     order = models.PositiveIntegerField(default=1)
@@ -72,7 +74,7 @@ class ProceedingsFile(models.Model):
 
 
 class ConferenceTrack(models.Model):
-    conference = models.ForeignKey(Conference, on_delete=models.CASCADE, related_name="tracks")
+    conference = ParentalKey(Conference, on_delete=models.CASCADE, related_name="tracks")
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0, help_text="Position of the track in the proceedings.")
@@ -85,7 +87,7 @@ class ConferenceTrack(models.Model):
 
 
 class Volume(EditTracking):
-    conference = models.ForeignKey(Conference, on_delete=models.CASCADE, related_name="volumes")
+    conference = ParentalKey(Conference, on_delete=models.CASCADE, related_name="volumes")
     number = models.PositiveIntegerField("volume number")
     first_page = models.PositiveIntegerField()
     last_page = models.PositiveIntegerField()
@@ -117,7 +119,7 @@ class PersonName(models.Model):
 
 
 class Editor(PersonName):
-    conference = models.ForeignKey(Conference, on_delete=models.CASCADE, related_name="editors")
+    conference = ParentalKey(Conference, on_delete=models.CASCADE, related_name="editors")
     title_and_contact = models.TextField(blank=True)
     order = models.PositiveIntegerField(null=True, blank=True)
 
@@ -149,7 +151,7 @@ class AuthorPerson(PersonName):
         return reverse("archive:author", args=[self.pk])
 
 
-class Paper(EditTracking):
+class Paper(EditTracking, ClusterableModel):
     class Status(models.IntegerChoices):
         # Values match the old PaperStatus enum, so migrated rows keep their meaning.
         NEW = 0, "New"
@@ -238,7 +240,7 @@ class Paper(EditTracking):
 class Author(PersonName):
     """An author as printed on one paper."""
 
-    paper = models.ForeignKey(Paper, on_delete=models.CASCADE, related_name="authors")
+    paper = ParentalKey(Paper, on_delete=models.CASCADE, related_name="authors")
     person = models.ForeignKey(
         AuthorPerson, null=True, blank=True, on_delete=models.SET_NULL, related_name="authorships"
     )
@@ -252,7 +254,7 @@ class Author(PersonName):
         return f"{self.first_name} {self.last_name}".strip()
 
 
-class LinkCategory(models.Model):
+class LinkCategory(ClusterableModel):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     sort_order = models.IntegerField(null=True, blank=True)
@@ -266,7 +268,7 @@ class LinkCategory(models.Model):
 
 
 class Link(models.Model):
-    category = models.ForeignKey(LinkCategory, on_delete=models.CASCADE, related_name="links")
+    category = ParentalKey(LinkCategory, on_delete=models.CASCADE, related_name="links")
     name = models.CharField(max_length=300)
     url = models.URLField(max_length=1000)
     description = models.TextField(blank=True)

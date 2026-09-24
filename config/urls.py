@@ -5,6 +5,7 @@ from django.contrib.auth.views import LogoutView
 from django.contrib.sitemaps import views as sitemap_views
 from django.http import HttpResponse
 from django.urls import include, path, re_path
+from django.views.generic import RedirectView
 from django.views.static import serve
 from wagtail import urls as wagtail_urls
 from wagtail.admin import urls as wagtailadmin_urls
@@ -15,14 +16,16 @@ from django.views.decorators.cache import cache_page
 from apps.archive import views as archive_views
 from apps.core.sitemaps import SITEMAPS
 
-admin.site.site_header = "IGLC administration"
-admin.site.site_title = "IGLC administration"
+admin.site.site_header = "IGLC data (superusers)"
+admin.site.site_title = "IGLC data (superusers)"
+# The back office is Wagtail's admin at /manage/. Django's admin is a fallback for superusers.
+admin.site.has_permission = lambda request: request.user.is_active and request.user.is_superuser
 
 def robots_txt(request):
     if settings.SITE_NOINDEX:
         return HttpResponse("User-agent: *\nDisallow: /\n", content_type="text/plain")
     sitemap = request.build_absolute_uri("/sitemap.xml")
-    return HttpResponse(f"User-agent: *\nDisallow: /manage/\nDisallow: /cms/\nDisallow: /production/\n\nSitemap: {sitemap}\n",
+    return HttpResponse(f"User-agent: *\nDisallow: /manage/\nDisallow: /django-admin/\n\nSitemap: {sitemap}\n",
                         content_type="text/plain")
 
 
@@ -32,10 +35,14 @@ urlpatterns = [
          "sitemap_url_name": "sitemap_section"}),
     path("sitemap-<section>.xml", cache_page(6 * 3600)(sitemap_views.sitemap), {"sitemaps": SITEMAPS},
          name="sitemap_section"),
-    path("manage/", admin.site.urls),
-    # Before the CMS's own logout, which would go to the CMS login page.
-    path("cms/logout/", LogoutView.as_view(next_page="/"), name="cms_logout"),
-    path("cms/", include(wagtailadmin_urls)),
+    path("django-admin/", admin.site.urls),
+    # The back office (Wagtail): pages, archive, committees, proceedings production, users.
+    # Logging out returns to the front page, not to the login page.
+    path("manage/logout/", LogoutView.as_view(next_page="/"), name="manage_logout"),
+    path("manage/", include(wagtailadmin_urls)),
+    # Old addresses of the back office
+    re_path(r"^cms/(?P<rest>.*)$", RedirectView.as_view(url="/manage/%(rest)s", query_string=True)),
+    re_path(r"^production/(?P<rest>.*)$", RedirectView.as_view(url="/manage/production/%(rest)s", query_string=True)),
     path("documents/", include(wagtaildocs_urls)),
     path("", archive_views.home, name="home"),
     path("", include("apps.archive.urls")),

@@ -165,7 +165,11 @@ WAGTAIL_SITE_NAME = "IGLC"
 # Logging out of the archive admin or the CMS returns to the front page; logging out from a
 # page on the site returns to that page (the form sends it as "next").
 LOGOUT_REDIRECT_URL = "/"
-LOGIN_URL = "admin:login"
+LOGIN_URL = "wagtailadmin_login"
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "apps.production.auth.ProductionRoleBackend",  # production roles give access to the back office
+]
 WAGTAILADMIN_BASE_URL = SITE_URL
 
 # IGLC specifics

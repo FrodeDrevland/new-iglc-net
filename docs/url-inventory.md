@@ -94,12 +94,12 @@ The old conference page also listed a ZIP of all papers (`papers-zipped` contain
 
 | Old URL | New URL |
 | --- | --- |
-| `/Admin/...` (old admin area) | `/cms/` (Wagtail) |
-| `/Account/...` (login, register, password) | `/cms/login/` |
-| `/DataPunching/...`, `/Authors/...` (admin tools) | `/manage/` (Django admin) |
-| `/Papers/Edit/{id}`, `/Papers/ResetFriendlyFileName/{id}` | `/manage/archive/paper/{id}/change/` (not redirected) |
+| `/Admin/...` (old admin area) | `/manage/` (the back office) |
+| `/Account/...` (login, register, password) | `/manage/login/` |
+| `/DataPunching/...`, `/Authors/...` (admin tools) | `/manage/` (the back office) |
+| `/Papers/Edit/{id}`, `/Papers/ResetFriendlyFileName/{id}` | `/manage/archive/paper/edit/{id}/` (not redirected) |
 
 ## New site admin
 
-- `/manage/`: Django admin for the archive (papers, authors, conferences, links).
-- `/cms/`: Wagtail for content pages.
+- `/manage/`: the back office (Wagtail): pages, images, documents, archive, committees, proceedings production, users.
+- `/django-admin/`: Django's admin, superusers only, as a fallback. `/cms/` and `/production/` redirect to `/manage/`.

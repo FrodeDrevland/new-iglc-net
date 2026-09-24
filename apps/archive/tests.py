@@ -85,7 +85,7 @@ class LegacyUrlTests(ArchiveTestCase):
     def test_static_pages(self):
         self.assertMovedTo("/Home/CharterAndOperatingProcedures", "/charter-and-operating-procedures/")
         self.assertMovedTo("/Home/important-links", "/links/")
-        self.assertMovedTo("/Admin/Papers", "/cms/")
+        self.assertMovedTo("/Admin/Papers", "/manage/")
 
     def test_for_authors_view_parameter(self):
         self.assertEqual(
@@ -126,15 +126,15 @@ class AdminBarTests(ArchiveTestCase):
         staff = get_user_model().objects.create_user("editor", password="x", is_staff=True, is_superuser=True)
         self.client.force_login(staff)
         response = self.client.get("/papers/details/2150")
-        self.assertContains(response, "/manage/archive/paper/2150/change/")
-        self.assertContains(response, "/cms/")
-        self.assertContains(self.client.get("/papers/conference/25"), "/manage/archive/conference/25/change/")
+        self.assertContains(response, "/manage/archive/paper/edit/2150/")
+        self.assertContains(response, "/manage/")
+        self.assertContains(self.client.get("/papers/conference/25"), "/manage/archive/conference/edit/25/")
 
 
 @override_settings(SITE_NOINDEX=False)  # a preview has it on
 class RobotsTests(TestCase):
     def test_robots(self):
-        self.assertContains(self.client.get("/robots.txt"), "Disallow: /cms/")
+        self.assertContains(self.client.get("/robots.txt"), "Disallow: /django-admin/")
 
     @override_settings(SITE_NOINDEX=True)
     def test_preview_is_not_indexed(self):
@@ -328,7 +328,12 @@ class AuthorPageTests(ArchiveTestCase):
         User.objects.create_superuser("admin", "a@example.org", "pw")
         self.client.login(username="admin", password="pw")
         ids = list(AuthorPerson.objects.filter(last_name__in=["Smith", "Lee"]).values_list("pk", flat=True))
-        self.client.post("/manage/archive/authorperson/", {"action": "merge_people", "_selected_action": ids})
+        smith, lee = AuthorPerson.objects.get(last_name="Smith"), AuthorPerson.objects.get(last_name="Lee")
+        page = self.client.get(f"/manage/archive/person/edit/{smith.pk}/")
+        self.assertContains(page, "Merge another person into this one")
+        response = self.client.post(f"/manage/archive/person/edit/{smith.pk}/", {
+            "first_name": smith.first_name, "last_name": smith.last_name, "orcid": smith.orcid, "merge": lee.pk})
+        self.assertEqual(response.status_code, 302)
         self.assertEqual(AuthorPerson.objects.count(), 2)
         self.assertEqual(AuthorPerson.objects.get(last_name="Smith").authorships.count(), 3)
 

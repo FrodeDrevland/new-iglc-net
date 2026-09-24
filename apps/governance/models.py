@@ -7,10 +7,12 @@ Phase 4 (membership and online votes) will fill these records from elections.
 from datetime import date
 
 from django.db import models
+from modelcluster.fields import ParentalKey
+from modelcluster.models import ClusterableModel
 from django.db.models import Q
 
 
-class Committee(models.Model):
+class Committee(ClusterableModel):
     name = models.CharField(max_length=120)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True, help_text="Shown above the members. Blank lines start new paragraphs.")
@@ -51,7 +53,7 @@ class Seat(models.Model):
 
     ROLE_ORDER = {r: i for i, r in enumerate(Role.values)}
 
-    committee = models.ForeignKey(Committee, on_delete=models.CASCADE, related_name="seats")
+    committee = ParentalKey(Committee, on_delete=models.CASCADE, related_name="seats")
     role = models.CharField(max_length=40, choices=Role.choices, default=Role.ELECTED)
     is_chair = models.BooleanField("chair", default=False)
     first_name = models.CharField(max_length=100)

@@ -23,7 +23,7 @@ def create_editor_group(sender, **kwargs):
     from django.contrib.auth.models import Group, Permission
 
     # This may run before Django has created the permissions of these apps.
-    for label in ("production", "archive"):
+    for label in ("production", "archive", "wagtailadmin"):
         create_permissions(apps.get_app_config(label), verbosity=0, using=kwargs.get("using", "default"))
     group, _ = Group.objects.get_or_create(name=EDITOR_GROUP)
     wanted = [
@@ -35,6 +35,9 @@ def create_editor_group(sender, **kwargs):
     permissions = Permission.objects.filter(
         content_type__app_label__in={a for a, _ in wanted}, codename__in=[c for _, c in wanted])
     group.permissions.add(*permissions)
+    access = Permission.objects.filter(content_type__app_label="wagtailadmin", codename="access_admin")
+    group.permissions.add(*access)  # into the back office
     publishers, _ = Group.objects.get_or_create(name=PUBLISHER_GROUP)
+    publishers.permissions.add(*access)
     publishers.permissions.add(*permissions, *Permission.objects.filter(
         content_type__app_label="production", codename__in=["publish_production", "change_production"]))

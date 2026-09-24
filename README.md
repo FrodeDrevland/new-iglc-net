@@ -14,7 +14,7 @@ What works so far:
 
 - The proceedings archive: conference list, conference pages, paper pages with Google Scholar metadata, PDF and presentation links, ranked search with filters, author pages, and BibTeX and RIS exports. After importing papers, run `python manage.py group_authors` to build the author pages.
 - Every old URL pattern redirects to its new address, and paper and conference URLs keep their paths (`docs/url-inventory.md`).
-- Django admin for the archive at `/manage/`, and Wagtail for content pages at `/cms/`.
+- One back office at `/manage/` (Wagtail): pages, the archive, committees, proceedings production and users. Django's admin at `/django-admin/` is a superuser-only fallback.
 - A script to inventory the live site and the Crossref-registered URLs, and to check the new site against them (`tools/url_inventory.py`).
 
 ## Run it locally (Windows, PowerShell)
@@ -32,7 +32,7 @@ copy .env.example .env
 .venv\Scripts\python manage.py runserver
 ```
 
-Then open http://localhost:8000, the archive admin at http://localhost:8000/manage/ and the CMS at http://localhost:8000/cms/.
+Then open http://localhost:8000 and the back office at http://localhost:8000/manage/.
 
 With Docker instead: `copy .env.example .env`, then `docker compose up`, and run the same `manage.py` commands with `docker compose exec web python manage.py ...`.
 

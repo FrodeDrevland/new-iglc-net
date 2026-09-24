@@ -36,7 +36,7 @@ moves to the next person. Keep it up to date.
    owner). Then create a new registry token under their account (deploy-azure.md step 5).
 3. **Domain and DNS:** transfer at the registrar, or add them as a contact.
 4. **Crossref and Sender.net:** add them as users and remove yourself.
-5. **The site itself:** make them a superuser (Manage → Users) and remove your own account's
+5. **The site itself:** make them a superuser (Manage → Settings → Users) and remove your own account's
    superuser status afterwards.
 6. **Secrets** (database password, Django secret key) live only in the App Service settings.
    A new holder can read them there. After a handover, it is good practice to set a new

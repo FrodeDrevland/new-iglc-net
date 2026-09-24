@@ -1,9 +1,31 @@
-{% extends "base.html" %}
-{% block title %}Proceedings production{% endblock %}
-{% block content %}
-<div class="page-head"><p class="kicker">Editors</p><h1>Proceedings production</h1></div>
+{% extends "production/editor/_base.html" %}
+{% block titletag %}Proceedings production{% endblock %}
+{% block main %}
+<div class="page-head"><p class="kicker">Back office</p><h1>Proceedings production</h1>
+  <p class="lead">Collecting and editing the papers, their order and page numbers, publication, and the full proceedings.</p></div>
 <ul class="plain-list">
-  {% for p in productions %}<li><a href="{% url 'production:production' p.conference.number %}">{{ p }}</a> <span class="muted">{{ p.get_status_display }}</span></li>
+  {% for p in productions %}<li><a href="{% url 'proceedings:production' p.conference.number %}">{{ p }}</a> <span class="muted">· {{ p.get_status_display }}</span></li>
   {% empty %}<li>You are not an editor of any proceedings.</li>{% endfor %}
 </ul>
+{% if can_start %}
+<h2>Start a production</h2>
+<div class="panel">
+  <h3>From ConfTool’s accepted papers</h3>
+  <p class="small muted">For a coming conference. Export the accepted papers from ConfTool (Excel or CSV) and upload the file here. Uploading a newer export later updates titles, tracks and authors; nothing already done is lost.</p>
+  <form method="post" enctype="multipart/form-data" class="prod-filters">{% csrf_token %}<input type="hidden" name="action" value="conftool">
+    <label>Conference <select name="conference">{% for c in conferences %}<option value="{{ c.pk }}">{{ c }}</option>{% endfor %}</select></label>
+    <label>Export <input type="file" name="file" accept=".xlsx,.csv"></label>
+    <button class="button" type="submit">Import</button>
+  </form>
+  <p class="small muted">A conference that is not in the list: add it first under <a href="{% url 'archive_conference:add' %}">Archive → Conferences</a>.</p>
+</div>
+<div class="panel">
+  <h3>From a conference already published</h3>
+  <p class="small muted">To make the full proceedings of a conference whose papers are already in the archive (published before these tools). The papers are taken as published: pages, tracks and PDFs stay as they are.</p>
+  <form method="post" class="prod-filters">{% csrf_token %}<input type="hidden" name="action" value="adopt">
+    <label>Conference <select name="conference">{% for c in published %}<option value="{{ c.pk }}">{{ c }}</option>{% endfor %}</select></label>
+    <button class="button button-secondary" type="submit">Take the published papers</button>
+  </form>
+</div>
+{% endif %}
 {% endblock %}

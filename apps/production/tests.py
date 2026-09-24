@@ -369,6 +369,7 @@ class EditorPagesTests(TestCase):
         ProductionEditor.objects.create(production=self.production, user=self.chief, role="chief")
         entry = ProductionEditor.objects.create(production=self.production, user=self.editor, role="editor")
         entry.tracks.add(self.green)
+        entry.save()  # tracks are kept with the editor (ParentalManyToManyField)
         self.docx = make_docx(BODY, NOTES, HEADER).read_bytes()
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as archive:
@@ -380,19 +381,19 @@ class EditorPagesTests(TestCase):
 
     def test_editors_see_their_tracks_only(self):
         self.client.login(username="ed", password="pw")
-        page = self.client.get("/production/35/").content.decode()
+        page = self.client.get("/manage/production/35/").content.decode()
         self.assertIn("Green", page)
         self.assertNotIn(">Takt<", page)
-        self.assertEqual(self.client.get("/production/35/123/").status_code, 404)
+        self.assertEqual(self.client.get("/manage/production/35/123/").status_code, 404)
 
     def test_outsiders_and_visitors_are_kept_out(self):
         from django.contrib.auth.models import User
 
         User.objects.create_user("other", password="pw", is_staff=True)
         self.client.login(username="other", password="pw")
-        self.assertEqual(self.client.get("/production/35/").status_code, 403)
+        self.assertIn(self.client.get("/manage/production/35/").status_code, (302, 403))
         self.client.logout()
-        self.assertEqual(self.client.get("/production/35/").status_code, 302)
+        self.assertEqual(self.client.get("/manage/production/35/").status_code, 302)
 
     def test_batch_upload_pairs_checks_and_versions(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
@@ -400,7 +401,7 @@ class EditorPagesTests(TestCase):
         from .models import Submission
 
         self.client.login(username="chief", password="pw")
-        page = self.client.post("/production/35/upload/", {
+        page = self.client.post("/manage/production/35/upload/", {
             "files": [SimpleUploadedFile("batch.zip", self.zip)], "comment": "first round"}).content.decode()
         self.assertIn("2 new versions", page)
         self.assertIn("notes.txt", page)
@@ -410,17 +411,17 @@ class EditorPagesTests(TestCase):
         self.assertTrue(version.passed, version.findings)
         self.assertEqual(takt.status, "uploaded")
         # a PDF alone becomes version 2, with the current Word file
-        self.client.post("/production/35/upload/", {"files": [SimpleUploadedFile("123.pdf", make_word_pdf(pages=3))]})
+        self.client.post("/manage/production/35/upload/", {"files": [SimpleUploadedFile("123.pdf", make_word_pdf(pages=3))]})
         self.assertEqual((takt.current.number, takt.current.pages), (2, 3))
         # the paper without a PDF is told so
         green = Submission.objects.get(conftool_id=124)
         self.assertIn("pdf_missing", [f["code"] for f in green.current.findings])
         # files are downloadable only through the site
-        response = self.client.get("/production/35/123/v1.docx")
+        response = self.client.get("/manage/production/35/123/v1.docx")
         self.assertEqual(b"".join(response.streaming_content), self.docx)
         import io
 
-        response = self.client.post("/production/35/download/", {"paper": ["123"], "with_pdf": "1"})
+        response = self.client.post("/manage/production/35/download/", {"paper": ["123"], "with_pdf": "1"})
         self.assertEqual(sorted(zipfile.ZipFile(io.BytesIO(response.content)).namelist()), ["123.docx", "123.pdf"])
 
     def test_layout_checks_and_approval(self):
@@ -429,14 +430,14 @@ class EditorPagesTests(TestCase):
         from .models import Submission
 
         self.client.login(username="chief", password="pw")
-        self.client.post("/production/35/123/", {"action": "upload", "docx": SimpleUploadedFile("123.docx", self.docx),
+        self.client.post("/manage/production/35/123/", {"action": "upload", "docx": SimpleUploadedFile("123.docx", self.docx),
                                                   "pdf": SimpleUploadedFile("123.pdf", make_word_pdf(title_y=750, stray_header=True))})
         takt = Submission.objects.get(conftool_id=123)
         codes = [f["code"] for f in takt.current.findings]
         self.assertIn("pdf_running_left", codes)
         self.assertIn("reference_space_missing", codes)
         self.assertEqual(takt.status, "needs_work")
-        self.client.post("/production/35/123/", {"action": "approve", "comment": "fine"})
+        self.client.post("/manage/production/35/123/", {"action": "approve", "comment": "fine"})
         takt.refresh_from_db()
         self.assertEqual(takt.status, "approved")
         self.assertEqual(takt.events.first().action, "approved")
@@ -453,7 +454,7 @@ class ArrangeTests(EditorPagesTests):
 
         self.client.login(username="chief", password="pw")
         for number, pages in ((123, 3), (124, 2)):
-            self.client.post("/production/35/upload/", {"files": [
+            self.client.post("/manage/production/35/upload/", {"files": [
                 SimpleUploadedFile(f"{number}.docx", self.docx), SimpleUploadedFile(f"{number}.pdf", make_word_pdf(pages))]})
         self.production.first_page = 10
         self.production.save()
@@ -462,19 +463,19 @@ class ArrangeTests(EditorPagesTests):
                          [(123, 10, 12), (124, 13, 14)])
         self.assertEqual(unknown, [])
         # the chief editor puts Lean and Green first and moves 123 there too
-        response = self.client.post("/production/35/arrange/", {
+        response = self.client.post("/manage/production/35/arrange/", {
             "first_page": "1", "layout": json.dumps([[self.green.pk, ["124", "123"]], [self.planning.pk, []]])})
         self.assertEqual(response.status_code, 302)
         papers = {s.conftool_id: s for s in Submission.objects.all()}
         self.assertEqual((papers[124].first_page, papers[123].first_page, papers[123].track), (1, 3, self.green))
-        page = self.client.get("/production/35/arrange/").content.decode()
+        page = self.client.get("/manage/production/35/arrange/").content.decode()
         self.assertIn("1–2", page)
         self.assertIn("3–5", page)
 
     def test_editors_cannot_rearrange(self):
         self.client.login(username="ed", password="pw")
-        self.assertEqual(self.client.get("/production/35/arrange/").status_code, 200)
-        self.assertEqual(self.client.post("/production/35/arrange/", {"layout": "[]"}).status_code, 403)
+        self.assertEqual(self.client.get("/manage/production/35/arrange/").status_code, 200)
+        self.assertIn(self.client.post("/manage/production/35/arrange/", {"layout": "[]"}).status_code, (302, 403))
 
     def test_unknown_pages_stop_the_numbering(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
@@ -482,7 +483,7 @@ class ArrangeTests(EditorPagesTests):
         from .arrange import number_pages
 
         self.client.login(username="chief", password="pw")
-        self.client.post("/production/35/upload/", {"files": [SimpleUploadedFile("123.docx", self.docx)]})
+        self.client.post("/manage/production/35/upload/", {"files": [SimpleUploadedFile("123.docx", self.docx)]})
         layout, unknown = number_pages(self.production)
         self.assertEqual([s.conftool_id for s in unknown], [123, 124])
 
@@ -513,7 +514,7 @@ class PublishTests(EditorPagesTests):
     def _upload(self, number, pages):
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        self.client.post(f"/production/35/{number}/", {"action": "upload", "docx": SimpleUploadedFile(
+        self.client.post(f"/manage/production/35/{number}/", {"action": "upload", "docx": SimpleUploadedFile(
             f"{number}.docx", self.docx), "pdf": SimpleUploadedFile(f"{number}.pdf", make_word_pdf(pages))})
 
     def test_publish_freeze_and_correct(self):
@@ -526,32 +527,32 @@ class PublishTests(EditorPagesTests):
         self.client.login(username="chief", password="pw")
         self._upload(123, 3)
         self._upload(124, 2)
-        self.assertIn("not approved", self.client.get("/production/35/publish/").content.decode())
+        self.assertIn("not approved", self.client.get("/manage/production/35/publish/").content.decode())
         for number in (123, 124):
-            self.client.post(f"/production/35/{number}/", {"action": "approve"})
+            self.client.post(f"/manage/production/35/{number}/", {"action": "approve"})
         # the editors give the title in sentence case and correct a name
         first = Submission.objects.get(conftool_id=124).current.metadata["authors"][0]["name"]
-        self.client.post("/production/35/124/", {"action": "metadata", "published_title": "Lean and green: a review",
+        self.client.post("/manage/production/35/124/", {"action": "metadata", "published_title": "Lean and green: a review",
                                                   "author_name": [first], "first_0": "", "last_0": first})
         self.client.login(username="ed", password="pw")
-        self.assertEqual(self.client.post("/production/35/publish/", {"action": "next"}).status_code, 403)
+        self.assertIn(self.client.post("/manage/production/35/publish/", {"action": "next"}).status_code, (302, 403))
         # the chief editor asks; only a publisher can publish, and only when asked
         self.client.login(username="chief", password="pw")
-        self.assertEqual(self.client.post("/production/35/publish/", {"action": "next"}).status_code, 403)
+        self.assertIn(self.client.post("/manage/production/35/publish/", {"action": "next"}).status_code, (302, 403))
         from django.contrib.auth.models import Group, User
 
         publisher = User.objects.create_user("pub", password="pw", is_staff=True)
         publisher.groups.add(Group.objects.get(name="Publishers"))
         self.client.login(username="pub", password="pw")
-        self.assertEqual(self.client.post("/production/35/publish/", {"action": "next"}).status_code, 400)
+        self.assertEqual(self.client.post("/manage/production/35/publish/", {"action": "next"}).status_code, 400)
         self.client.login(username="chief", password="pw")
-        self.client.post("/production/35/publish/", {"action": "request"})
+        self.client.post("/manage/production/35/publish/", {"action": "request"})
         self.client.login(username="pub", password="pw")
-        result = self.client.post("/production/35/publish/", {"action": "next"}).json()
+        result = self.client.post("/manage/production/35/publish/", {"action": "next"}).json()
         self.assertEqual((result["published"], result["left"]), (["10.24928/2027/0123", "10.24928/2027/0124"], 0))
         # the order is fixed as soon as papers are published
-        self.assertEqual(self.client.post("/production/35/arrange/", {"layout": json.dumps([])}).status_code, 403)
-        self.client.post("/production/35/publish/", {"action": "finish"})
+        self.assertIn(self.client.post("/manage/production/35/arrange/", {"layout": json.dumps([])}).status_code, (302, 403))
+        self.client.post("/manage/production/35/publish/", {"action": "finish"})
         self.client.login(username="chief", password="pw")
         self.production.refresh_from_db()
         conference = self.production.conference
@@ -567,18 +568,18 @@ class PublishTests(EditorPagesTests):
         # a correction that is a page too long is refused, and moves nothing
         self._upload(123, 4)
         self.assertEqual(Submission.objects.get(conftool_id=124).first_page, 4)
-        page = self.client.get("/production/35/123/").content.decode()
+        page = self.client.get("/manage/production/35/123/").content.decode()
         self.assertIn("must fit", page)
-        self.client.post("/production/35/123/", {"action": "stage_correction", "comment": "Figure 2"})
+        self.client.post("/manage/production/35/123/", {"action": "stage_correction", "comment": "Figure 2"})
         self.assertEqual(Submission.objects.get(conftool_id=123).correction_note, "")
         # one that fits replaces the PDF; the DOI and pages stay, the old PDF is kept
         old_url = paper.full_text_url
         self._upload(123, 3)
-        self.assertEqual(self.client.post("/production/35/123/", {"action": "correct"}).status_code, 403)
-        self.client.post("/production/35/123/", {"action": "stage_correction", "comment": "Figure 2 was replaced."})
+        self.assertIn(self.client.post("/manage/production/35/123/", {"action": "correct"}).status_code, (302, 403))
+        self.client.post("/manage/production/35/123/", {"action": "stage_correction", "comment": "Figure 2 was replaced."})
         self.assertFalse(Correction.objects.exists())
         self.client.login(username="pub", password="pw")
-        self.client.post("/production/35/123/", {"action": "correct", "comment": "Figure 2 was replaced."})
+        self.client.post("/manage/production/35/123/", {"action": "correct", "comment": "Figure 2 was replaced."})
         correction = Correction.objects.get()
         paper.refresh_from_db()
         self.assertEqual((paper.doi, paper.pages), ("10.24928/2027/0123", "1-3"))
@@ -613,13 +614,13 @@ class FullProceedingsTests(PublishTests):
         self._upload(123, 3)
         self._upload(124, 2)
         for number in (123, 124):
-            self.client.post(f"/production/35/{number}/", {"action": "approve"})
-        self.client.post("/production/35/publish/", {"action": "request"})
+            self.client.post(f"/manage/production/35/{number}/", {"action": "approve"})
+        self.client.post("/manage/production/35/publish/", {"action": "request"})
         publisher = User.objects.create_user("pub", password="pw", is_staff=True)
         publisher.groups.add(Group.objects.get(name="Publishers"))
         self.client.login(username="pub", password="pw")
-        self.client.post("/production/35/publish/", {"action": "next"})
-        self.client.post("/production/35/publish/", {"action": "finish"})
+        self.client.post("/manage/production/35/publish/", {"action": "next"})
+        self.client.post("/manage/production/35/publish/", {"action": "finish"})
 
     def test_adopt_a_published_conference(self):
         from datetime import date
@@ -646,23 +647,25 @@ class FullProceedingsTests(PublishTests):
 
         self._publish_all()
         self.client.login(username="chief", password="pw")
-        self.assertEqual(self.client.get("/production/35/book/").status_code, 200)
-        foreword = self.client.get("/production/35/book/foreword.docx")
+        self.assertEqual(self.client.get("/manage/production/35/book/").status_code, 200)
+        foreword = self.client.get("/manage/production/35/book/foreword.docx")
         text = "\n".join(p.text for p in Document(io.BytesIO(foreword.content)).paragraphs)
         self.assertIn("Table 1 Papers published per country", text)
         self.assertIn("2 papers", text)
         # only a publisher sets the ISBN, and it must be valid
-        self.assertEqual(self.client.post("/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-8"})
-                         .status_code, 403)
-        self.client.login(username="pub", password="pw")
-        self.client.post("/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-9"})
+        self.assertIn(self.client.post("/manage/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-8"})
+                      .status_code, (302, 403))
         self.production.refresh_from_db()
         self.assertEqual(self.production.isbn_pdf, "")
-        self.client.post("/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-8"})
+        self.client.login(username="pub", password="pw")
+        self.client.post("/manage/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-9"})
+        self.production.refresh_from_db()
+        self.assertEqual(self.production.isbn_pdf, "")
+        self.client.post("/manage/production/35/book/", {"action": "isbn", "isbn_pdf": "978-82-692499-5-8"})
         self.production.refresh_from_db()
         self.assertEqual(self.production.isbn_pdf, "978-82-692499-5-8")
         # the publisher cannot publish what was not submitted
-        self.client.post("/production/35/book/", {"action": "publish"})
+        self.client.post("/manage/production/35/book/", {"action": "publish"})
         self.production.refresh_from_db()
         self.assertEqual(self.production.status, "papers_published")
 
@@ -686,3 +689,31 @@ class BookPartCheckTests(SimpleTestCase):
         self.assertIn("header and footer must be empty", problems)
         self.assertEqual(check_part(make_word_pdf(2), "cover"), ["A cover is one page."])
         self.assertEqual(check_part(b"not a pdf", "sponsors"), ["This is not a PDF that can be read."])
+
+
+class BackOfficeTests(EditorPagesTests):
+    """One back office: archive, committees and production screens in Wagtail's admin."""
+
+    def test_screens_open(self):
+        from django.contrib.auth.models import User
+
+        from apps.archive.models import Author, AuthorPerson, Paper
+
+        paper = Paper.objects.create(conference=self.production.conference, title="A paper", doi="10.24928/2027/0001")
+        person = AuthorPerson.objects.create(first_name="Ann", last_name="Smith")
+        Author.objects.create(paper=paper, first_name="Ann", last_name="Smith", person=person, order=1)
+        User.objects.create_superuser("root", "r@example.org", "pw")
+        self.client.login(username="root", password="pw")
+        for url in ("/manage/", "/manage/archive/conference/", f"/manage/archive/conference/edit/{self.production.conference.pk}/",
+                    "/manage/archive/paper/", f"/manage/archive/paper/edit/{paper.pk}/", "/manage/archive/paper/?q=paper",
+                    "/manage/archive/person/", f"/manage/archive/person/edit/{person.pk}/", "/manage/archive/links/",
+                    "/manage/committees/", "/manage/production/", "/manage/production/35/",
+                    f"/manage/production-settings/edit/{self.production.pk}/", "/manage/reports/paper-checks/",
+                    "/manage/archive/person-chooser/?q=smi", "/manage/users/"):
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+
+    def test_editors_get_in_with_their_role_only(self):
+        self.client.login(username="ed", password="pw")  # no group, only a production role
+        self.assertEqual(self.client.get("/manage/").status_code, 200)
+        self.assertEqual(self.client.get("/manage/production/35/").status_code, 200)
+        self.assertNotEqual(self.client.get("/manage/archive/paper/").status_code, 200)

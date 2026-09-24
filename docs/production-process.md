@@ -147,8 +147,11 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
 - `import_conftool 35 export.xlsx` creates or updates the production from ConfTool's export of
   accepted papers (columns found by their headings, or named with --column);
   `import_conftool 34 --from-archive` builds one from the archive for trying out.
-- Editor accounts: Manage → Users → add user, tick "Staff status", group "Proceedings
-  editors"; then add the person to the production (Manage → Proceedings productions).
+- Editor accounts: Manage → Settings → Users → add user; then on the production's page,
+  "Editors and settings", add the person as editor or chief editor. That role is what lets them
+  into the back office (no group needed). Publishers: add the user to the group "Publishers".
+- New productions: Manage → Proceedings production → "Start a production", from ConfTool's
+  export of accepted papers or from a conference already published (superusers and publishers).
 
 **Step 2 (editors' upload):** /production/ (link in the admin bar)
 
@@ -223,8 +226,8 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
 - Chief editors make drafts (private) and submit one; the publisher enters the ISBNs and
   approves: the final book is made with the ISBNs, published, linked from the conference page
   (as "Full proceedings") and recorded as volume 1 with its ISBN.
-- Conferences published before these tools (e.g. IGLC 28, IGLC 34): Manage → Conferences, tick
-  the conference, action "Make the full proceedings here", or `adopt_published 28`. The papers
+- Conferences published before these tools (e.g. IGLC 28, IGLC 34): Manage → Proceedings production →
+  "From a conference already published", or `adopt_published 28`. The papers
   come from the archive as published (pages, tracks, PDFs); the PDFs are fetched on the Full
   proceedings page, checking each page count. Tracks missing in the archive (IGLC 28) can be
   read from the PDFs' footers first: `read_tracks --conference 28` and `import_tracks`.

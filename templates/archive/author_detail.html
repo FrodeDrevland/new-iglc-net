@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ person.full_name }}{% endblock %}
-{% block admin_edit %}<a class="admin-edit" href="{% url 'admin:archive_authorperson_change' person.pk %}">Edit this author</a>{% endblock %}
+{% block admin_edit %}<a class="admin-edit" href="{% url 'archive_person:edit' person.pk %}">Edit this author</a>{% endblock %}
 {% block content %}
 <div class="page-head">
   <p class="kicker"><a href="{% url 'archive:authors' %}">Authors</a></p>

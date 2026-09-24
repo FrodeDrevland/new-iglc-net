@@ -5,9 +5,9 @@
 {% if user.is_anonymous %}{% include "admin/color_theme_toggle.html" %}{% endif %}
 {% endblock %}
 {% block userlinks %}
-<a href="/">View site</a> / <a href="/cms/">Pages (CMS)</a> /
+<a href="/">View site</a> / <a href="/manage/">Back office</a> /
 {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">Change password</a> /{% endif %}
-<form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
+<form id="logout-form" method="post" action="{% url 'manage_logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
 {% include "admin/color_theme_toggle.html" %}
 {% endblock %}
 {% block nav-global %}{% endblock %}

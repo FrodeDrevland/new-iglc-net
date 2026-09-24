@@ -1,14 +1,14 @@
-{% extends "base.html" %}
-{% block title %}Arrange | {{ production }}{% endblock %}
-{% block content %}
+{% extends "production/editor/_base.html" %}
+{% block titletag %}Arrange | {{ production }}{% endblock %}
+{% block main %}
 {% with n=production.conference.number %}
 <div class="page-head">
-  <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
+  <p class="kicker"><a href="{% url 'proceedings:production' n %}">{{ production }}</a></p>
   <h1>Order and page numbers</h1>
   <p class="lead">{% if production.pages_frozen %}The papers are published, so their order and page numbers are fixed: they are cited. A corrected paper must fit its page range.{% elif can_edit %}Drag the tracks and the papers into the order of the proceedings; papers can also be dragged to another track. The page numbers follow and are saved with the order.{% else %}The order of the proceedings. Only chief editors can change it.{% endif %}</p>
 </div>
 {% if unknown %}
-<p class="upload-report">Page numbers are exact up to the first paper without a PDF. Waiting for a PDF: {% for p in unknown %}<a href="{% url 'production:paper' n p.conftool_id %}">{{ p.conftool_id }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+<p class="upload-report">Page numbers are exact up to the first paper without a PDF. Waiting for a PDF: {% for p in unknown %}<a href="{% url 'proceedings:paper' n p.conftool_id %}">{{ p.conftool_id }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
 {% endif %}
 <form method="post" id="arrange-form">
   {% csrf_token %}
@@ -22,7 +22,7 @@
         <li data-id="{{ item.submission.conftool_id }}" data-pages="{{ item.pages|default:'' }}"{% if can_edit %} draggable="true"{% endif %}>
           {% if can_edit %}<span class="grip">⠿</span>{% endif %}
           <span class="pp pages-label">{% if item.first_page %}{{ item.first_page }}–{{ item.last_page }}{% else %}?{% endif %}</span>
-          <a href="{% url 'production:paper' n item.submission.conftool_id %}">{{ item.submission.current.metadata.title|default:item.submission.title }}</a>
+          <a href="{% url 'proceedings:paper' n item.submission.conftool_id %}">{{ item.submission.current.metadata.title|default:item.submission.title }}</a>
           <span class="muted small">{{ item.submission.conftool_id }} · {{ item.pages|default:"no PDF" }}{% if item.pages %} pages{% endif %} · {{ item.submission.get_status_display }}</span>
         </li>
         {% endfor %}
@@ -35,7 +35,7 @@
 </form>
 {% endwith %}
 {% endblock %}
-{% block scripts %}
+{% block extra_js %}{{ block.super }}
 <script>
 (function () {
   var form = document.getElementById("arrange-form");

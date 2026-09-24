@@ -1,9 +1,9 @@
-{% extends "base.html" %}
-{% block title %}Full proceedings | {{ production }}{% endblock %}
-{% block content %}
+{% extends "production/editor/_base.html" %}
+{% block titletag %}Full proceedings | {{ production }}{% endblock %}
+{% block main %}
 {% with n=production.conference.number %}
 <div class="page-head">
-  <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
+  <p class="kicker"><a href="{% url 'proceedings:production' n %}">{{ production }}</a></p>
   <h1>Full proceedings</h1>
   <p class="lead">One PDF: cover, colophon, title page, front matter sections, the table of contents, the papers as published, the author index, back matter sections and the back cover. Chief editors prepare it and submit it; a publisher enters the ISBNs, approves and publishes it.</p>
 </div>
@@ -17,7 +17,7 @@
   <h2>The papers’ PDFs</h2>
   <p>{{ stats.papers }} papers. {% if missing %}{{ missing }} PDF{{ missing|pluralize }} published before these tools must be fetched from the archive (the page counts are checked).{% else %}All PDFs are at hand.{% endif %}</p>
   {% if missing and can_edit %}<form method="post" id="fetch-form">{% csrf_token %}
-    <button class="button secondary" type="button" id="fetch-start">Fetch {{ missing }} PDF{{ missing|pluralize }}</button>
+    <button class="button button-secondary" type="button" id="fetch-start">Fetch {{ missing }} PDF{{ missing|pluralize }}</button>
     <span class="publish-progress muted" id="fetch-progress" role="status"></span>
     <ul class="small" id="fetch-problems"></ul></form>{% endif %}
 </li>
@@ -28,10 +28,10 @@
   <form method="post">{% csrf_token %}<input type="hidden" name="action" value="settings">
     <p><label>Conference chair(s), separated by ; <br><input type="text" name="conference_chair" value="{{ production.conference_chair }}" style="width:100%"{% if not can_edit %} disabled{% endif %}></label></p>
     <p><label>Copyright holders (the editors if empty)<br><input type="text" name="copyright_holders" value="{{ production.copyright_holders }}" style="width:100%"{% if not can_edit %} disabled{% endif %}></label></p>
-    <table class="prod-table"><thead><tr><th>Track</th><th>Track chair(s): one per line, “Name, affiliation”</th></tr></thead><tbody>
+    <table class="listing prod-table"><thead><tr><th>Track</th><th>Track chair(s): one per line, “Name, affiliation”</th></tr></thead><tbody>
     {% for track, chairs in tracks %}<tr><td>{{ track.title }}</td><td><textarea name="chairs_{{ track.pk }}" rows="2" style="width:100%"{% if not can_edit %} disabled{% endif %}>{{ chairs }}</textarea></td></tr>
     {% empty %}<tr><td colspan="2">No tracks.</td></tr>{% endfor %}</tbody></table>
-    {% if can_edit %}<p><button class="button secondary" type="submit">Save</button></p>{% endif %}
+    {% if can_edit %}<p><button class="button button-secondary" type="submit">Save</button></p>{% endif %}
   </form>
 </li>
 
@@ -43,7 +43,7 @@
        <label>ISBN (printed) <input type="text" name="isbn_print" value="{{ production.isbn_print }}"></label></p>
     <p><label>ISSN (printed) <input type="text" name="issn_print" value="{{ production.issn_print }}"></label>
        <label>ISSN (electronic) <input type="text" name="issn_electronic" value="{{ production.issn_electronic }}"></label></p>
-    <button class="button secondary" type="submit">Save</button>
+    <button class="button button-secondary" type="submit">Save</button>
   </form>
   {% else %}
   <p>ISBN (PDF): {{ production.isbn_pdf|default:"–" }} · ISBN (printed): {{ production.isbn_print|default:"–" }} · ISSN: {{ production.issn_print }} (printed), {{ production.issn_electronic }} (electronic). <span class="muted">The publisher requests and enters the ISBNs.</span></p>
@@ -53,21 +53,21 @@
 <li>
   <h2>Covers, front matter and back matter</h2>
   <p>Besides what the system makes (colophon, title page, contents, author index), the book can hold any sections: the conference organisation, a message from the conference chair, the foreword, the reviewers, sponsors, or anything else. Every section is made from an IGLC Word template so it looks like the rest of the book: keep the template’s styles and fonts, leave the header and footer empty (the page numbers are printed there) and save as PDF from Word. Uploads are checked and refused if they do not follow the template. Covers are one A4 page, designed by the organisers.</p>
-  <p class="small"><b>Templates:</b> {% for kind, label in templates %}<a href="{% url 'production:book_file' n kind|add:'.docx' %}">{{ label }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}. <span class="muted">The foreword comes with its tables filled in.</span></p>
+  <p class="small"><b>Templates:</b> {% for kind, label in templates %}<a href="{% url 'proceedings:book_file' n kind|add:'.docx' %}">{{ label }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}. <span class="muted">The foreword comes with its tables filled in.</span></p>
 
-  <table class="prod-table"><thead><tr><th>Cover</th><th>Uploaded</th></tr></thead><tbody>
+  <table class="listing prod-table"><thead><tr><th>Cover</th><th>Uploaded</th></tr></thead><tbody>
   {% for kind, items in covers %}<tr><td>{% if kind == "cover" %}Front cover{% else %}Back cover{% endif %}</td>
     <td>{% for part in items %}{{ part.uploaded|date:"j M Y" }}{% if can_edit %} <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="delete_part"><input type="hidden" name="part" value="{{ part.pk }}"><button class="linklike" type="submit">remove</button></form>{% endif %}{% empty %}<span class="muted">–</span>{% endfor %}</td></tr>{% endfor %}
   </tbody></table>
 
   <form method="post">{% csrf_token %}<input type="hidden" name="action" value="arrange_parts">
-  <table class="prod-table"><thead><tr><th>Section</th><th>Template</th><th>Pages</th><th>Where</th><th>Order</th><th></th></tr></thead><tbody>
+  <table class="listing prod-table"><thead><tr><th>Section</th><th>Template</th><th>Pages</th><th>Where</th><th>Order</th><th></th></tr></thead><tbody>
   {% for part in sections %}<tr><td>{{ part.label }}</td><td class="small">{{ part.get_kind_display }}</td><td>{{ part.pages }}</td>
     <td><select name="placement_{{ part.pk }}"{% if not can_edit %} disabled{% endif %}>{% for key, label in placements %}<option value="{{ key }}"{% if part.placement == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
     <td><input type="number" name="order_{{ part.pk }}" value="{{ part.order }}" min="0" style="width:5rem"{% if not can_edit %} disabled{% endif %}></td>
     <td>{% if can_edit %}<button class="linklike" type="submit" form="remove-{{ part.pk }}">remove</button>{% endif %}</td></tr>
   {% empty %}<tr><td colspan="6">No sections yet.</td></tr>{% endfor %}</tbody></table>
-  {% if can_edit and sections %}<p><button class="button secondary" type="submit">Save order</button> <span class="muted small">Lower numbers come first. The contents always come last in the front matter, the author index first in the back matter.</span></p>{% endif %}
+  {% if can_edit and sections %}<p><button class="button button-secondary" type="submit">Save order</button> <span class="muted small">Lower numbers come first. The contents always come last in the front matter, the author index first in the back matter.</span></p>{% endif %}
   </form>
   {% for part in sections %}<form method="post" id="remove-{{ part.pk }}">{% csrf_token %}<input type="hidden" name="action" value="delete_part"><input type="hidden" name="part" value="{{ part.pk }}"></form>{% endfor %}
 
@@ -77,7 +77,7 @@
     <label>Heading <input type="text" name="title" placeholder="for the bookmarks"></label>
     <label>Where <select name="placement">{% for key, label in placements %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
     <label>PDF <input type="file" name="pdf" accept=".pdf"></label>
-    <button class="button secondary" type="submit">Upload and check</button>
+    <button class="button button-secondary" type="submit">Upload and check</button>
   </form>
   {% endif %}
 </li>
@@ -87,9 +87,9 @@
   {% if problems %}<ul>{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>{% endif %}
   {% if can_edit %}
   <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="draft">
-    <button class="button secondary" type="submit"{% if problems %} disabled{% endif %} onclick="this.textContent='Making the draft… (up to a minute)'">Make a draft</button></form>
+    <button class="button button-secondary" type="submit"{% if problems %} disabled{% endif %} onclick="this.textContent='Making the draft… (up to a minute)'">Make a draft</button></form>
   {% endif %}
-  {% if production.draft_built %}<a class="button secondary" href="{% url 'production:book_file' n 'draft.pdf' %}">Download the draft</a> <span class="muted small">made {{ production.draft_built|date:"j M Y H:i" }}</span>{% endif %}
+  {% if production.draft_built %}<a class="button button-secondary" href="{% url 'proceedings:book_file' n 'draft.pdf' %}">Download the draft</a> <span class="muted small">made {{ production.draft_built|date:"j M Y H:i" }}</span>{% endif %}
   {% if production.book_requested_at %}
     <p>Submitted for approval by {{ production.book_requested_by.get_full_name|default:production.book_requested_by.username }} on {{ production.book_requested_at|date:"j F Y H:i" }}.</p>
     {% if can_publish %}
@@ -105,7 +105,7 @@
 </ol>
 {% endwith %}
 {% endblock %}
-{% block scripts %}
+{% block extra_js %}{{ block.super }}
 <script>
 (function () {
   const start = document.getElementById("fetch-start");

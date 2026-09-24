@@ -1,0 +1,107 @@
+"""Proceedings production in the back office (/manage/production/)."""
+
+from django import forms
+
+from django.urls import include, path, reverse
+from wagtail import hooks
+from wagtail.admin.menu import MenuItem
+
+from wagtail.admin.forms import WagtailAdminModelForm
+from wagtail.admin.menu import MenuItem as _MenuItem  # noqa: F401
+from wagtail.admin.panels import FieldPanel, FieldRowPanel, InlinePanel, ObjectList
+from wagtail.admin.viewsets.model import ModelViewSet
+from wagtail.permission_policies import ModelPermissionPolicy
+
+from . import admin_urls
+from .models import PaperCheck, Production, ProductionEditor
+
+
+@hooks.register("register_admin_urls")
+def production_urls():
+    return [path("production/", include(admin_urls))]
+
+
+class ProductionMenuItem(MenuItem):
+    def is_shown(self, request):
+        from .access import productions_for
+
+        return productions_for(request.user).exists() or request.user.is_superuser
+
+
+@hooks.register("register_admin_menu_item")
+def production_menu_item():
+    return ProductionMenuItem("Proceedings production", reverse("proceedings:productions"), icon_name="doc-full-inverse",
+                              order=250)
+
+
+# ---------------------------------------------------------------- production settings and editors
+
+class EditorForm(WagtailAdminModelForm):
+    """An editor's tracks: those of the production's conference."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "tracks" in self.fields:
+            conference = getattr(getattr(self.instance, "production", None), "conference_id", None)
+            queryset = self.fields["tracks"].queryset
+            self.fields["tracks"].queryset = (queryset.filter(conference_id=conference) if conference
+                                              else queryset.filter(conference__production__isnull=False))
+
+
+ProductionEditor.base_form_class = EditorForm
+
+
+class ProductionViewSet(ModelViewSet):
+    """Who works on a production, and its settings. Reached from the production's own page."""
+
+    model = Production
+    icon = "doc-full-inverse"
+    add_to_admin_menu = False
+    inspect_view_enabled = False
+    list_display = ["__str__", "status"]
+    edit_handler = ObjectList([
+        FieldRowPanel([FieldPanel("conference"), FieldPanel("status"), FieldPanel("first_page")]),
+        FieldRowPanel([FieldPanel("conference_chair"), FieldPanel("copyright_holders")]),
+        InlinePanel("editors", heading="Editors", label="Editor",
+                    help_text="Chief editors see and arrange everything and stage publication; editors see the papers of "
+                              "their tracks (all papers if no track is ticked). Being added here gives access to the back office.",
+                    panels=[FieldRowPanel([FieldPanel("user"), FieldPanel("role")]),
+                            FieldPanel("tracks", widget=forms.CheckboxSelectMultiple)]),
+    ])
+
+
+# ---------------------------------------------------------------- the authors' template checks (read only)
+
+class ReadOnlyPolicy(ModelPermissionPolicy):
+    def user_has_permission(self, user, action):
+        return action in ("view", "inspect") and super().user_has_permission(user, "view")
+
+
+class PaperCheckViewSet(ModelViewSet):
+    model = PaperCheck
+    icon = "tasks"
+    menu_label = "Authors' paper checks"
+    add_to_admin_menu = False
+    inspect_view_enabled = True
+    list_display = ["file_name", "stage", "passed", "title", "created"]
+    form_fields = ["stage"]  # never edited (read-only policy)
+    list_filter = ["stage", "passed"]
+    search_fields = ["file_name", "title", "sha256"]
+    list_per_page = 50
+
+    @property
+    def permission_policy(self):
+        return ReadOnlyPolicy(self.model)
+
+
+paper_checks = PaperCheckViewSet("paper_checks", url_prefix="reports/paper-checks")
+
+
+@hooks.register("register_admin_viewset")
+def production_viewsets():
+    return [ProductionViewSet("production_settings", url_prefix="production-settings"), paper_checks]
+
+
+@hooks.register("register_reports_menu_item")
+def paper_checks_menu_item():
+    return paper_checks.get_menu_item()

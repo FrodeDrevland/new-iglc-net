@@ -2,6 +2,8 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from modelcluster.fields import ParentalKey, ParentalManyToManyField
+from modelcluster.models import ClusterableModel
 
 
 class PaperCheck(models.Model):
@@ -33,7 +35,7 @@ class PaperCheck(models.Model):
 
 # ---------------------------------------------------------------- proceedings production
 
-class Production(models.Model):
+class Production(ClusterableModel):
     """The making of one conference's proceedings: collecting, editing and arranging the papers.
 
     Not to be confused with archive.Volume, a published book (older proceedings were printed
@@ -91,7 +93,7 @@ class Production(models.Model):
         return self.conference.year
 
 
-class ProductionEditor(models.Model):
+class ProductionEditor(ClusterableModel):
     """A person working on a production. Chief editors see and arrange everything; editors
     see the papers of their tracks (or all papers when no tracks are given)."""
 
@@ -99,10 +101,10 @@ class ProductionEditor(models.Model):
         CHIEF = "chief", "Chief editor"
         EDITOR = "editor", "Editor"
 
-    production = models.ForeignKey(Production, on_delete=models.CASCADE, related_name="editors")
+    production = ParentalKey(Production, on_delete=models.CASCADE, related_name="editors")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="production_roles")
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.EDITOR)
-    tracks = models.ManyToManyField("archive.ConferenceTrack", blank=True)
+    tracks = ParentalManyToManyField("archive.ConferenceTrack", blank=True)
 
     class Meta:
         unique_together = [("production", "user")]

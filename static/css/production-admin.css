@@ -1,0 +1,47 @@
+/* Proceedings production pages inside the back office (Wagtail admin). Uses Wagtail's colour
+   variables, so the pages follow its light and dark themes. */
+.iglc-prod { padding-bottom: 3rem; }
+.iglc-prod .page-head { padding: 1.5rem 0 .5rem; border-bottom: 1px solid var(--w-color-border-furniture, #e0e0e0); margin-bottom: 1.25rem; }
+.iglc-prod .page-head h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 .4rem; }
+.iglc-prod .kicker { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 .3rem; }
+.iglc-prod .kicker a { color: var(--w-color-text-link-default, #007d7e); text-decoration: none; }
+.iglc-prod .lead { font-size: 1rem; color: var(--w-color-text-meta, #5c5c5c); max-width: 60rem; margin: 0 0 .75rem; }
+.iglc-prod h2 { font-size: 1.2rem; margin: 1.75rem 0 .6rem; }
+.iglc-prod h3 { font-size: 1rem; margin: 1.25rem 0 .5rem; }
+.iglc-prod p, .iglc-prod li { max-width: 72rem; }
+.iglc-prod .muted { color: var(--w-color-text-meta, #5c5c5c); }
+.iglc-prod .small { font-size: .875rem; }
+.iglc-prod .ok { color: var(--w-color-positive-100, #1b8666); font-weight: 600; }
+.iglc-prod .fail { color: var(--w-color-critical-200, #cd4444); font-weight: 600; }
+.iglc-prod .button + .button, .iglc-prod form + .button { margin-left: .4rem; }
+.iglc-prod .prod-filters { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; margin: 1rem 0; }
+.iglc-prod .prod-filters label { display: flex; gap: .4rem; align-items: center; }
+.iglc-prod table.prod-table { width: 100%; margin: .5rem 0 1rem; }
+.iglc-prod table.prod-table td, .iglc-prod table.prod-table th { vertical-align: top; }
+.iglc-prod tr.differs td { background: var(--w-color-warning-50, #faecd5); }
+.iglc-prod .badge { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-size: .8rem; white-space: nowrap;
+  border: 1px solid var(--w-color-border-furniture, #e0e0e0); background: var(--w-color-surface-page, #fff); }
+.iglc-prod .badge.approved { background: var(--w-color-positive-50, #e0fbf4); }
+.iglc-prod .badge.needs_work { background: var(--w-color-critical-50, #fde9e9); }
+.iglc-prod .badge.uploaded { background: var(--w-color-info-50, #e2f5fc); }
+.iglc-prod .upload-report { margin: 1rem 0 1.5rem; padding: .9rem 1rem; border-left: 3px solid var(--w-color-secondary, #2e1f5e);
+  background: var(--w-color-surface-menus, #f6f6f8); }
+.iglc-prod .panel { border: 1px solid var(--w-color-border-furniture, #e0e0e0); border-radius: 5px; padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.iglc-prod .panel h3 { margin-top: 0; }
+.iglc-prod .paper-layout { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 2.5rem; align-items: start; }
+@media (max-width: 70rem) { .iglc-prod .paper-layout { grid-template-columns: 1fr; } }
+.iglc-prod .paper-layout aside select, .iglc-prod .paper-layout aside input, .iglc-prod .paper-layout aside textarea { width: 100%; box-sizing: border-box; }
+.iglc-prod .arrange-track { margin: 1rem 0; padding: .5rem .75rem; border: 1px solid var(--w-color-border-furniture, #e0e0e0); border-radius: 5px; }
+.iglc-prod .arrange-track h2 { font-size: 1.05rem; margin: .25rem 0 .5rem; }
+.iglc-prod .arrange-papers { list-style: none; padding: 0; margin: 0; min-height: 1.5rem; }
+.iglc-prod .arrange-papers li { display: flex; gap: .6rem; align-items: baseline; padding: .35rem .25rem; border-top: 1px solid var(--w-color-border-furniture, #e0e0e0); }
+.iglc-prod .arrange-papers li .pp { min-width: 6.5rem; font-variant-numeric: tabular-nums; color: var(--w-color-text-meta, #5c5c5c); }
+.iglc-prod .grip { cursor: grab; color: var(--w-color-text-meta, #5c5c5c); user-select: none; }
+.iglc-prod .dragging { opacity: .45; }
+.iglc-prod .plain-list { list-style: none; padding: 0; }
+.iglc-prod .publish-progress { font-variant-numeric: tabular-nums; margin-left: .75rem; }
+.iglc-prod .book-steps { padding-left: 1.25rem; }
+.iglc-prod .book-steps > li { margin-bottom: 2rem; }
+.iglc-prod .book-steps h2 { margin-top: 0; }
+.iglc-prod .isbn-form label { margin-right: 1rem; }
+.iglc-prod .linklike { background: none; border: 0; padding: 0; color: var(--w-color-text-link-default, #007d7e); text-decoration: underline; cursor: pointer; font: inherit; }

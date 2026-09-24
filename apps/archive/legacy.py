@@ -57,8 +57,8 @@ STATIC_REDIRECTS = {
 
 # Old areas that need a login are replaced by the new admin.
 PREFIX_REDIRECTS = [
-    ("/admin", "/cms/"),
-    ("/account", "/cms/login/"),
+    ("/admin", "/manage/"),
+    ("/account", "/manage/login/"),
     ("/datapunching", "/manage/"),
 ]
 

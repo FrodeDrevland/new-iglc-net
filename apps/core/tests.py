@@ -66,12 +66,14 @@ class LoginLogoutTests(TestCase):
     def test_logout_from_admin_and_cms_goes_to_front_page(self):
         self.client.login(username="admin", password="pw")
         self.assertRedirects(self.client.post("/manage/logout/"), "/", fetch_redirect_response=False)
-        self.client.login(username="admin", password="pw")
-        self.assertRedirects(self.client.post("/cms/logout/"), "/", fetch_redirect_response=False)
+        # the old addresses of the back office lead to the new one
+        self.assertRedirects(self.client.get("/cms/pages/"), "/manage/pages/", fetch_redirect_response=False)
+        self.assertRedirects(self.client.get("/production/35/"), "/manage/production/35/", fetch_redirect_response=False)
 
-    def test_admin_links_to_cms_and_site(self):
+    def test_one_back_office(self):
         self.client.login(username="admin", password="pw")
         page = self.client.get("/manage/").content.decode()
-        self.assertIn('href="/cms/"', page)
-        self.assertIn('href="/">View site', page)
-        self.assertIn("/manage/", self.client.get("/cms/").content.decode())
+        self.assertIn('"url": "/"', page)  # View site, in the sidebar
+        self.assertIn("/manage/production/", page)
+        # Django's admin is a fallback for superusers only
+        self.assertEqual(self.client.get("/django-admin/").status_code, 200)

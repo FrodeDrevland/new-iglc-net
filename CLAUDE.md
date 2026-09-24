@@ -31,6 +31,7 @@ The full plan: https://claude.ai/code/artifact/4eba9a7d-936c-4caa-affb-cbefeb7f4
 The old site is in Frode's Google Drive under 80. Koding/Visual Studio/IGLC (ASP.NET MVC 5, EF6, SQL Server, Azure App Service and Blob Storage). Useful references: Models/*.cs, Helpers/CrossrefXmlCreator.cs, Areas/Admin/Controllers/ImportController.cs and ProceedingsController.cs.
 
 ## Working notes
+- One back office: Wagtail's admin at /manage/. Archive, committees and production are Wagtail viewsets (apps/*/admin_views.py, wagtail_hooks.py); the production pages extend templates/production/editor/_base.html. Django's admin at /django-admin/ is a superuser-only fallback: do not build new features there.
 - Fresh checkouts need `python manage.py makemigrations archive pages` once; commit the generated migrations.
 - Old-URL redirects live in apps/archive/legacy.py; the full route list is docs/url-inventory.md. Update both together.
 - tools/url_inventory.py uses only the standard library; run it where iglc.net and api.crossref.org are reachable.

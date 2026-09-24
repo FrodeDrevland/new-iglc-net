@@ -41,7 +41,56 @@ def _submission(request, production, conftool_id):
 
 @login_required
 def production_list(request):
-    return render(request, "production/editor/list.html", {"productions": productions_for(request.user)})
+    """The productions this person works on. Superusers and publishers also start new ones: from
+    ConfTool's export of accepted papers, or from a conference already published in the archive."""
+    from apps.archive.models import Conference
+
+    can_start = request.user.is_superuser or is_publisher(request.user)
+    if request.method == "POST":
+        if not can_start:
+            raise PermissionDenied
+        conference = Conference.objects.filter(pk=request.POST.get("conference")).first()
+        if conference is None:
+            messages.error(request, "Choose the conference.")
+        elif request.POST.get("action") == "conftool":
+            _import_conftool(request, conference)
+        elif request.POST.get("action") == "adopt":
+            from .adopt import AdoptError, adopt_published
+
+            try:
+                production, report = adopt_published(conference, request.user)
+                messages.success(request, f"{production}: {report['added']} papers taken from the archive, "
+                                          f"{report['updated']} updated.")
+                return redirect("proceedings:production", number=conference.number)
+            except AdoptError as error:
+                messages.error(request, str(error))
+        return redirect("proceedings:productions")
+    return render(request, "production/editor/list.html", {
+        "productions": productions_for(request.user), "can_start": can_start,
+        "conferences": Conference.objects.order_by("-number"),
+        "published": Conference.objects.filter(papers__isnull=False).distinct().order_by("-number"),
+    })
+
+
+def _import_conftool(request, conference):
+    import tempfile
+    from pathlib import Path
+
+    from django.core.management import CommandError, call_command
+
+    upload = request.FILES.get("file")
+    if not upload or Path(upload.name).suffix.lower() not in (".xlsx", ".csv"):
+        messages.error(request, "Choose ConfTool's export of accepted papers (.xlsx or .csv).")
+        return
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / f"export{Path(upload.name).suffix.lower()}"
+        path.write_bytes(upload.read())
+        out = io.StringIO()
+        try:
+            call_command("import_conftool", conference.number, str(path), stdout=out)
+            messages.success(request, " ".join(out.getvalue().split()))
+        except CommandError as error:
+            messages.error(request, str(error))
 
 
 @login_required
@@ -183,7 +232,7 @@ def paper(request, number, conftool_id):
                 messages.success(request, "The correction is published.")
             except publishing.PublishError as error:
                 messages.error(request, str(error))
-        return redirect("production:paper", number=number, conftool_id=conftool_id)
+        return redirect("proceedings:paper", number=number, conftool_id=conftool_id)
 
     versions = list(submission.versions.select_related("uploaded_by"))
     current = versions[0] if versions else None
@@ -230,13 +279,13 @@ def arrange(request, number):
             first_page = int(request.POST.get("first_page") or 1)
         except (ValueError, TypeError):
             messages.error(request, "The order could not be read; nothing was changed.")
-            return redirect("production:arrange", number=number)
+            return redirect("proceedings:arrange", number=number)
         if first_page != production.first_page:
             production.first_page = max(1, first_page)
             production.save(update_fields=["first_page"])
         save_order(production, [(t or None, [int(i) for i in ids]) for t, ids in layout])
         messages.success(request, "Order and page numbers saved.")
-        return redirect("production:arrange", number=number)
+        return redirect("proceedings:arrange", number=number)
     layout, unknown = number_pages(production)
     return render(request, "production/editor/arrange.html", {
         "production": production, "layout": layout, "unknown": unknown, "role": my_role,
@@ -264,7 +313,7 @@ def publish(request, number):
             production.papers_requested_at, production.papers_requested_by = timezone.now(), request.user
             production.save(update_fields=["papers_requested_at", "papers_requested_by"])
             messages.success(request, "The publisher is asked to publish the papers.")
-        return redirect("production:publish", number=number)
+        return redirect("proceedings:publish", number=number)
     if request.method == "POST":
         if not is_publisher(request.user):
             raise PermissionDenied
@@ -274,12 +323,12 @@ def publish(request, number):
             if action == "finish":
                 publishing.finish(production, request.user)
                 messages.success(request, "The papers are published, and the ZIP of all papers is on the conference page.")
-                return redirect("production:publish", number=number)
+                return redirect("proceedings:publish", number=number)
             return JsonResponse(publishing.publish_next(production, request.user, n=10))
         except publishing.PublishError as error:
             if action == "finish":
                 messages.error(request, str(error))
-                return redirect("production:publish", number=number)
+                return redirect("proceedings:publish", number=number)
             return JsonResponse({"error": str(error)}, status=400)
     published = production.submissions.filter(published_version__isnull=False).select_related("paper")
     return render(request, "production/editor/publish.html", {
@@ -412,7 +461,7 @@ def book(request, number):
             if action == "fetch":
                 return JsonResponse({"error": str(error)}, status=400)
             messages.error(request, str(error))
-        return redirect("production:book", number=number)
+        return redirect("proceedings:book", number=number)
 
     parts = books.parts_of(production)
     chairs = {}

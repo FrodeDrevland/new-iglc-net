@@ -68,7 +68,7 @@ docker exec -it iglc-web python manage.py createsuperuser
 4. Restart SWAG.
 
 Then open https://iglc.drevland.net and log in with `iglc` and the password. Give that login to whoever should see the preview.
-The site admin is at `/manage/` and the CMS at `/cms/`, with the account from `createsuperuser`.
+The back office is at `/manage/` (pages, archive, committees, proceedings production, users), with the account from `createsuperuser`. Django's own admin is at `/django-admin/`, for superusers only, as a fallback.
 
 ## Updating
 

@@ -1,9 +1,9 @@
-{% extends "base.html" %}
-{% block title %}Publish | {{ production }}{% endblock %}
-{% block content %}
+{% extends "production/editor/_base.html" %}
+{% block titletag %}Publish | {{ production }}{% endblock %}
+{% block main %}
 {% with n=production.conference.number %}
 <div class="page-head">
-  <p class="kicker"><a href="{% url 'production:production' n %}">{{ production }}</a></p>
+  <p class="kicker"><a href="{% url 'proceedings:production' n %}">{{ production }}</a></p>
   <h1>Publish the papers</h1>
   <p class="lead">A chief editor asks for publication; a publisher approves it. Each paper goes on the site with its DOI, its page numbers and the IGLC headers and footers. When the last one is published, the page numbers are fixed, the conference appears in the proceedings list and a ZIP of all papers is made. The full proceedings PDF is a later step.</p>
 </div>
@@ -11,16 +11,16 @@
 {% if production.papers_published %}
   <p class="upload-report">Published: {{ published|length }} papers. {% if production.conference.papers_zip_url %}<a href="{{ production.conference.papers_zip_url }}">ZIP of all papers</a> · {% endif %}<a href="{{ production.conference.get_absolute_url }}">Conference page</a></p>
   {% if waiting_corrections %}<h2>Corrections waiting for the publisher</h2>
-  <ul>{% for s in waiting_corrections %}<li><a href="{% url 'production:paper' n s.conftool_id %}">{{ s.conftool_id }}</a>: {{ s.correction_note }}{% if s.correction_requested_by %} ({{ s.correction_requested_by.get_full_name|default:s.correction_requested_by.username }}){% endif %}</li>{% endfor %}</ul>{% endif %}
+  <ul>{% for s in waiting_corrections %}<li><a href="{% url 'proceedings:paper' n s.conftool_id %}">{{ s.conftool_id }}</a>: {{ s.correction_note }}{% if s.correction_requested_by %} ({{ s.correction_requested_by.get_full_name|default:s.correction_requested_by.username }}){% endif %}</li>{% endfor %}</ul>{% endif %}
   <h2>Corrections after publication</h2>
   <p>To correct a paper, upload the corrected Word file and PDF on the paper's page and send the correction to the publisher there. It must fit the paper's page range; the DOI stays, the old PDF is kept and the paper's page says it was corrected.</p>
-  <ul>{% for c in corrections %}<li><a href="{% url 'production:paper' n c.submission.conftool_id %}">{{ c.submission.conftool_id }}</a>, {{ c.time|date:"j M Y" }}{% if c.user %} by {{ c.user.get_full_name|default:c.user.username }}{% endif %}: {{ c.note }}</li>{% empty %}<li>None.</li>{% endfor %}</ul>
+  <ul>{% for c in corrections %}<li><a href="{% url 'proceedings:paper' n c.submission.conftool_id %}">{{ c.submission.conftool_id }}</a>, {{ c.time|date:"j M Y" }}{% if c.user %} by {{ c.user.get_full_name|default:c.user.username }}{% endif %}: {{ c.note }}</li>{% empty %}<li>None.</li>{% endfor %}</ul>
 {% else %}
   {% if problems %}
     <h2>Not ready yet</h2>
     <ul>{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>
   {% else %}
-    <p class="upload-report">Ready: {{ left }} paper{{ left|pluralize }} to publish{% if published %} ({{ published|length }} published already){% endif %}. Check the <a href="{% url 'production:arrange' n %}">order and page numbers</a> first: after publication they cannot change.</p>
+    <p class="upload-report">Ready: {{ left }} paper{{ left|pluralize }} to publish{% if published %} ({{ published|length }} published already){% endif %}. Check the <a href="{% url 'proceedings:arrange' n %}">order and page numbers</a> first: after publication they cannot change.</p>
   {% endif %}
   {% if production.papers_requested_at %}
     <p>Publication asked for by {{ production.papers_requested_by.get_full_name|default:production.papers_requested_by.username }} on {{ production.papers_requested_at|date:"j F Y H:i" }}.</p>
@@ -41,7 +41,7 @@
 {% endif %}
 {% endwith %}
 {% endblock %}
-{% block scripts %}
+{% block extra_js %}{{ block.super }}
 <script>
 (function () {
   const start = document.getElementById("publish-start");

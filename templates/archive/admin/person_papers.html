@@ -1,0 +1,6 @@
+{% with person=self.instance %}{% if person.pk %}
+<ul>{% for author in person.authorships.all|dictsortreversed:"paper.conference.number" %}
+  <li><a href="{% url 'archive_paper:edit' author.paper.pk %}">{{ author.paper.title }}</a> (IGLC {{ author.paper.conference.number }}), printed as “{{ author.first_name }} {{ author.last_name }}”</li>
+{% empty %}<li>No papers.</li>{% endfor %}</ul>
+<p><a href="{{ person.get_absolute_url }}" target="_blank">The author's page on the site</a></p>
+{% else %}<p>Save the person first.</p>{% endif %}{% endwith %}

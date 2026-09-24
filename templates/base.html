@@ -13,15 +13,13 @@
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  {% if user.is_staff %}
+  {% if perms.wagtailadmin.access_admin %}
   <div class="admin-bar">
     <div class="wrap">
       <span class="admin-bar-label">Admin</span>
-      <a href="/cms/">Pages (CMS)</a>
-      <a href="{% url 'admin:index' %}">Archive (conferences, papers)</a>
-      <a href="{% url 'production:productions' %}">Proceedings production</a>
+      <a href="{% url 'wagtailadmin_home' %}">Manage</a>
       {% block admin_edit %}{% endblock %}
-      <form class="admin-bar-logout" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit">Log out {{ user.get_username }}</button></form>
+      <form class="admin-bar-logout" method="post" action="{% url 'manage_logout' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button type="submit">Log out {{ user.get_username }}</button></form>
     </div>
   </div>
   {% endif %}
@@ -74,7 +72,7 @@
       </div>
       <div class="footer-bottom">
         <span>Proceedings ISSN 2309-0979 (print) &middot; 2789-0015 (online) &middot; DOI prefix 10.24928</span>
-        <span><a href="/copyright/">Copyright</a>{% if not user.is_authenticated %} &middot; <a href="{% url 'admin:login' %}?next={{ request.get_full_path|urlencode }}" rel="nofollow">Log in</a>{% endif %}</span>
+        <span><a href="/copyright/">Copyright</a>{% if not user.is_authenticated %} &middot; <a href="{% url 'wagtailadmin_login' %}?next={{ request.get_full_path|urlencode }}" rel="nofollow">Log in</a>{% endif %}</span>
       </div>
     </div>
   </footer>
