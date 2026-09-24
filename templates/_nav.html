@@ -12,7 +12,14 @@
       </ul>
     </li>
     <li class="{% if nav_section == 'papers' %}current{% endif %}"><a href="{% url 'archive:conference_list' %}">Proceedings</a></li>
-    <li class="{% if nav_section == 'for-authors' %}current{% endif %}"><a href="/for-authors/">For authors</a></li>
+    <li class="has-sub {% if nav_section == 'for-authors' %}current{% endif %}">
+      <a href="/for-authors/">For authors</a>
+      <ul>
+        <li><a href="/for-authors/">Guidelines for authors</a></li>
+        <li><a href="/for-authors/templates/">Templates</a></li>
+        <li><a href="{% url 'production:check_form' %}">Check your paper</a></li>
+      </ul>
+    </li>
     <li class="has-sub{% if nav_section == 'community' or nav_section == 'links' %} current{% endif %}">
       <a href="/community/">Community</a>
       <ul>

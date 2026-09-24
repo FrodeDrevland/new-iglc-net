@@ -45,6 +45,18 @@ TEMPLATE_STYLES = {
 }
 
 
+class Issues(list):
+    """Messages for people, with a code per message for the rules (apps/production/checks.py)."""
+
+    def __init__(self):
+        super().__init__()
+        self.codes: list[str] = []
+
+    def add(self, code: str, message: str):
+        self.append(message)
+        self.codes.append(code)
+
+
 @dataclass
 class ManuscriptAuthor:
     name: str
@@ -70,10 +82,14 @@ class Manuscript:
     citation: str = ""
     citation_title: str = ""  # the title as the editors wrote it in the citation header
     track: str = ""
-    issues: list[str] = field(default_factory=list)
+    issues: Issues = field(default_factory=Issues)
 
     def as_dict(self):
-        return asdict(self)
+        data = {name: getattr(self, name) for name in self.__dataclass_fields__}
+        data["authors"] = [asdict(a) for a in self.authors]
+        data["issues"] = list(self.issues)
+        data["issue_codes"] = list(self.issues.codes)
+        return data
 
 
 # ---------------------------------------------------------------- XML helpers
@@ -283,27 +299,27 @@ def _read_authors(paragraphs, notes, note_order, issues) -> list[ManuscriptAutho
     rest = _strip_separators(_clean(pending_text))
     for name in filter(None, (_clean(n) for n in re.split(r",|&|\band\b", rest))):
         current.append([name, []])
-        issues.append(f"Author “{name}” has no footnote with affiliation")
+        issues.add("author_no_affiliation", f"Author “{name}” has no footnote with affiliation")
 
     for name, note_ids in current:
         name = re.sub(r"[\d*†‡§]+$", "", name).strip()
         missing = [n for n in note_ids if n not in by_number]
         if missing:
-            issues.append(f"{name} refers to footnote {', '.join(map(str, missing))}, which does not exist")
+            issues.add("footnote_missing", f"{name} refers to footnote {', '.join(map(str, missing))}, which does not exist")
         note = " / ".join(by_number[n] for n in note_ids if n in by_number).strip()
         first, last = split_name(name)
         author = ManuscriptAuthor(name=name, first_name=first, last_name=last, note=note, **parse_affiliation(note))
         if note and not author.email:
-            issues.append(f"No email address in the footnote of {name}")
+            issues.add("author_no_email", f"No email address in the footnote of {name}")
         if note and not author.orcid:
             if re.search(r"orcid", note, re.I):
-                issues.append(f"The ORCID of {name} is not a valid ORCID iD")
+                issues.add("orcid_invalid", f"The ORCID of {name} is not a valid ORCID iD")
             else:
-                issues.append(f"No ORCID in the footnote of {name}")
+                issues.add("author_no_orcid", f"No ORCID in the footnote of {name}")
         elif author.orcid and not orcid_checksum_ok(author.orcid):
-            issues.append(f"The ORCID of {name} ({author.orcid}) has a wrong check digit")
+            issues.add("orcid_invalid", f"The ORCID of {name} ({author.orcid}) has a wrong check digit")
         if re.search(r"\b(dr|prof|phd)\b\.?", name, re.I):
-            issues.append(f"Author name “{name}” includes a title")
+            issues.add("author_title_in_name", f"Author name “{name}” includes a title")
         authors.append(author)
     return authors
 
@@ -318,7 +334,7 @@ def read_manuscript(path) -> Manuscript:
         archive = zipfile.ZipFile(path)
         root = ET.fromstring(archive.read("word/document.xml"))
     except (zipfile.BadZipFile, KeyError) as error:
-        issues.append(f"Not a readable Word (.docx) file: {error}")
+        issues.add("not_docx", f"Not a readable Word (.docx) file: {error}")
         return result
 
     names = _style_names(archive)
@@ -337,15 +353,15 @@ def read_manuscript(path) -> Manuscript:
             title = [first[2]]
             if first[0] in author_paragraphs:
                 author_paragraphs.remove(first[0])
-            issues.append(f"The title is in the “{first[1]}” style, not the Title style")
+            issues.add("title_wrong_style", f"The title is in the “{first[1]}” style, not the Title style")
         else:
-            issues.append("No paragraph with the Title style")
+            issues.add("title_missing", "No paragraph with the Title style")
     result.title = " ".join(title)
 
     if author_paragraphs:
         result.authors = _read_authors(author_paragraphs, notes, note_order, issues)
     else:
-        issues.append("No paragraph with the Authors style")
+        issues.add("authors_missing", "No paragraph with the Authors style")
 
     # Sections by Heading 1
     sections, current = {}, None
@@ -362,28 +378,28 @@ def read_manuscript(path) -> Manuscript:
         result.abstract = " ".join(text for _, text in abstract)
         words = len(result.abstract.split())
         if words > 200:
-            issues.append(f"Abstract has {words} words (maximum 200)")
+            issues.add("abstract_long", f"Abstract has {words} words (maximum 200)")
     else:
-        issues.append("No “Abstract” heading (Heading 1)")
+        issues.add("abstract_missing", "No “Abstract” heading (Heading 1)")
 
     keywords = sections.get("keywords")
     if keywords:
         line = " ".join(text for _, text in keywords)
         result.keywords = [k.strip(" .") for k in re.split(r"[;,]", line) if k.strip(" .")]
         if len(result.keywords) > 5:
-            issues.append(f"{len(result.keywords)} keywords (maximum five)")
+            issues.add("keywords_many", f"{len(result.keywords)} keywords (maximum five)")
     else:
-        issues.append("No “Keywords” heading (Heading 1)")
+        issues.add("keywords_missing", "No “Keywords” heading (Heading 1)")
 
     for heading in MANDATORY_HEADINGS[2:]:
         if heading not in sections:
-            issues.append(f"No “{heading.capitalize()}” heading (Heading 1)")
+            issues.add("heading_missing", f"No “{heading.capitalize()}” heading (Heading 1)")
 
     letters = [c for c in result.title if c.isalpha()]
     if letters and sum(c.isupper() for c in letters) / len(letters) > 0.8:
-        issues.append("The title is typed in capitals (the Title style adds capitals itself)")
+        issues.add("title_capitals", "The title is typed in capitals (the Title style adds capitals itself)")
     if len(result.title) > 90:
-        issues.append(f"Title has {len(result.title)} characters (maximum 90)")
+        issues.add("title_long", f"Title has {len(result.title)} characters (maximum 90)")
 
     # Styles outside the template
     stray = {}
@@ -391,7 +407,8 @@ def read_manuscript(path) -> Manuscript:
         if text and style not in TEMPLATE_STYLES and not style.startswith(("toc", "bibliography")):
             stray[style] = stray.get(style, 0) + 1
     for style, count in sorted(stray.items(), key=lambda item: -item[1]):
-        issues.append(f"{count} paragraph{'s' if count > 1 else ''} in style “{style}”, which is not a template style")
+        issues.add("non_template_styles", f"{count} paragraph{'s' if count > 1 else ''} in the style “{style.title()}”, "
+                   "which is not one of the template's styles (use Text First, Text Running, Table body etc.)")
 
     # Editors' header and footer: citation, DOI, pages, track
     texts = _header_footer_texts(archive)

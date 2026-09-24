@@ -40,6 +40,7 @@ urlpatterns = [
     path("", archive_views.home, name="home"),
     path("", include("apps.archive.urls")),
     path("", include("apps.governance.urls")),
+    path("", include("apps.production.urls")),
 ]
 
 if settings.DEBUG:

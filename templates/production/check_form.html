@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Check your paper{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="kicker"><a href="/for-authors/">For authors</a></p>
+  <h1>Check your paper</h1>
+  <p class="lead">Upload your paper to check it against the IGLC template before you submit it. You get a report of what needs fixing, which you can download as a PDF.</p>
+</div>
+<div class="prose check-intro">
+  <p>The check looks at what can be checked automatically: the template's styles, title, authors and their affiliation footnotes (email, ORCID), abstract, keywords, the required headings, page size and margins, and, for papers under review, that they are anonymous. The editors still read every paper, so a paper that passes can still be sent back.</p>
+  <p>Your file is only used for the check and is not kept. The report records the file's name and a fingerprint (SHA-256) that identifies the exact file checked.</p>
+</div>
+<form class="check-form" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+  <fieldset>
+    <legend>{{ form.stage.label }}</legend>
+    {% for radio in form.stage %}<label class="radio">{{ radio.tag }} {{ radio.choice_label }}</label>{% endfor %}
+  </fieldset>
+  <p><label for="{{ form.paper.id_for_label }}"><b>{{ form.paper.label }}</b></label><br>{{ form.paper }}{% for e in form.paper.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</p>
+  <p><label for="{{ form.pdf.id_for_label }}"><b>{{ form.pdf.label }}</b></label><br>{{ form.pdf }}{% for e in form.pdf.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</p>
+  <button class="button" type="submit">Check the paper</button>
+</form>
+{% endblock %}

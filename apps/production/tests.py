@@ -2,7 +2,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 
 from .docx_reader import orcid_checksum_ok, parse_affiliation, read_manuscript
 
@@ -90,7 +90,7 @@ class ReaderTests(SimpleTestCase):
     def test_issues(self):
         issues = " | ".join(self.result.issues)
         self.assertIn("No ORCID in the footnote of Cy Lee", issues)
-        self.assertIn("1 paragraph in style “normal”", issues)
+        self.assertIn("1 paragraph in the style “Normal”", issues)
         self.assertNotIn("Abstract", issues)
 
     def test_affiliations_numbered_inside_one_footnote(self):
@@ -208,3 +208,38 @@ class PdfRunningTests(SimpleTestCase):
 
         pieces = [w for w, _ in _words([Segment("Garcia-Lopez (pp. 922–933). x")])]
         self.assertEqual(pieces, ["Garcia-", "Lopez ", "(pp. ", "922–", "933). ", "x"])
+
+
+class PaperCheckPageTests(TestCase):
+    def test_upload_check_report_and_pdf(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from .models import PaperCheck
+
+        docx = make_docx(BODY, NOTES, HEADER).read_bytes()
+        response = self.client.post("/for-authors/check-your-paper/", {
+            "stage": "camera_ready", "paper": SimpleUploadedFile("my paper.docx", docx)})
+        check = PaperCheck.objects.get()
+        self.assertRedirects(response, f"/for-authors/check-your-paper/{check.pk}/")
+        page = self.client.get(response["Location"]).content.decode()
+        self.assertIn("Takt planning in practice", page)
+        self.assertIn("No ORCID in the footnote of Cy Lee", page)
+        self.assertIn("number of pages was not checked", page)
+        pdf = self.client.get(f"/for-authors/check-your-paper/{check.pk}/report.pdf")
+        self.assertEqual(pdf["Content-Type"], "application/pdf")
+        self.assertTrue(pdf.content.startswith(b"%PDF"))
+
+    def test_review_stage_requires_anonymity(self):
+        from .checks import check_paper
+
+        result = check_paper(make_docx(BODY, NOTES, HEADER), "review")
+        self.assertFalse(result.passed)
+        self.assertIn("not_anonymous", [f.code for f in result.findings])
+        self.assertNotIn("author_no_orcid", [f.code for f in result.findings])
+
+    def test_rejects_other_files(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        response = self.client.post("/for-authors/check-your-paper/", {
+            "stage": "camera_ready", "paper": SimpleUploadedFile("paper.pdf", b"%PDF-1.4")})
+        self.assertContains(response, "Please upload the paper as a Word file")

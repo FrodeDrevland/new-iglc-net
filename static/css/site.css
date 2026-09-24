@@ -270,3 +270,15 @@ table.members th:nth-child(4) { width: 7.5rem; }
 /* Tracks in a conference's paper list */
 .track-heading { font-size: 1.15rem; margin: 2rem 0 .25rem; padding-bottom: .3rem; border-bottom: 2px solid var(--orange); }
 .track-group[hidden] { display: none; }
+
+/* Paper check */
+.check-form { max-width: 44rem; margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--soft); }
+.check-form fieldset { border: 0; padding: 0; margin: 0 0 1rem; }
+.check-form legend { font-weight: 700; margin-bottom: .35rem; }
+.check-form .radio { display: block; margin: .2rem 0; }
+.field-error, .form-errors { display: block; color: #b42318; font-size: .9rem; }
+.verdict { padding: 0 .4rem; border-radius: 4px; }
+.verdict.pass { background: #dcfce7; color: #14532d; }
+.verdict.fail { background: #fee2e2; color: #7f1d1d; }
+.check-facts .hash { font-family: ui-monospace, monospace; font-size: .8rem; word-break: break-all; }
+.check-group h2 { font-size: 1.1rem; margin-top: 1.5rem; }

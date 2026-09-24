@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Template check {{ check.short_id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'production:check_form' %}">Check your paper</a></p>
+  <h1>Template check: {% if check.passed %}<span class="verdict pass">passed</span>{% else %}<span class="verdict fail">not passed</span>{% endif %}</h1>
+  <p class="lead">{{ check.title|default:"(no title found)" }}</p>
+</div>
+<dl class="facts check-facts">
+  <dt>Submitting as</dt><dd>{{ stage }}</dd>
+  <dt>File</dt><dd>{{ check.file_name }}</dd>
+  <dt>Checked</dt><dd>{{ check.created|date:"j F Y, H:i" }} UTC</dd>
+  <dt>Check ID</dt><dd>{{ check.short_id }}</dd>
+  <dt>Fingerprint</dt><dd class="hash">{{ check.sha256 }}</dd>
+</dl>
+<p><a class="button" href="{% url 'production:check_report_pdf' check.pk %}">Download the report (PDF)</a> <a class="button secondary" href="{% url 'production:check_form' %}">Check another file</a></p>
+{% for label, items in groups %}
+<section class="check-group">
+  <h2>{{ label }} ({{ items|length }})</h2>
+  <ul>{% for item in items %}<li>{{ item.message }}</li>{% endfor %}</ul>
+</section>
+{% empty %}
+<p>No problems found.</p>
+{% endfor %}
+<p class="muted small">This page is the report's permanent address: editors can open it to verify a downloaded report.</p>
+{% endblock %}
