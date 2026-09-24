@@ -20,7 +20,9 @@
 param(
     [Parameter(Mandatory = $true)] [string] $InputFolder,
     [string] $OutputFolder = $InputFolder,
-    [switch] $Pdf
+    [switch] $Pdf,
+    # Show Word while it works: use this if the script seems to hang, to see what Word is asking.
+    [switch] $Visible
 )
 
 $ErrorActionPreference = "Stop"
@@ -33,7 +35,7 @@ New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
 $files = Get-ChildItem -Path $InputFolder -Filter *.docx | Where-Object { $_.Name -notlike '~$*' } |
     Sort-Object { [int]($_.BaseName -replace '\D', '0') }
 $word = New-Object -ComObject Word.Application
-$word.Visible = $false
+$word.Visible = [bool]$Visible
 $word.DisplayAlerts = 0
 $rows = @()
 try {
@@ -41,7 +43,13 @@ try {
     foreach ($file in $files) {
         $i++
         Write-Progress -Activity "Word" -Status $file.Name -PercentComplete (100 * $i / $files.Count)
-        $doc = $word.Documents.Open($file.FullName, $false, $true, $false)
+        Write-Host ("{0,-12} opening..." -f $file.Name) -NoNewline
+        # Open(FileName, ConfirmConversions, ReadOnly, AddToRecentFiles, PasswordDocument,
+        #      PasswordTemplate, Revert, WritePasswordDocument, WritePasswordTemplate, Format,
+        #      Encoding, Visible, OpenAndRepair, DocumentDirection, NoEncodingDialog)
+        # Empty passwords stop Word from waiting for one; NoEncodingDialog avoids another prompt.
+        $doc = $word.Documents.Open($file.FullName, $false, $true, $false, "", "", $true, "", "",
+            0, [Type]::Missing, [bool]$Visible, $false, [Type]::Missing, $true)
         try {
             $doc.Fields.Update() | Out-Null
             foreach ($section in $doc.Sections) {
@@ -55,7 +63,7 @@ try {
                     0, 0, 0, 0, $true, $true, $wdExportCreateHeadingBookmarks, $true, $true, $false)
             }
             $rows += [pscustomobject]@{ file = $file.Name; pages = $pages }
-            Write-Host ("{0,-12} {1,3} pages" -f $file.Name, $pages)
+            Write-Host (" {0,3} pages" -f $pages)
         }
         finally {
             $doc.Close([ref]0)
