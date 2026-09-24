@@ -264,7 +264,7 @@ class AuthorSkillTests(TestCase):
         self.assertIn("No ORCID in the footnote of Cy Lee", out.stdout)
 
 
-# ---------------------------------------------------------------- volumes and ConfTool
+# ---------------------------------------------------------------- productions and ConfTool
 
 class ConfToolImportTests(TestCase):
     def setUp(self):

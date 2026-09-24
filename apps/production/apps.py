@@ -26,7 +26,7 @@ def create_editor_group(sender, **kwargs):
         create_permissions(apps.get_app_config(label), verbosity=0, using=kwargs.get("using", "default"))
     group, _ = Group.objects.get_or_create(name=EDITOR_GROUP)
     wanted = [
-        ("production", "view_proceedingsvolume"), ("production", "view_volumeeditor"),
+        ("production", "view_production"), ("production", "view_productioneditor"),
         ("production", "view_submission"), ("production", "change_submission"),
         ("production", "view_paperversion"), ("production", "add_paperversion"),
         ("archive", "view_conferencetrack"), ("production", "view_papercheck"),

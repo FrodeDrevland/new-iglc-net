@@ -1,4 +1,4 @@
-"""Create or update a conference's proceedings volume from ConfTool's accepted papers.
+"""Create or update a conference's proceedings production from ConfTool's accepted papers.
 
     python manage.py import_conftool 35 accepted.xlsx            # ConfTool export (xlsx or csv)
     python manage.py import_conftool 35 accepted.csv --column track="Track / Topic"
@@ -16,7 +16,7 @@ from django.db import transaction
 
 from apps.archive.models import Conference, ConferenceTrack
 from apps.production.conftool import read_accepted
-from apps.production.models import ProceedingsVolume, Submission
+from apps.production.models import Production, Submission
 
 EMAIL = re.compile(r"[\w.+'-]+@[\w-]+(?:\.[\w-]+)+")
 
@@ -36,7 +36,7 @@ def papers_from_archive(conference):
 
 
 class Command(BaseCommand):
-    help = "Create or update a proceedings volume from ConfTool's export of accepted papers."
+    help = "Create or update a proceedings production from ConfTool's export of accepted papers."
 
     def add_arguments(self, parser):
         parser.add_argument("conference", type=int, help="conference number, e.g. 35")
@@ -64,7 +64,7 @@ class Command(BaseCommand):
         else:
             raise CommandError("Give a ConfTool export file, or --from-archive.")
 
-        volume, created = ProceedingsVolume.objects.get_or_create(conference=conf)
+        production, created = Production.objects.get_or_create(conference=conf)
         tracks = {t.title: t for t in conf.tracks.all()}
         new = updated = 0
         for index, data in enumerate(papers):
@@ -75,14 +75,14 @@ class Command(BaseCommand):
                     track = tracks[data["track"]] = ConferenceTrack.objects.create(
                         conference=conf, title=data["track"], order=len(tracks) + 1)
             submission, was_created = Submission.objects.update_or_create(
-                volume=volume, conftool_id=data["conftool_id"],
+                production=production, conftool_id=data["conftool_id"],
                 defaults={"title": data["title"][:500], "track": track, "registered_authors": data["authors"]})
             new += was_created
             updated += not was_created
         ids = {p["conftool_id"] for p in papers}
-        missing = volume.submissions.exclude(conftool_id__in=ids).exclude(status=Submission.Status.WITHDRAWN)
+        missing = production.submissions.exclude(conftool_id__in=ids).exclude(status=Submission.Status.WITHDRAWN)
         self.stdout.write(self.style.SUCCESS(
-            f"{volume}{' (new)' if created else ''}: {new} papers added, {updated} updated, {len(tracks)} tracks."))
+            f"{production}{' (new)' if created else ''}: {new} papers added, {updated} updated, {len(tracks)} tracks."))
         if missing.exists():
             self.stdout.write(self.style.WARNING(
                 "Not in the list any more (mark them withdrawn if so): "

@@ -114,20 +114,22 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
 
 ## Built so far
 
-**Step 1 (volumes, papers, editors):** apps/production/models.py
+**Step 1 (productions, papers, editors):** apps/production/models.py
 
-- *Proceedings volume* per conference (status, first page number), with its *editors*: chief
-  editors see and arrange everything; editors see the papers of their tracks, or all papers.
+- *Production* per conference (status, first page number): the making of its proceedings.
+  Not the same as a *volume*, which in the archive is a published book (older proceedings
+  were printed in several); when published, the papers go into the volume(s) by page.
+- *Production editors*: chief editors see and arrange everything; editors see the papers of their tracks, or all papers.
 - *Submission*: an accepted paper (ConfTool ID, registered title, track, registered authors
   with email addresses, status, editor, position in its track, first page, DOI
   10.24928/year/ConfTool ID, and later the published archive paper).
 - *Paper version*: every upload (Word file, PDF, page count, what was read, the check), kept.
 - Tracks have an order in the proceedings.
-- `import_conftool 35 export.xlsx` creates or updates the volume from ConfTool's export of
+- `import_conftool 35 export.xlsx` creates or updates the production from ConfTool's export of
   accepted papers (columns found by their headings, or named with --column);
   `import_conftool 34 --from-archive` builds one from the archive for trying out.
 - Editor accounts: Manage → Users → add user, tick "Staff status", group "Proceedings
-  editors"; then add the person to the volume (Manage → Proceedings volumes).
+  editors"; then add the person to the production (Manage → Proceedings productions).
 
 ## Open
 

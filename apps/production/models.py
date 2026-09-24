@@ -33,8 +33,11 @@ class PaperCheck(models.Model):
 
 # ---------------------------------------------------------------- proceedings production
 
-class ProceedingsVolume(models.Model):
-    """The proceedings of one conference while they are being made."""
+class Production(models.Model):
+    """The making of one conference's proceedings: collecting, editing and arranging the papers.
+
+    Not to be confused with archive.Volume, a published book (older proceedings were printed
+    in several). When published, the papers go into the conference's volume(s) by page."""
 
     class Status(models.TextChoices):
         COLLECTING = "collecting", "Collecting and editing papers"
@@ -48,7 +51,7 @@ class ProceedingsVolume(models.Model):
 
     class Meta:
         ordering = ["-conference__number"]
-        verbose_name = "proceedings volume"
+        verbose_name = "proceedings production"
 
     def __str__(self):
         return f"Proceedings IGLC {self.conference.number}"
@@ -58,24 +61,24 @@ class ProceedingsVolume(models.Model):
         return self.conference.year
 
 
-class VolumeEditor(models.Model):
-    """A person working on a volume. Chief editors see and arrange everything; editors
+class ProductionEditor(models.Model):
+    """A person working on a production. Chief editors see and arrange everything; editors
     see the papers of their tracks (or all papers when no tracks are given)."""
 
     class Role(models.TextChoices):
         CHIEF = "chief", "Chief editor"
         EDITOR = "editor", "Editor"
 
-    volume = models.ForeignKey(ProceedingsVolume, on_delete=models.CASCADE, related_name="editors")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="volume_roles")
+    production = models.ForeignKey(Production, on_delete=models.CASCADE, related_name="editors")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="production_roles")
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.EDITOR)
     tracks = models.ManyToManyField("archive.ConferenceTrack", blank=True)
 
     class Meta:
-        unique_together = [("volume", "user")]
+        unique_together = [("production", "user")]
 
     def __str__(self):
-        return f"{self.user} ({self.get_role_display()}, {self.volume})"
+        return f"{self.user} ({self.get_role_display()}, {self.production})"
 
 
 class Submission(models.Model):
@@ -88,7 +91,7 @@ class Submission(models.Model):
         APPROVED = "approved", "Approved"
         WITHDRAWN = "withdrawn", "Withdrawn"
 
-    volume = models.ForeignKey(ProceedingsVolume, on_delete=models.CASCADE, related_name="submissions")
+    production = models.ForeignKey(Production, on_delete=models.CASCADE, related_name="submissions")
     conftool_id = models.PositiveIntegerField("ConfTool ID")
     title = models.CharField(max_length=500, help_text="As registered (ConfTool); the published title comes from the paper.")
     track = models.ForeignKey("archive.ConferenceTrack", null=True, blank=True, on_delete=models.SET_NULL)
@@ -105,15 +108,15 @@ class Submission(models.Model):
     note = models.TextField(blank=True)
 
     class Meta:
-        unique_together = [("volume", "conftool_id")]
-        ordering = ["volume", "track__order", "position", "conftool_id"]
+        unique_together = [("production", "conftool_id")]
+        ordering = ["production", "track__order", "position", "conftool_id"]
 
     def __str__(self):
         return f"{self.conftool_id}: {self.title}"
 
     @property
     def doi(self):
-        year = self.volume.doi_year
+        year = self.production.doi_year
         return f"10.24928/{year}/{self.conftool_id:04d}" if year else ""
 
     @property
@@ -123,7 +126,7 @@ class Submission(models.Model):
 
 def _version_path(instance, filename):
     submission = instance.submission
-    return (f"production/iglc{submission.volume.conference.number}/{submission.conftool_id}/"
+    return (f"production/iglc{submission.production.conference.number}/{submission.conftool_id}/"
             f"v{instance.number}-{filename}")
 
 
