@@ -1,0 +1,22 @@
+{% extends "conferences/base.html" %}
+{% block content %}
+<article class="conf-page">
+  <h1>{{ page.title }}</h1>
+  {% if page.intro %}<p class="lead">{{ page.intro }}</p>{% endif %}
+  {% with result=page.papers %}{% with groups=result.0 published=result.1 %}
+  {% if published %}<p>The papers are published in the <a href="{{ main_site_url }}{{ conference.get_absolute_url }}">IGLC {{ conference.number }} proceedings</a>.</p>{% endif %}
+  {% for track, papers in groups %}
+  <section>
+    <h2>{% if track %}{{ track.title }}{% else %}Papers{% endif %} <span class="muted">({{ papers|length }})</span></h2>
+    <ul class="conf-papers">
+    {% for p in papers %}
+      <li>{% if p.url %}<a href="{{ main_site_url }}{{ p.url }}">{{ p.title }}</a>{% else %}<span class="conf-paper-title">{{ p.title }}</span>{% endif %}{% if p.authors %}<br><span class="muted">{{ p.authors }}</span>{% endif %}</li>
+    {% endfor %}
+    </ul>
+  </section>
+  {% empty %}
+  <p>The accepted papers will be listed here.</p>
+  {% endfor %}
+  {% endwith %}{% endwith %}
+</article>
+{% endblock %}

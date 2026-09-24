@@ -1,0 +1,19 @@
+{% extends "conferences/base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+{% block content %}
+<article class="conf-page">
+  <h1>{{ page.title }}</h1>
+  {% if page.intro %}<p class="lead">{{ page.intro }}</p>{% endif %}
+  {% for level, sponsors in page.levels %}
+  <section>
+    {% if level %}<h2>{{ level }}</h2>{% endif %}
+    <ul class="conf-sponsors">
+    {% for s in sponsors %}
+      <li>{% if s.url %}<a href="{{ s.url }}">{% endif %}{% if s.logo %}{% image s.logo max-320x160 alt=s.name %}{% else %}<span>{{ s.name }}</span>{% endif %}{% if s.url %}</a>{% endif %}</li>
+    {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+  <div class="prose">{% for block in page.body %}{% include_block block %}{% endfor %}</div>
+</article>
+{% endblock %}

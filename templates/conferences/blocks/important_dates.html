@@ -1,0 +1,13 @@
+{% load conference_tags %}{% with dates=home.important_dates.all %}{% if dates %}
+<table class="conf-dates">
+  <caption class="visually-hidden">Important dates</caption>
+  <tbody>
+  {% for d in dates %}
+    <tr{% if d.is_past %} class="past"{% endif %}>
+      <th scope="row">{{ d.label }}{% if d.note %}<br><span class="muted">{{ d.note }}</span>{% endif %}</th>
+      <td>{% if d.original_date %}<del>{{ d.original_date|date:"j F Y" }}</del> {% endif %}<time datetime="{{ d.date|date:'Y-m-d' }}">{% date_range d.date d.end_date %}</time></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}{% endwith %}

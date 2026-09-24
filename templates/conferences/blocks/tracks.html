@@ -1,0 +1,4 @@
+{% with tracks=home.tracks %}{% if tracks %}
+<h2>Tracks</h2>
+<ul class="conf-tracks">{% for t in tracks %}<li><strong>{{ t.title }}</strong>{% if t.description %}<br><span class="muted">{{ t.description }}</span>{% endif %}</li>{% endfor %}</ul>
+{% endif %}{% endwith %}

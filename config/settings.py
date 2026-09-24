@@ -7,6 +7,7 @@ import os
 import sys
 from email.utils import parseaddr
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -44,6 +45,15 @@ if SECRET_KEY == _DEV_KEY and not DEBUG:
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
+# The conference websites (apps.conferences). By default "conference." + the site's host without
+# "www.": conference.iglc.net, conference.iglc.drevland.net on the preview, conference.localhost when
+# developing. Added to ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
+_site_host = (urlsplit(SITE_URL).hostname or "localhost").removeprefix("www.")
+CONFERENCE_HOST = os.environ.get("CONFERENCE_HOST", f"conference.{_site_host}").strip().lower()
+if CONFERENCE_HOST:
+    ALLOWED_HOSTS.append(CONFERENCE_HOST)
+    if SITE_URL.startswith("https://"):
+        CSRF_TRUSTED_ORIGINS.append(f"https://{CONFERENCE_HOST}")
 
 INSTALLED_APPS = [
     "apps.archive",
@@ -52,6 +62,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.production",
     "apps.crossref",
+    "apps.conferences",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",
@@ -77,6 +88,7 @@ MIDDLEWARE = [
     "apps.core.middleware.HealthCheckMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "apps.core.middleware.HostRedirectMiddleware",
+    "apps.conferences.middleware.ConferenceHostMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "apps.archive.legacy.LegacyUrlMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

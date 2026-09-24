@@ -1,0 +1,23 @@
+{% extends "conferences/base.html" %}
+{% block content %}
+<article class="conf-page">
+  <h1>{{ page.title }}</h1>
+  {% if page.intro %}<p class="lead">{{ page.intro }}</p>{% endif %}
+  {% for committee, members in page.groups %}
+  <section>
+    <h2>{{ committee }}</h2>
+    <ul class="conf-members">
+    {% for m in members %}
+      <li><strong>{% if m.person %}<a href="{{ main_site_url }}{{ m.person.get_absolute_url }}">{{ m.name }}</a>{% else %}{{ m.name }}{% endif %}</strong>{% if m.role %} ({{ m.role }}){% endif %}{% if m.affiliation or m.country %}<br><span class="muted">{{ m.affiliation }}{% if m.affiliation and m.country %}, {% endif %}{{ m.country }}</span>{% endif %}</li>
+    {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+  {% if page.show_editors and conference.editors.all %}
+  <section>
+    <h2>Proceedings editors</h2>
+    <ul class="conf-members">{% for e in conference.editors.all %}<li><strong>{{ e }}</strong></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+</article>
+{% endblock %}

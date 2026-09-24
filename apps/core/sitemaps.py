@@ -69,7 +69,13 @@ class PageSitemap(Sitemap):
     priority = 0.5
 
     def items(self):
-        return Page.objects.live().public().filter(depth__gt=2).order_by("path")
+        from wagtail.models import Site
+
+        site = Site.objects.filter(is_default_site=True).first()
+        pages = Page.objects.live().public().filter(depth__gt=2)
+        if site:  # the conference sites have their own sitemap
+            pages = pages.descendant_of(site.root_page)
+        return pages.order_by("path")
 
     def location(self, page):
         return page.get_url_parts()[2]

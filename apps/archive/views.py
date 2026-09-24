@@ -64,7 +64,16 @@ def conference_detail(request, pk):
         "tracks": tracks,
         "untracked": sum(1 for p in papers if not p.track_id) if tracks else 0,
         "show_paper_numbers": _show_paper_numbers(conference),
+        "website": _conference_website(conference),
     })
+
+
+def _conference_website(conference):
+    """The conference's own website on the conference sites, if it is published."""
+    from apps.conferences.models import ConferenceHomePage
+
+    home = ConferenceHomePage.objects.live().filter(conference=conference).first()
+    return home.full_url if home else ""
 
 
 def _show_paper_numbers(conference) -> bool:

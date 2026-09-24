@@ -1,0 +1,59 @@
+{% load static wagtailcore_tags wagtailimages_tags conference_tags %}<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page.seo_title|default:page.title }}{% endblock %}{% if home and page.pk != home.pk %} | {{ home.short_name }}{% endif %}</title>
+  <meta name="description" content="{% block description %}{{ page.search_description|default:page.intro|default:page.title|striptags }}{% endblock %}">
+  {% if page.full_url %}<link rel="canonical" href="{{ page.full_url }}">{% endif %}
+  <link rel="icon" href="{% static 'img/iglc-logo-symbol.svg' %}" type="image/svg+xml">
+  <link rel="preload" href="{% static 'fonts/source-sans-3-var.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/conference.css' %}">
+  {% if home %}{% with c=home.colours %}
+  <style>:root { --conf-primary: {{ c.primary }}; --conf-accent: {{ c.accent }}; --conf-on-accent: {{ c.on_accent }}; --conf-accent-text: {{ c.accent_text }}; --conf-heading: {{ c.heading_font|safe }}; }</style>
+  {% endwith %}{% endif %}
+</head>
+<body class="conference-site">
+  <a class="skip" href="#main">Skip to content</a>
+  {% if home %}
+  <header class="conf-header">
+    <div class="wrap conf-header-top">
+      <a class="conf-brand" href="{% pageurl home %}">
+        {% if home.logo %}{% image home.logo height-60 alt=home.short_name %}{% endif %}
+        <span class="conf-brand-text">
+          <span class="conf-name">{{ home.short_name }}</span>
+          <span class="conf-where">{% if conference.city %}{{ conference.location }}{% endif %}{% if conference.start_date %} &middot; {% date_range conference.start_date conference.end_date %}{% endif %}</span>
+        </span>
+      </a>
+      {% if home.registration_url and not home.frozen %}<a class="conf-register" href="{{ home.registration_url }}">Register</a>{% endif %}
+    </div>
+    <nav class="conf-nav" aria-label="{{ home.short_name }}">
+      <div class="wrap">
+        {% include "conferences/_menu.html" with class="conf-menu-desktop" %}
+        <details class="conf-menu-mobile">
+          <summary>Menu</summary>
+          {% include "conferences/_menu.html" %}
+        </details>
+      </div>
+    </nav>
+  </header>
+  {% if home.frozen %}
+  <div class="conf-frozen"><div class="wrap">{{ home.short_name }} has taken place. This is its website as it was.
+    {% if conference.is_published %}<a href="{{ main_site_url }}{{ conference.get_absolute_url }}">Read the papers in the proceedings</a>.{% endif %}</div></div>
+  {% endif %}
+  {% endif %}
+  <main id="main">
+    {% block hero %}{% endblock %}
+    <div class="wrap">{% block content %}{% endblock %}</div>
+  </main>
+  <footer class="conf-footer">
+    <div class="wrap">
+      <a href="{{ main_site_url }}/"><img src="{% static 'img/iglc-logo-horizontal.svg' %}" alt="IGLC – International Group for Lean Construction" width="184" height="44"></a>
+      <p>{% if home %}{{ home.short_name }} is{% else %}The IGLC conferences are{% endif %} organised for the <a href="{{ main_site_url }}/">International Group for Lean Construction</a>. Papers from all conferences are in the <a href="{{ main_site_url }}/papers">IGLC proceedings</a>.</p>
+      {% if home.contact_email %}<p>Contact: <a href="mailto:{{ home.contact_email }}">{{ home.contact_email }}</a></p>{% endif %}
+      <p class="conf-footer-links"><a href="{{ main_site_url }}/copyright/">Copyright</a> &middot; <a href="{{ main_site_url }}/contact/">Contact the IGLC</a></p>
+    </div>
+  </footer>
+</body>
+</html>

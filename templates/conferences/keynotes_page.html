@@ -1,0 +1,23 @@
+{% extends "conferences/base.html" %}
+{% load wagtailcore_tags wagtailimages_tags %}
+{% block content %}
+<article class="conf-page">
+  <h1>{{ page.title }}</h1>
+  {% if page.intro %}<p class="lead">{{ page.intro }}</p>{% endif %}
+  <div class="conf-people">
+  {% for k in page.keynotes.all %}
+    <section class="conf-person">
+      {% if k.photo %}{% image k.photo fill-240x240 alt="" class="conf-person-photo" %}{% endif %}
+      <div>
+        <h2>{% if k.url %}<a href="{{ k.url }}">{{ k.name }}</a>{% else %}{{ k.name }}{% endif %}</h2>
+        {% if k.affiliation %}<p class="muted">{{ k.affiliation }}</p>{% endif %}
+        {% if k.talk_title %}<p class="conf-talk">{{ k.talk_title }}</p>{% endif %}
+        {% if k.biography %}<div class="prose">{{ k.biography|richtext }}</div>{% endif %}
+      </div>
+    </section>
+  {% empty %}
+    <p>The keynote speakers will be announced here.</p>
+  {% endfor %}
+  </div>
+</article>
+{% endblock %}

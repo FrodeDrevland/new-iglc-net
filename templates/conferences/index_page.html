@@ -1,0 +1,10 @@
+{% extends "conferences/base.html" %}
+{% block title %}IGLC conferences{% endblock %}
+{% block content %}
+<article class="conf-page">
+  <h1>IGLC conferences</h1>
+  {% if page.intro %}<p class="lead">{{ page.intro }}</p>{% endif %}
+  <ul class="conf-papers">{% for h in homes %}<li><a href="{{ h.url }}">{{ h.title }}</a></li>{% empty %}<li>No conference websites yet.</li>{% endfor %}</ul>
+  <p>All IGLC conferences and their papers: <a href="{{ main_site_url }}/papers">the IGLC proceedings</a>.</p>
+</article>
+{% endblock %}
