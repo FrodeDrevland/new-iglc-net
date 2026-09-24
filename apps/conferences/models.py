@@ -7,8 +7,8 @@ The pages live in their own Wagtail Site (the host name is the setting CONFERENC
         ConferencePage           call for papers, venue, registration, programme, free pages
         KeynotesPage, CommitteesPage, SponsorsPage, AcceptedPapersPage
 
-The organisers of a conference edit the pages below their home page and submit them for
-moderation; the IGLC publishes. Dates, tracks and accepted papers come from the platform.
+The organisers of a conference edit and publish the pages below their home page (the site's
+settings, current and frozen, stay with the IGLC). Dates, tracks and accepted papers come from the platform.
 After the conference the site is frozen and linked from the archive.
 """
 
@@ -107,6 +107,12 @@ BODY_BLOCKS = [
 class ConferencePageMixin:
     """For every page of a conference site: its home page and the site's branding and menu."""
 
+    # No approval workflow on the conference sites: the organisers publish their own pages.
+    has_workflow = False
+
+    def get_workflow(self):
+        return None
+
     @cached_property
     def conference_home(self) -> "ConferenceHomePage | None":
         if isinstance(self.specific, ConferenceHomePage):
@@ -138,6 +144,10 @@ class ConferenceIndexPage(Page):
     subpage_types = ["conferences.ConferenceHomePage"]
     max_count = 1
     template = "conferences/index_page.html"
+    has_workflow = False  # new conference home pages are published by the IGLC directly
+
+    def get_workflow(self):
+        return None
 
     class Meta:
         verbose_name = "conference sites (root)"

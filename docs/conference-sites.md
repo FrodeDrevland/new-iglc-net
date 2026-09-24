@@ -31,7 +31,8 @@ robots.txt, a sitemap and uploaded files. The back office stays on the main site
 
 ## What the organisers do
 
-- Edit the pages and **submit them for moderation**; the IGLC publishes them. They cannot publish,
+- Edit and **publish** the pages themselves (Publish in the menu under Save draft), no IGLC approval
+  needed; they can also unpublish. They cannot change the current/frozen settings,
   delete the site, or touch other conferences' pages.
 - Branding tab of the home page: logo, a wide photograph, two colours and the heading font. The layout
   stays the IGLC's (responsive and accessible); a primary colour too light for white text is refused.

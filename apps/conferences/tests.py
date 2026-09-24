@@ -153,12 +153,23 @@ class OrganiserTests(TestCase):
         theirs = ConferencePage.objects.child_of(self.other).get(slug="call-for-papers")
         self.assertIn(self.client.get(f"/manage/pages/{theirs.pk}/edit/").status_code, (302, 403))
 
-    def test_organisers_cannot_publish(self):
+    def test_organisers_publish_their_own_pages(self):
         from wagtail.models import Page
 
         perms = Page.objects.get(pk=self.page.pk).permissions_for_user(self.organiser)
         self.assertTrue(perms.can_edit())
-        self.assertFalse(perms.can_publish())
+        self.assertTrue(perms.can_publish())
+        self.assertTrue(perms.can_unpublish())
+        theirs = ConferencePage.objects.child_of(self.other).get(slug="call-for-papers")
+        self.assertFalse(Page.objects.get(pk=theirs.pk).permissions_for_user(self.organiser).can_publish())
+        response = self.client.post(f"/manage/pages/{self.page.pk}/edit/", {
+            "title": "Call for papers", "slug": "call-for-papers", "intro": "Now open.",
+            "body-count": "0", "action-publish": "action-publish"})
+        self.assertEqual(response.status_code, 302)
+        self.assertContains(self.client.get("/2027/call-for-papers/", **HOST), "Now open.")
+        # no IGLC approval step on the conference sites (the main site keeps its workflow)
+        self.assertIsNone(self.page.get_workflow())
+        self.assertNotContains(self.client.get(f"/manage/pages/{self.page.pk}/edit/"), "action-submit")
 
     def test_frozen_site(self):
         self.home.frozen = True

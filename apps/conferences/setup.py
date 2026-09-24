@@ -53,13 +53,13 @@ def sync_site(**kwargs):
 
 # ---------------------------------------------------------------- organisers
 
-PAGE_PERMISSIONS = ("add_page", "change_page")  # publishing stays with the IGLC
+PAGE_PERMISSIONS = ("add_page", "change_page", "publish_page")  # organisers publish their own pages
 IMAGE_PERMISSIONS = ("add_image", "change_image", "choose_image")
 DOCUMENT_PERMISSIONS = ("add_document", "change_document", "choose_document")
 
 
 def organiser_group(home) -> Group:
-    """The group whose members edit this conference's pages (and submit them for publication),
+    """The group whose members edit and publish this conference's pages,
     and upload its pictures and documents. Repeatable."""
     from wagtail.models import Collection, GroupCollectionPermission, GroupPagePermission
 
