@@ -54,6 +54,7 @@
       {% if paper.a3_url %}<a class="button secondary block" style="margin-top:.5rem" href="{{ paper.a3_url }}">A3</a>{% endif %}
       <dl class="facts">
         <dt>Published in</dt><dd><a href="{{ paper.conference.get_absolute_url }}">IGLC {{ paper.conference.number }}</a>{% if paper.year %}, {{ paper.year }}{% endif %}</dd>
+        {% if paper.track %}<dt>Track</dt><dd>{{ paper.track.title }}</dd>{% endif %}
         {% if paper.pages %}<dt>Pages</dt><dd>{{ paper.pages }}</dd>{% endif %}
         {% if paper.doi %}<dt>DOI</dt><dd><a href="{{ paper.doi_url }}">{{ paper.doi }}</a></dd>{% endif %}
         {% if user.is_staff %}<dt>Admin</dt><dd><a href="{% url 'admin:archive_paper_change' paper.pk %}">Edit this paper</a></dd>{% endif %}
