@@ -459,3 +459,67 @@ class AcceptedPapersPage(ConferencePageMixin, Page):
                 grouped.append((track, []))
             grouped[-1][1].append(row)
         return grouped, published
+
+
+# ---------------------------------------------------------------- the standard pages of a new site
+
+class StandardPageTemplate(models.Model):
+    """One of the pages every new conference website starts with (as a draft). Edited by the
+    IGLC in the back office (Settings → Conference standard pages); changes apply to sites
+    created afterwards, not to existing ones."""
+
+    PAGE_TYPES = [
+        ("ConferencePage", "Ordinary page (text, pictures, buttons, dates, tracks)"),
+        ("KeynotesPage", "Keynotes (a list of speakers)"),
+        ("CommitteesPage", "Committees (a list of members)"),
+        ("SponsorsPage", "Sponsors (logos by level, and text)"),
+        ("AcceptedPapersPage", "Accepted papers (listed automatically)"),
+    ]
+    WITH_BODY = {"ConferencePage", "SponsorsPage"}
+
+    page_type = models.CharField(max_length=40, choices=PAGE_TYPES, default="ConferencePage")
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=100, unique=True,
+                            help_text="The last part of the address, e.g. call-for-papers → /2027/call-for-papers/.")
+    intro = models.TextField(blank=True, help_text="One or two sentences shown under the title.")
+    body = StreamField(BODY_BLOCKS, blank=True,
+                       help_text="The starting text. Only ordinary pages and the sponsors page have one.")
+    show_in_menus = models.BooleanField("show in the menu", default=True)
+    active = models.BooleanField(default=True, help_text="Untick to stop adding this page to new sites.")
+    sort_order = models.PositiveIntegerField(default=0, help_text="Position in the menu.")
+
+    panels = [
+        FieldPanel("page_type"),
+        FieldPanel("title"),
+        FieldPanel("slug"),
+        FieldPanel("intro"),
+        FieldPanel("body"),
+        FieldPanel("show_in_menus"),
+        FieldPanel("active"),
+    ]
+
+    class Meta:
+        ordering = ["sort_order", "pk"]
+        verbose_name = "conference standard page"
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and not self.sort_order:  # a new page goes last
+            last = StandardPageTemplate.objects.aggregate(models.Max("sort_order"))["sort_order__max"]
+            self.sort_order = 0 if last is None else last + 1
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.slug and self.slug.isdigit():
+            errors["slug"] = "A number is not allowed: numbers are the conference years."
+        if (self.page_type == "AcceptedPapersPage" and StandardPageTemplate.objects
+                .filter(page_type="AcceptedPapersPage").exclude(pk=self.pk).exists()):
+            errors["page_type"] = "There is already an accepted papers page: a site can have only one."
+        if self.page_type not in self.WITH_BODY and self.body and len(self.body):
+            errors["body"] = "This kind of page has no text of its own: leave it empty."
+        if errors:
+            raise ValidationError(errors)

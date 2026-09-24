@@ -18,7 +18,9 @@ robots.txt, a sitemap and uploaded files. The back office stays on the main site
 2. Pages → IGLC conferences → Add child page → Conference home page. Choose the conference; the
    address is its year. Saving creates:
    - the standard pages below it, as drafts: call for papers, important dates, programme, keynotes,
-     committees, accepted papers, venue and travel, registration, sponsors (delete what is not needed);
+     committees, accepted papers, venue and travel, registration, sponsors (delete what is not needed).
+     The list, its order and each page's starting text are edited under Settings → Conference
+     standard pages (superusers); changes apply to sites created afterwards;
    - the group **IGLC nn organisers**, which may edit these pages and upload pictures and documents
      to the collection **IGLC nn**.
 

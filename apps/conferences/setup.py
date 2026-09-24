@@ -82,46 +82,20 @@ def organiser_group(home) -> Group:
 
 # ---------------------------------------------------------------- a new site
 
-STANDARD_PAGES = [
-    # (type, title, slug, intro, body text)
-    ("ConferencePage", "Call for papers", "call-for-papers",
-     "Topics, submission and review.",
-     "<p>Describe the conference theme and the topics, how to submit an abstract and a paper, and how "
-     "papers are reviewed. Link to the IGLC's <a href=\"{main}/for-authors/\">guidelines for authors</a> "
-     "and <a href=\"{main}/for-authors/templates/\">templates</a>.</p>"),
-    ("ConferencePage", "Important dates", "important-dates", "", None),
-    ("ConferencePage", "Programme", "programme",
-     "The programme is published when the sessions are set.",
-     "<p>The programme will be published here.</p>"),
-    ("KeynotesPage", "Keynotes", "keynotes", "", None),
-    ("CommitteesPage", "Committees", "committees", "", None),
-    ("AcceptedPapersPage", "Accepted papers", "accepted-papers", "", None),
-    ("ConferencePage", "Venue and travel", "venue-and-travel",
-     "", "<p>The venue, how to get there, and where to stay.</p>"),
-    ("ConferencePage", "Registration", "registration",
-     "", "<p>Fees, what they include, and the deadlines for early registration.</p>"),
-    ("SponsorsPage", "Sponsors", "sponsors", "", None),
-]
-
-
 def add_standard_pages(home, publish: bool = False):
-    """The standard pages below a conference home page, as drafts to fill in. Pages that are
-    there already (by slug) are left alone."""
+    """The standard pages (StandardPageTemplate, edited in the back office) below a conference
+    home page, as drafts to fill in. Pages that are there already (by slug) are left alone."""
     from . import models
 
     existing = set(home.get_children().values_list("slug", flat=True))
-    for type_name, title, slug, intro, text in STANDARD_PAGES:
-        if slug in existing:
+    for template in models.StandardPageTemplate.objects.filter(active=True):
+        if template.slug in existing:
             continue
-        page = getattr(models, type_name)(title=title, slug=slug, show_in_menus=True, live=publish)
-        if hasattr(page, "intro"):
-            page.intro = intro
-        if slug == "important-dates":
-            page.body = [("important_dates", None)]
-        elif slug == "call-for-papers":
-            page.body = [("text", text.format(main=settings.SITE_URL)), ("tracks", None)]
-        elif text and hasattr(page, "body"):
-            page.body = [("text", text)]
+        page = getattr(models, template.page_type)(title=template.title, slug=template.slug,
+                                                   show_in_menus=template.show_in_menus, live=publish)
+        page.intro = template.intro
+        if template.page_type in template.WITH_BODY:
+            page.body = list(template.body.raw_data)
         home.add_child(instance=page)
         page.save_revision()
 

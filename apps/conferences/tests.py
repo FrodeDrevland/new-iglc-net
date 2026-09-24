@@ -183,3 +183,46 @@ class DateRangeTests(TestCase):
         self.assertEqual(date_range(date(2027, 6, 30), date(2027, 7, 2)), "30 June – 2 July 2027")
         self.assertEqual(date_range(date(2027, 12, 31), date(2028, 1, 2)), "31 December 2027 – 2 January 2028")
         self.assertEqual(date_range(date(2027, 7, 19)), "19 July 2027")
+
+
+class StandardPageTemplateTests(TestCase):
+    def setUp(self):
+        sync_site()
+        self.conference = Conference.objects.create(number=35, city="Munich", start_date=date(2027, 7, 19))
+
+    def test_new_sites_follow_the_edited_list(self):
+        from .models import StandardPageTemplate
+
+        StandardPageTemplate.objects.filter(slug="sponsors").update(active=False)
+        StandardPageTemplate.objects.create(page_type="ConferencePage", title="Industry day", slug="industry-day",
+                                            intro="For practitioners.", sort_order=99,
+                                            body=[("text", "<p>Site visits.</p>")])
+        home = seed(self.conference, publish=True)
+        slugs = list(home.get_children().values_list("slug", flat=True))
+        self.assertNotIn("sponsors", slugs)
+        self.assertEqual(slugs[-1], "industry-day")
+        self.assertEqual(slugs[0], "call-for-papers")
+        self.assertContains(self.client.get("/2027/industry-day/", **HOST), "Site visits.")
+
+    def test_rules(self):
+        from .models import StandardPageTemplate
+
+        with self.assertRaises(ValidationError):
+            StandardPageTemplate(page_type="ConferencePage", title="x", slug="2027").full_clean()
+        with self.assertRaises(ValidationError):
+            StandardPageTemplate(page_type="AcceptedPapersPage", title="x", slug="more-papers").full_clean()
+        with self.assertRaises(ValidationError):
+            StandardPageTemplate(page_type="KeynotesPage", title="x", slug="talks",
+                                 body=[("text", "<p>x</p>")]).full_clean()
+
+    def test_admin_for_superusers_only(self):
+        self.client.force_login(User.objects.create_superuser("root", password="pw"))
+        response = self.client.get("/manage/conference_standard_pages/")
+        self.assertContains(response, "Call for papers")
+        from .models import StandardPageTemplate
+
+        pk = StandardPageTemplate.objects.get(slug="programme").pk
+        self.assertEqual(self.client.get(f"/manage/conference_standard_pages/edit/{pk}/").status_code, 200)
+        organiser = User.objects.create_user("org", password="pw")
+        self.client.force_login(organiser)
+        self.assertIn(self.client.get("/manage/conference_standard_pages/").status_code, (302, 403))

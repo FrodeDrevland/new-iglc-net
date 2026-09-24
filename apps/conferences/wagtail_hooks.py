@@ -11,9 +11,8 @@ def conference_organisers(request, page):
     if isinstance(page.specific, ConferenceHomePage):
         organiser_group(page.specific)
         add_standard_pages(page.specific)
-        messages.info(request, "The standard pages were added below it as drafts: call for papers, important "
-                               "dates, programme, keynotes, committees, accepted papers, venue and travel, "
-                               "registration and sponsors. Delete the ones the conference does not need.")
+        messages.info(request, "The standard pages (Settings → Conference standard pages) were added below it "
+                               "as drafts. Delete the ones the conference does not need.")
 
 
 def _frozen_home(page):
@@ -51,3 +50,35 @@ def frozen_create(request, parent_page, page_class):
         messages.error(request, f"The website of {home.short_name} is frozen: no pages can be added.")
         return redirect("wagtailadmin_explore", parent_page.pk)
     return None
+
+
+# ---------------------------------------------------------------- standard pages (Settings menu)
+
+from wagtail.admin.panels import HelpPanel  # noqa: E402
+from wagtail.admin.ui.tables import BooleanColumn, Column  # noqa: E402
+from wagtail.admin.viewsets.model import ModelViewSet  # noqa: E402
+
+from .models import StandardPageTemplate  # noqa: E402
+
+
+class StandardPageViewSet(ModelViewSet):
+    model = StandardPageTemplate
+    name = "conference_standard_pages"
+    menu_label = "Conference standard pages"
+    icon = "doc-empty-inverse"
+    add_to_settings_menu = True
+    sort_order_field = "sort_order"
+    list_display = ["title", "slug", Column("kind", label="Kind", accessor="get_page_type_display"),
+                    BooleanColumn("show_in_menus", label="In the menu"), BooleanColumn("active", label="Active")]
+    list_filter = ["page_type", "active"]
+    ordering = "sort_order"
+    panels = [
+        HelpPanel("<p>Every new conference website starts with these pages, as drafts, in this order "
+                  "(drag the rows in the list to change it). Changes apply to sites created afterwards; "
+                  "existing sites keep their pages.</p>"),
+    ] + StandardPageTemplate.panels
+
+
+@hooks.register("register_admin_viewset")
+def standard_pages_viewset():
+    return StandardPageViewSet()
