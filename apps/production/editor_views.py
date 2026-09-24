@@ -381,6 +381,15 @@ def publish(request, number):
     action = request.POST.get("action")
     if request.method == "POST" and action and action.startswith("crossref_"):
         return _crossref_action(request, production, action)
+    if request.method == "POST" and action == "make_zip":
+        if my_role != "chief" and not is_publisher(request.user):
+            raise PermissionDenied
+        try:
+            publishing.build_zip(production)
+            messages.success(request, "The ZIP of all papers is made and linked from the conference page.")
+        except publishing.PublishError as error:
+            messages.error(request, str(error))
+        return redirect("proceedings:publish", number=number)
     if request.method == "POST" and action in ("metadata_send", "metadata_remind"):
         from . import metadata_check as checks
 

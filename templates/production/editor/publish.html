@@ -9,7 +9,13 @@
 </div>
 
 {% if production.papers_published %}
-  <p class="upload-report">Published: {{ published|length }} papers. {% if production.conference.papers_zip_url %}<a href="{{ production.conference.papers_zip_url }}">ZIP of all papers</a> · {% endif %}<a href="{{ production.conference.get_absolute_url }}">Conference page</a></p>
+  <p class="upload-report">Published{% if published %}: {{ published|length }} papers{% endif %}. {% if production.conference.papers_zip_url %}<a href="{{ production.conference.papers_zip_url }}">ZIP of all papers</a> · {% endif %}<a href="{{ production.conference.get_absolute_url }}">Conference page</a></p>
+  {% if role == "chief" or can_publish %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="make_zip">
+    <p><button class="button button-secondary" type="submit" onclick="this.textContent='Making the ZIP… (up to a minute)'">{% if production.conference.papers_zip_url %}Make the ZIP of all papers again{% else %}Make the ZIP of all papers{% endif %}</button>
+    <span class="small muted">One ZIP with every published paper, linked from the conference page. For conferences taken from the archive, fetch the PDFs on the Full proceedings page first. Also after a correction.</span></p>
+  </form>
+  {% endif %}
   {% if waiting_corrections %}<h2>Corrections waiting for the publisher</h2>
   <ul>{% for s in waiting_corrections %}<li><a href="{% url 'proceedings:paper' n s.conftool_id %}">{{ s.conftool_id }}</a>: {{ s.correction_note }}{% if s.correction_requested_by %} ({{ s.correction_requested_by.get_full_name|default:s.correction_requested_by.username }}){% endif %}</li>{% endfor %}</ul>{% endif %}
   <h2>Corrections after publication</h2>

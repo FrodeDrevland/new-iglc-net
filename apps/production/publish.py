@@ -265,12 +265,24 @@ def _zip_name(submission: Submission) -> str:
 
 
 def build_zip(production: Production) -> str:
-    """A ZIP of every published paper, linked from the conference page. Returns its URL."""
+    """A ZIP of every published paper, linked from the conference page (replacing the link to any
+    earlier ZIP). Papers published before these tools need their PDFs fetched first (Full
+    proceedings page). Returns its URL."""
+    from .book import paper_pdf
+
+    papers = list(production.submissions.filter(paper__isnull=False).exclude(status=Submission.Status.WITHDRAWN)
+                  .select_related("paper").order_by("paper__first_page", "conftool_id"))
+    if not papers:
+        raise PublishError("No published papers")
+    contents = [(s, paper_pdf(s)) for s in papers]
+    missing = [str(s.conftool_id) for s, data in contents if data is None]
+    if missing:
+        raise PublishError(f"{len(missing)} papers' PDFs are not at hand (fetch them on the Full proceedings page): "
+                           + ", ".join(missing[:10]))
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as archive:  # PDFs are compressed already
-        for submission in production.submissions.filter(published_version__isnull=False).select_related("paper"):
-            with submission.published_pdf.open("rb") as handle:
-                archive.writestr(_zip_name(submission), handle.read())
+        for submission, data in contents:
+            archive.writestr(_zip_name(submission), data)
     name = default_storage.save(f"papers/iglc{production.conference.number}/IGLC{production.conference.number}"
                                 f"-papers.zip", ContentFile(buffer.getvalue()))
     old = production.conference.papers_zip_url
@@ -342,9 +354,17 @@ def correct(submission: Submission, user, note: str, public: bool = False) -> Co
     from django.core.management import call_command
 
     call_command("group_authors", verbosity=0, stdout=io.StringIO())
-    if submission.production.conference.papers_zip_url:
-        build_zip(submission.production)
+    _refresh_zip(submission.production)
     return correction
+
+
+def _refresh_zip(production):
+    """After a correction: the ZIP of all papers again, when there is one and the PDFs are at hand."""
+    if production.conference.papers_zip_url:
+        try:
+            build_zip(production)
+        except PublishError:
+            pass  # e.g. PDFs of a conference taken from the archive not fetched: the old ZIP stays
 
 
 # ---------------------------------------------------------------- papers published before these tools
@@ -398,4 +418,5 @@ def correct_pdf(submission: Submission, user, note: str, public: bool = False) -
         submission.save(update_fields=["correction_pdf", "correction_note", "correction_requested_by"])
         Event.objects.create(submission=submission, user=user, action="correction published (PDF replaced)",
                              comment=note.strip())
+    _refresh_zip(submission.production)
     return correction

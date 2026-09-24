@@ -958,3 +958,49 @@ class GuideTests(EditorPagesTests):
         self.assertContains(self.client.get("/manage/production/35/"), "/manage/production/guide/")
         script = self.client.get("/manage/production/guide/iglc-word-batch.ps1")
         self.assertIn(b"ComputeStatistics", b"".join(script.streaming_content))
+
+
+
+class ZipAndAuthorPageTests(PublishTests):
+    def test_zip_for_any_published_production(self):
+        import io
+        import zipfile as zf
+
+        from django.core.files.storage import default_storage
+
+        self.client.login(username="chief", password="pw")
+        self._upload(123, 3)
+        self._upload(124, 2)
+        for number in (123, 124):
+            self.client.post(f"/manage/production/35/{number}/", {"action": "approve"})
+        from django.contrib.auth.models import Group, User
+
+        publisher = User.objects.create_user("pubz", password="pw")
+        publisher.groups.add(Group.objects.get(name="Publishers"))
+        self.client.post("/manage/production/35/publish/", {"action": "request"})
+        self.client.login(username="pubz", password="pw")
+        self.client.post("/manage/production/35/publish/", {"action": "next"})
+        self.client.post("/manage/production/35/publish/", {"action": "finish"})
+        conference = self.production.conference
+        conference.refresh_from_db()
+        conference.papers_zip_url = ""
+        conference.save()
+        self.client.login(username="chief", password="pw")
+        self.client.post("/manage/production/35/publish/", {"action": "make_zip"})
+        conference.refresh_from_db()
+        name = conference.papers_zip_url.split("/media/", 1)[-1]
+        with default_storage.open(name) as handle:
+            self.assertEqual(len(zf.ZipFile(io.BytesIO(handle.read())).namelist()), 2)
+
+    def test_author_pages_show_the_year(self):
+        from apps.archive.models import Author, AuthorPerson, Paper
+
+        paper = Paper.objects.create(conference=self.production.conference, title="Yearly", first_page=77, last_page=80)
+        conference = self.production.conference
+        conference.is_published = True
+        conference.save()
+        person = AuthorPerson.objects.create(first_name="Ann", last_name="Smith")
+        Author.objects.create(paper=paper, first_name="Ann", last_name="Smith", person=person)
+        page = self.client.get(person.get_absolute_url()).content.decode()
+        self.assertIn('<span class="pp">2027</span>', page)
+        self.assertNotIn("p. 77", page)
