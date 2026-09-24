@@ -125,6 +125,12 @@ class Submission(models.Model):
         return self.versions.order_by("-number").first()
 
 
+def private_storage():
+    from django.core.files.storage import storages
+
+    return storages["private"]
+
+
 def _version_path(instance, filename):
     submission = instance.submission
     return (f"production/iglc{submission.production.conference.number}/{submission.conftool_id}/"
@@ -139,9 +145,9 @@ class PaperVersion(models.Model):
     uploaded = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     comment = models.TextField(blank=True)
-    docx = models.FileField(upload_to=_version_path)
+    docx = models.FileField(upload_to=_version_path, storage=private_storage)
     docx_sha256 = models.CharField(max_length=64)
-    pdf = models.FileField(upload_to=_version_path, blank=True)
+    pdf = models.FileField(upload_to=_version_path, storage=private_storage, blank=True)
     pdf_sha256 = models.CharField(max_length=64, blank=True)
     pages = models.PositiveIntegerField(null=True, blank=True, help_text="From the PDF.")
     metadata = models.JSONField(default=dict, help_text="What was read from the Word file.")

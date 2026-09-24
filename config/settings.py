@@ -132,6 +132,9 @@ MEDIA_ROOT = BASE_DIR / "media"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+    # Papers in production: never public, only downloaded through the site by their editors.
+    "private": {"BACKEND": "django.core.files.storage.FileSystemStorage",
+                "OPTIONS": {"location": os.environ.get("PRIVATE_FILES_ROOT", str(BASE_DIR / "private"))}},
 }
 # In production, uploaded images and documents go to a blob container (App Service does not
 # keep files written in the container). The container allows anonymous read of blobs, like
@@ -144,6 +147,14 @@ if AZURE_STORAGE_CONNECTION_STRING:
             "connection_string": AZURE_STORAGE_CONNECTION_STRING,
             "azure_container": os.environ.get("AZURE_MEDIA_CONTAINER", "media"),
             "expiration_secs": None,
+            "overwrite_files": False,
+        },
+    }
+    STORAGES["private"] = {
+        "BACKEND": "storages.backends.azure_storage.AzureStorage",
+        "OPTIONS": {
+            "connection_string": AZURE_STORAGE_CONNECTION_STRING,
+            "azure_container": os.environ.get("AZURE_PRIVATE_CONTAINER", "production"),  # no public access
             "overwrite_files": False,
         },
     }

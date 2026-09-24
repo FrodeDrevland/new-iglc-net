@@ -223,7 +223,7 @@ class PaperCheckPageTests(TestCase):
         self.assertRedirects(response, f"/for-authors/check-your-paper/{check.pk}/")
         page = self.client.get(response["Location"]).content.decode()
         self.assertIn("Takt planning in practice", page)
-        self.assertIn("No ORCID in the footnote of Cy Lee", page)
+        self.assertIn("No ORCID in the footnote of Bo Jones, Cy Lee", page)
         self.assertIn("number of pages was not checked", page)
         pdf = self.client.get(f"/for-authors/check-your-paper/{check.pk}/report.pdf")
         self.assertEqual(pdf["Content-Type"], "application/pdf")
@@ -261,7 +261,7 @@ class AuthorSkillTests(TestCase):
                              capture_output=True, text=True, cwd=folder)
         self.assertEqual(out.returncode, 0, out.stderr)
         self.assertIn("Title:    Takt planning in practice", out.stdout)
-        self.assertIn("No ORCID in the footnote of Cy Lee", out.stdout)
+        self.assertIn("No ORCID in the footnote of Bo Jones, Cy Lee", out.stdout)
 
 
 # ---------------------------------------------------------------- productions and ConfTool

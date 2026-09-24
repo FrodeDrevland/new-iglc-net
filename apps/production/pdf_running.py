@@ -85,6 +85,51 @@ def strip_running(source) -> tuple[PdfWriter, int]:
     return writer, removed
 
 
+# ---------------------------------------------------------------- checking
+
+HEADER_ZONE = 62      # points from the top edge: Word's header area, above the text
+FOOTER_ZONE = 55      # points from the bottom edge
+REFERENCE_ZONE = 100  # page 1: room for a five-line reference above the title
+
+
+def _text_positions(page):
+    found = []
+
+    def visit(text, cm, tm, font, size):
+        if text.strip():
+            baseline = tm[5] * cm[3] + cm[5]
+            height = abs(size * tm[3] * cm[3]) or size
+            found.append((baseline + 0.75 * height, text.strip()))  # top of the letters
+
+    page.extract_text(visitor_text=visit)
+    return found
+
+
+def layout_findings(writer: PdfWriter, removed: int) -> list[tuple[str, str]]:
+    """Check a PDF whose running headers and footers have been removed (strip_running):
+    nothing may be left where the new ones will be printed."""
+    findings = []
+    if removed == 0:
+        findings.append(("pdf_not_from_word", "The PDF has no headers or footers marked by Word: "
+                                              "save it from Word for Windows (or use the IGLC conversion tool)"))
+    left, crowded = [], False
+    for number, page in enumerate(writer.pages, 1):
+        height = float(page.mediabox.height)
+        for y, text in _text_positions(page):
+            if y > height - HEADER_ZONE or y < FOOTER_ZONE:
+                left.append((number, text))
+            elif number == 1 and y > height - REFERENCE_ZONE:
+                crowded = True
+    if left:
+        pages = sorted({n for n, _ in left})
+        findings.append(("pdf_running_left", "Text in the header or footer area that is not a Word header or footer "
+                                             f"(page {', '.join(map(str, pages[:5]))}): “{left[0][1][:60]}”"))
+    if crowded:
+        findings.append(("reference_space_missing", "The title starts too high on the first page: the reference "
+                                                    "needs the space above it (use the Title style of the current template)"))
+    return findings
+
+
 # ---------------------------------------------------------------- printing
 
 def _words(segments: list[Segment]):

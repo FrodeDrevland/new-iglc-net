@@ -25,6 +25,7 @@ services:
       DATABASE_URL: postgres://iglc:${POSTGRES_PASSWORD}@db:5432/iglc
     volumes:
       - ${APPDATA:-/mnt/user/appdata/iglc}/media:/app/media
+      - ${APPDATA:-/mnt/user/appdata/iglc}/private:/app/private
       - ${APPDATA:-/mnt/user/appdata/iglc}/import:/import:ro
     depends_on: [db]
     networks: [internal, proxy]

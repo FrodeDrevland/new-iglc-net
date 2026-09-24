@@ -8,4 +8,4 @@
 - [x] Logging out should return the user to whatever page they were on or to the front page if the were in the manage or admin areas
 - [x] Do we need a separate admin and manage interface or could the joined. At least there needs  to be links to navigate between them and also to the front end. 
 - [ ] Can we have a function on the admin side of the site to produce the zip bundle of papers for a proceeding?
-- [ ]
+- [ ] Another thing to put on the development roadmap: Conference programming and conference program. Setting us plenary and paralell sessions, Assigning papers to sessions. Assigning session chair. Assigning rooms. 
