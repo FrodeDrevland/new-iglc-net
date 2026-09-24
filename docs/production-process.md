@@ -83,9 +83,36 @@ template's first page must reserve room for 5 header lines (fixed height), or th
 would overlap the title. The same reserved height also keeps the page count independent of
 the reference's length.
 
+## 2027: with ConfTool
+
+ConfTool still handles submission, review and the authors' camera-ready uploads; the track
+chairs' check happens outside our system. Our site starts where the editors take over, and
+from there follows steps 3-7 above.
+
+1. **Before the call for papers:** the IGLC 35 template with reserved space for the reference
+   (see below); the call asks authors to run "Check your paper" and upload the PDF report
+   with their camera-ready paper in ConfTool.
+2. **Import from ConfTool:** the accepted papers (ConfTool ID, title, track, authors and
+   their email addresses) from ConfTool's export. The Word file is the source of the
+   published metadata; ConfTool's names and affiliations often differ slightly, so
+   differences are shown to the editors as information, not errors. ConfTool's email
+   addresses are used to reach the authors.
+3. **Editors** download the papers from ConfTool (named by ConfTool ID), edit them in Word,
+   make PDFs with the conversion script, and upload Word files and PDFs to the site, in
+   batches or one by one. The site checks each upload, reads the metadata, removes the PDF's
+   headers and footers and counts the pages. Papers can be uploaded again as often as
+   needed; every version is kept.
+4. **Editors** approve each paper and order tracks and papers; page numbers follow.
+5. **The site** prints headers, footers and page numbers, assigns DOIs
+   (10.24928/2027/ConfTool ID), builds front matter, table of contents and full proceedings,
+   and publishes the papers in the archive.
+6. **The site emails each paper's authors** a personal link to check the metadata; after the
+   check, the Crossref deposit is made.
+
+Needed: an email account the site can send from (SMTP), and a sample ConfTool export.
+
 ## Open
 
-- The 2027 process with ConfTool, as a subset of this.
 - Template for IGLC 35: Title style 40 pt space before (was 18 pt) and a one-line note in the
   first-page header (tools/reserve_reference_space.py). Tested on five IGLC 34 papers with 3-5
   line references: the title always starts at the same place, 18 pt below a 5-line reference,
