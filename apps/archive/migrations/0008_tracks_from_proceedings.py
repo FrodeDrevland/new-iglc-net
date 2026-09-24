@@ -11,10 +11,10 @@ from django.db import migrations
 CSV = Path(__file__).resolve().parent.parent / "data" / "tracks.csv"
 
 
-def load(apps, schema_editor):
+def load(apps, schema_editor, path=CSV):
     Paper = apps.get_model("archive", "Paper")
     Track = apps.get_model("archive", "ConferenceTrack")
-    with open(CSV, encoding="utf-8-sig", newline="") as handle:
+    with open(path, encoding="utf-8-sig", newline="") as handle:
         rows = [r for r in csv.DictReader(handle) if r["track"].strip()]
     papers = {p.pk: p for p in Paper.objects.filter(pk__in=[int(r["paper_id"]) for r in rows])}
     first_page = {}
