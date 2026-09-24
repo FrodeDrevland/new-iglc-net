@@ -24,3 +24,5 @@ _preview/
 inventory/*.zip
 # Reports on manuscripts contain authors' emails. Never commit them.
 _reports/
+# Licensed fonts for local layout tests. Never commit them.
+_fonts/
