@@ -7,7 +7,7 @@ The full plan: https://claude.ai/code/artifact/4eba9a7d-936c-4caa-affb-cbefeb7f4
 ## Decisions made
 - Stack: Python, Django (current LTS), Wagtail, Postgres, a background worker (Celery or Django-Q2), Docker. htmx rather than a JavaScript framework.
 - One Django project with apps: archive, pages, production, crossref, conferences, submissions, accounts, community (membership, mailing list, governance).
-- Five phases: 1 foundation (port archive and admin, migrate data, keep URLs), 2 production tools, 3 conference sites, 4 membership and governance, 5 submission and review.
+- Six phases: 1 foundation (port archive and admin, migrate data, keep URLs), 2 production tools, 3 conference sites (with the conference programme, possibly on program.iglc.net), 4 membership and governance, 5 submission and review (its own mini-site), 6 students and the PhD summer school (applications separate from paper submission; a student mini-site such as student.iglc.net).
 - Metadata is extracted from the DOCX using the template's paragraph styles (python-docx), not from the PDF.
 - Workflow: publish papers on iglc.net, authors check their metadata, then proceedings build and Crossref deposit.
 - conference.iglc.net serves the current conference; conference.iglc.net/<year>/ holds each year's site.
