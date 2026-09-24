@@ -98,8 +98,8 @@ class ConferenceViewSet(ModelViewSet):
         MultiFieldPanel([
             FieldPanel("conference_title"), FieldPanel("proceedings_title"),
             FieldRowPanel([FieldPanel("publisher"), FieldPanel("publication_location"), FieldPanel("issn")]),
-            FieldPanel("papers_zip_url"),
         ], heading="Proceedings"),
+        HelpPanel(template="archive/admin/conference_files.html", heading="Files"),
         InlinePanel("editors", heading="Editors", label="Editor",
                     panels=[FieldRowPanel([FieldPanel("first_name"), FieldPanel("last_name"), FieldPanel("order")]),
                             FieldPanel("title_and_contact")]),
@@ -108,8 +108,6 @@ class ConferenceViewSet(ModelViewSet):
         InlinePanel("volumes", heading="Volumes (printed books)", label="Volume",
                     panels=[FieldRowPanel([FieldPanel("number"), FieldPanel("first_page"), FieldPanel("last_page"),
                                            FieldPanel("isbn")])]),
-        InlinePanel("proceedings_files", heading="Full proceedings files", label="File",
-                    panels=[FieldRowPanel([FieldPanel("label"), FieldPanel("order")]), FieldPanel("url")]),
     ]
 
 
@@ -157,8 +155,7 @@ class PaperViewSet(ModelViewSet):
                             FieldPanel("title_and_contact"), FieldPanel("person", widget=PersonChooser)]),
         FieldPanel("abstract"),
         FieldPanel("keywords"),
-        MultiFieldPanel([FieldPanel("full_text_url"), FieldPanel("presentation_url"), FieldPanel("a3_url")],
-                        heading="Files"),
+        HelpPanel(template="archive/admin/paper_files.html", heading="Files"),
     ], base_form_class=PaperForm)
 
 

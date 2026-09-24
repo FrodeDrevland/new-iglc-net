@@ -1,0 +1,7 @@
+{% with conference=self.instance %}{% if conference.pk %}
+<ul>
+  <li>ZIP of all papers: {% if conference.papers_zip_url %}<a href="{{ conference.papers_zip_url }}" target="_blank">download</a>{% else %}none{% endif %}</li>
+  {% for f in conference.proceedings_files.all %}<li>{{ f.label }}: <a href="{{ f.url }}" target="_blank">download</a></li>{% empty %}<li>Full proceedings: none</li>{% endfor %}
+</ul>
+<p class="help">Made and replaced through Proceedings production (publishing the papers makes the ZIP; publishing the full proceedings makes the book), not edited here.</p>
+{% endif %}{% endwith %}

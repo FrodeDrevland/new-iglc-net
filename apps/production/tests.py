@@ -711,6 +711,12 @@ class BackOfficeTests(EditorPagesTests):
                     f"/manage/production-settings/edit/{self.production.pk}/", "/manage/reports/paper-checks/",
                     "/manage/archive/person-chooser/?q=smi", "/manage/users/"):
             self.assertEqual(self.client.get(url).status_code, 200, url)
+        # file addresses are shown, never edited
+        page = self.client.get(f"/manage/archive/paper/edit/{paper.pk}/").content.decode()
+        self.assertNotIn('name="full_text_url"', page)
+        self.assertIn("cannot be changed here", page)
+        page = self.client.get(f"/manage/archive/conference/edit/{self.production.conference.pk}/").content.decode()
+        self.assertNotIn('name="papers_zip_url"', page)
 
     def test_editors_get_in_with_their_role_only(self):
         self.client.login(username="ed", password="pw")  # no group, only a production role
@@ -742,3 +748,47 @@ class FetchTests(EditorPagesTests):
         page = self.client.get("/manage/production/35/book/").content.decode()
         if 'id="fetch-start"' in page:
             self.assertLess(page.index('id="fetch-start"'), page.rindex("<script>"))
+
+
+
+class PdfCorrectionTests(PublishTests):
+    """Replacing the PDF of a paper published before these tools (taken from the archive)."""
+
+    def test_replace_the_pdf_of_an_adopted_paper(self):
+        from datetime import date
+
+        from django.contrib.auth.models import Group, User
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.archive.models import Conference, Paper
+
+        from .adopt import adopt_published
+        from .models import Correction, ProductionEditor
+
+        old = Conference.objects.create(pk=31, number=29, start_date=date(2021, 7, 14), city="Lima")
+        paper = Paper.objects.create(conference=old, title="Old", doi="10.24928/2021/0131", first_page=1, last_page=2,
+                                     full_text_url="https://example.org/old.pdf")
+        production, _ = adopt_published(old)
+        ProductionEditor.objects.create(production=production, user=self.chief, role="chief")
+        self.client.login(username="chief", password="pw")
+        url = "/manage/production/29/131/"
+        self.assertContains(self.client.get(url), "Published (before these tools)")
+        # three pages do not fit a two-page range
+        self.client.post(url, {"action": "stage_pdf", "comment": "Fixed", "pdf": SimpleUploadedFile("a.pdf", make_word_pdf(3))})
+        production.submissions.get().refresh_from_db()
+        self.assertFalse(production.submissions.get().correction_pdf)
+        self.client.post(url, {"action": "stage_pdf", "comment": "Page overflow fixed",
+                               "pdf": SimpleUploadedFile("a.pdf", make_word_pdf(2))})
+        self.assertTrue(production.submissions.get().correction_pdf)
+        self.assertIn(self.client.post(url, {"action": "correct_pdf"}).status_code, (302, 403))
+        self.assertFalse(Correction.objects.exists())
+        publisher = User.objects.create_user("pub2", password="pw")
+        publisher.groups.add(Group.objects.get(name="Publishers"))
+        self.client.login(username="pub2", password="pw")
+        self.client.post(url, {"action": "correct_pdf", "comment": "Page overflow fixed"})
+        paper.refresh_from_db()
+        correction = Correction.objects.get()
+        self.assertEqual((paper.pages, correction.previous_pdf), ("1-2", "https://example.org/old.pdf"))
+        self.assertNotEqual(paper.full_text_url, "https://example.org/old.pdf")
+        self.assertFalse(production.submissions.get().correction_pdf)
+        self.assertIn("Page overflow fixed", self.client.get(paper.get_absolute_url()).content.decode())

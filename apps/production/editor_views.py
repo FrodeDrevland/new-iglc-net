@@ -222,6 +222,33 @@ def paper(request, number, conftool_id):
                 Event.objects.create(submission=submission, user=request.user,
                                      action="correction sent to the publisher", comment=comment)
                 messages.success(request, "The correction waits for the publisher's approval.")
+        elif action == "stage_pdf":
+            if my_role != "chief":
+                raise PermissionDenied
+            upload = request.FILES.get("pdf")
+            data = upload.read() if upload else b""
+            problems = publishing.pdf_correction_problems(submission, data) if data else ["Choose the PDF."]
+            if not problems and not comment:
+                problems = ["Say what was corrected."]
+            if problems:
+                messages.error(request, problems[0])
+            else:
+                if submission.correction_pdf:
+                    submission.correction_pdf.delete(save=False)
+                submission.correction_pdf.save("replacement.pdf", ContentFile(data), save=False)
+                submission.correction_note, submission.correction_requested_by = comment, request.user
+                submission.save(update_fields=["correction_pdf", "correction_note", "correction_requested_by"])
+                Event.objects.create(submission=submission, user=request.user,
+                                     action="replacement PDF sent to the publisher", comment=comment)
+                messages.success(request, "The replacement PDF waits for the publisher's approval.")
+        elif action == "correct_pdf":
+            if not is_publisher(request.user):
+                raise PermissionDenied
+            try:
+                publishing.correct_pdf(submission, request.user, comment or submission.correction_note)
+                messages.success(request, "The corrected PDF is published.")
+            except publishing.PublishError as error:
+                messages.error(request, str(error))
         elif action == "correct":
             if not is_publisher(request.user):
                 raise PermissionDenied
@@ -251,6 +278,17 @@ def paper(request, number, conftool_id):
         "correction_problems": publishing.correction_problems(submission) if submission.published_version_id else [],
         "corrections": submission.corrections.select_related("user", "version"),
     })
+
+
+@login_required
+def correction_file(request, number, conftool_id):
+    """The replacement PDF waiting for the publisher."""
+    production = _production(request, number)
+    submission = _submission(request, production, conftool_id)
+    if not submission.correction_pdf:
+        raise Http404
+    return FileResponse(submission.correction_pdf.open("rb"), as_attachment=True,
+                        filename=f"{conftool_id}-replacement.pdf")
 
 
 @login_required

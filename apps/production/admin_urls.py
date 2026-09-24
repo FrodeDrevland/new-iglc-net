@@ -16,5 +16,6 @@ urlpatterns = [
     path("<int:number>/book/", editor_views.book, name="book"),
     path("<int:number>/book/<str:name>", editor_views.book_file, name="book_file"),
     path("<int:number>/<int:conftool_id>/", editor_views.paper, name="paper"),
+    path("<int:number>/<int:conftool_id>/replacement.pdf", editor_views.correction_file, name="correction_file"),
     path("<int:number>/<int:conftool_id>/v<int:version>.<str:kind>", editor_views.version_file, name="version_file"),
 ]

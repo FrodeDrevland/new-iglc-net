@@ -1,0 +1,10 @@
+{% with paper=self.instance %}
+<ul>
+  <li>Full text: {% if paper.full_text_url %}<a href="{% url 'archive:paper_pdf' paper.pk %}" target="_blank">the published PDF</a>{% else %}none{% endif %}</li>
+  {% if paper.presentation_url %}<li>Presentation: <a href="{% url 'archive:paper_presentation' paper.pk %}" target="_blank">download</a></li>{% endif %}
+  {% if paper.a3_url %}<li>A3: <a href="{{ paper.a3_url }}" target="_blank">download</a></li>{% endif %}
+</ul>
+<p class="help">The files cannot be changed here: the DOI leads to this PDF. To replace it (for example with a corrected version), open the paper under
+{% if paper.submission %}<a href="{% url 'proceedings:paper' paper.conference.number paper.submission.conftool_id %}">Proceedings production</a>{% else %}Proceedings production (start a production for IGLC {{ paper.conference.number }} from the published conference first){% endif %}:
+a chief editor sends the new PDF, a publisher approves it, and the paper's page says it was corrected.</p>
+{% endwith %}

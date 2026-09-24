@@ -113,6 +113,16 @@ class ProductionEditor(ClusterableModel):
         return f"{self.user} ({self.get_role_display()}, {self.production})"
 
 
+def _correction_path(instance, filename):
+    return f"production/iglc{instance.production.conference.number}/{instance.conftool_id}/correction-{filename}"
+
+
+def private_storage():
+    from django.core.files.storage import storages
+
+    return storages["private"]
+
+
 class Submission(models.Model):
     """An accepted paper on its way into the proceedings."""
 
@@ -145,6 +155,9 @@ class Submission(models.Model):
     correction_note = models.TextField(blank=True, help_text="A correction waiting for the publisher.")
     correction_requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                                 on_delete=models.SET_NULL, related_name="+")
+    correction_pdf = models.FileField(
+        upload_to=_correction_path, storage=private_storage, blank=True, max_length=300,
+        help_text="For a paper published before these tools: the replacement PDF, waiting for the publisher.")
     published_version = models.ForeignKey(
         "PaperVersion", null=True, blank=True, on_delete=models.PROTECT, related_name="+",
         help_text="The version whose PDF is on the site.")
@@ -172,12 +185,6 @@ class Submission(models.Model):
         if self.paper_id and self.paper.first_page and self.paper.last_page:
             return self.paper.last_page - self.paper.first_page + 1
         return None
-
-
-def private_storage():
-    from django.core.files.storage import storages
-
-    return storages["private"]
 
 
 def _version_path(instance, filename):
@@ -234,7 +241,8 @@ class Correction(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="corrections")
     time = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
-    version = models.ForeignKey(PaperVersion, on_delete=models.PROTECT, related_name="+")
+    version = models.ForeignKey(PaperVersion, null=True, blank=True, on_delete=models.PROTECT, related_name="+",
+                                help_text="Empty for a paper published before these tools (its PDF was replaced).")
     note = models.TextField(help_text="What was corrected. Shown on the paper's page.")
     previous_version = models.ForeignKey(PaperVersion, null=True, on_delete=models.PROTECT, related_name="+")
     previous_pdf = models.CharField(max_length=300, blank=True, help_text="The PDF that was replaced (kept).")

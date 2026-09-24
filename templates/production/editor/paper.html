@@ -59,6 +59,30 @@
 </div>
 
 <aside>
+  {% if submission.paper and not submission.published_version %}
+  <div class="panel">
+    <h3>Published (before these tools)</h3>
+    <p class="small">Pages {{ submission.paper.pages }}. <a href="{{ submission.paper.get_absolute_url }}">Paper page</a> · <a href="{% url 'archive:paper_pdf' submission.paper.pk %}">PDF</a></p>
+    {% for c in corrections %}<p class="small muted">Corrected {{ c.time|date:"j M Y" }}: {{ c.note }}</p>{% endfor %}
+    {% if submission.correction_pdf %}
+      <p class="small"><b>Replacement PDF waiting for the publisher:</b> {{ submission.correction_note }}
+        (<a href="{% url 'proceedings:correction_file' n submission.conftool_id %}">download</a>)</p>
+      {% if can_publish %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct_pdf">
+        <p><label>Public note<br><textarea name="comment" rows="3">{{ submission.correction_note }}</textarea></label></p>
+        <button class="button" type="submit">Approve and publish the new PDF</button>
+      </form>
+      {% endif %}
+    {% elif role == "chief" %}
+      <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="stage_pdf">
+        <p class="small">Replace the published PDF, for example a corrected version. It must fit the page range ({{ submission.paper.pages }}); the DOI and first page stay, the old PDF is kept, and the paper's page says it was corrected. A publisher approves it.</p>
+        <p><label>New PDF<br><input type="file" name="pdf" accept=".pdf" required></label></p>
+        <p><label>What was corrected (shown publicly)<br><textarea name="comment" rows="3" required></textarea></label></p>
+        <button class="button" type="submit">Send to the publisher</button>
+      </form>
+    {% endif %}
+  </div>
+  {% endif %}
   {% if submission.published_version %}
   <div class="panel">
     <h3>Published</h3>

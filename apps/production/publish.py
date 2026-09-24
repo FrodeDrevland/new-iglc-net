@@ -345,3 +345,57 @@ def correct(submission: Submission, user, note: str) -> Correction:
     if submission.production.conference.papers_zip_url:
         build_zip(submission.production)
     return correction
+
+
+# ---------------------------------------------------------------- papers published before these tools
+
+def pdf_correction_problems(submission: Submission, data: bytes) -> list[str]:
+    """A replacement PDF for a paper published before these tools (taken from the archive): it
+    must be a readable PDF that fits the paper's published page range."""
+    from pypdf import PdfReader
+
+    paper = submission.paper
+    if paper is None or submission.published_version_id:
+        return ["This is for papers published before these tools; use a new version instead."]
+    try:
+        pages = len(PdfReader(io.BytesIO(data)).pages)
+    except Exception:  # noqa: BLE001
+        return ["That is not a PDF that can be read."]
+    allowed = paper.last_page - paper.first_page + 1
+    if pages > allowed:
+        return [f"The PDF has {pages} pages, but the paper's published page range ({paper.pages}) has {allowed}: "
+                "it must fit, since the page numbers of the papers after it are cited."]
+    return []
+
+
+def correct_pdf(submission: Submission, user, note: str) -> Correction:
+    """Publish the staged replacement PDF of a paper published before these tools. The DOI and
+    first page stay; the old PDF address is kept in the correction record."""
+    if not submission.correction_pdf:
+        raise PublishError("No replacement PDF is waiting")
+    if not note.strip():
+        raise PublishError("Say what was corrected: it is shown on the paper's page")
+    with submission.correction_pdf.open("rb") as handle:
+        data = handle.read()
+    problems = pdf_correction_problems(submission, data)
+    if problems:
+        raise PublishError(problems[0])
+    from pypdf import PdfReader
+
+    paper, pages = submission.paper, len(PdfReader(io.BytesIO(data)).pages)
+    with transaction.atomic():
+        count = submission.corrections.count() + 1
+        correction = Correction.objects.create(submission=submission, user=user, version=None, note=note.strip(),
+                                               previous_pdf=submission.published_pdf.name or paper.full_text_url)
+        name = _store_pdf(submission, data, suffix=f"-corrected-{count}")
+        paper.full_text_url = public_url(name)
+        paper.last_page = paper.first_page + pages - 1
+        paper.save(update_fields=["full_text_url", "last_page"])
+        submission.published_pdf.name = name
+        submission.save(update_fields=["published_pdf"])
+        submission.correction_pdf.delete(save=False)
+        submission.correction_note, submission.correction_requested_by = "", None
+        submission.save(update_fields=["correction_pdf", "correction_note", "correction_requested_by"])
+        Event.objects.create(submission=submission, user=user, action="correction published (PDF replaced)",
+                             comment=note.strip())
+    return correction
