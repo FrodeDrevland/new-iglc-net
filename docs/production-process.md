@@ -51,6 +51,11 @@ more than five keywords, missing ORCID and non-template styles are "warn".
    them on upload (tested on IGLC 34: removed cleanly, content and page count unchanged). A
    PDF without these marks, or with anything left in the header/footer areas, is refused
    with a request to use the conversion tool. The page count is taken from this PDF.
+   Word's PDF export can lay a paper out differently from Word's screen (an IGLC 34 paper was
+   12 pages in Word, 13 in Word's PDF, 12 via Adobe's PDF printer). The upload check compares
+   the PDF with the page count Word stored in the file and refuses a mismatch; Word does not
+   always store it, so the conversion script (tools/word_batch.ps1) also compares Word's count
+   with each PDF it makes and lists the mismatches.
 5. **Editors arrange the proceedings:** order of tracks and of papers within tracks. Page
    numbers follow from the PDFs and update when the order changes.
 6. **Publication of the papers (before the conference; this is the deadline that matters):**
@@ -77,7 +82,13 @@ with a short public note on what was corrected.
   published page range: the following papers' page numbers are already cited.
 - The new PDF gets the same running heads; the old PDF and all versions are kept.
 - The archive record is updated from the corrected Word file (title, authors, affiliations,
-  abstract, keywords), and the paper's page says "Corrected <date>" with the note.
+  abstract, keywords). What was corrected is always recorded; whether the paper's page shows
+  "Corrected <date>" with the note is a choice (the chief editor suggests, the publisher
+  decides): worth it for a substantial change long after publication, noise for a small fix
+  the day after.
+- Papers published before these tools (conferences taken from the archive): the chief editor
+  uploads a replacement PDF on the paper's page (it must fit the page range); the publisher
+  approves it the same way.
 - The ZIP of all papers is rebuilt. Once the Crossref deposit exists (step 6 in the build
   list), a changed title or author list is deposited again.
 

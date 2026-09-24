@@ -6,8 +6,11 @@
   Word is the only program that lays out the papers exactly as the authors see them, so page
   counts and the final PDFs come from Word. For every .docx in -InputFolder this script opens
   the file (invisibly), closes it again without saving, and writes:
-    - pages.csv with the file name and Word's page count
+    - pages.csv with the file name and Word's page count (and with -Pdf, the PDF's)
     - with -Pdf: <name>.pdf in -OutputFolder
+  Word's PDF export can lay a paper out differently from Word's own screen (one IGLC 34 paper
+  was 12 pages in Word and 13 in the PDF). With -Pdf, such papers are listed at the end: adjust
+  them in Word (for example tighten the text before the extra page break) and run again.
 
 .EXAMPLE
   # Page counts of the edited papers, before page numbers are assigned
@@ -59,9 +62,16 @@ try {
                 # Save as PDF (format 17) with Word's own exporter. Only the two arguments: the
                 # long ExportAsFixedFormat call hung when made from PowerShell.
                 $doc.SaveAs2([string]$target, 17)
+                # Count the PDF's pages ("/Type /Page" objects; exact for Word's PDFs)
+                $text = [System.Text.Encoding]::GetEncoding(28591).GetString([System.IO.File]::ReadAllBytes($target))
+                $pdfPages = ([regex]::Matches($text, '/Type\s*/Page(?![a-zA-Z])')).Count
             }
-            $rows += [pscustomobject]@{ file = $file.Name; pages = $pages }
-            Write-Host (" {0,3} pages" -f $pages)
+            else { $pdfPages = $null }
+            $rows += [pscustomobject]@{ file = $file.Name; pages = $pages; pdf_pages = $pdfPages }
+            if ($pdfPages -and $pdfPages -ne $pages) {
+                Write-Host (" {0,3} pages, but the PDF has {1}!" -f $pages, $pdfPages) -ForegroundColor Yellow
+            }
+            else { Write-Host (" {0,3} pages" -f $pages) }
         }
         finally {
             $doc.Close(0)  # 0 = do not save
@@ -75,3 +85,9 @@ finally {
 $csv = Join-Path $OutputFolder "pages.csv"
 $rows | Export-Csv -Path $csv -NoTypeInformation -Encoding UTF8
 Write-Host "Page counts written to $csv"
+$differ = $rows | Where-Object { $_.pdf_pages -and $_.pdf_pages -ne $_.pages }
+if ($differ) {
+    Write-Host ""
+    Write-Host "These PDFs have a different number of pages than Word shows; adjust the papers and run again:" -ForegroundColor Yellow
+    $differ | ForEach-Object { Write-Host ("  {0}: Word {1}, PDF {2}" -f $_.file, $_.pages, $_.pdf_pages) -ForegroundColor Yellow }
+}

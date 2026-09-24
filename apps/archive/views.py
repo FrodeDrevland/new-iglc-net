@@ -85,7 +85,7 @@ def paper_detail(request, pk):
 def _corrections(paper):
     from apps.production.models import Correction
 
-    return list(Correction.objects.filter(submission__paper=paper).order_by("time"))
+    return list(Correction.objects.filter(submission__paper=paper, public=True).order_by("time"))
 
 
 def paper_pdf(request, pk):

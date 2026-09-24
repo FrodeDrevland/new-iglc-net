@@ -53,6 +53,8 @@ RULES = {
     "too_many_pages": {"review": "reject", "camera_ready": "reject"},
     "pdf_not_checked": {"review": "note", "camera_ready": "note"},
     "pdf_unreadable": {"review": "warn", "camera_ready": "warn"},
+    # Word's own PDF export can lay out a paper differently from Word's screen (seen on IGLC 34)
+    "pdf_pages_differ": {"review": "note", "camera_ready": "warn", "production": "reject"},
     # The PDF's layout, for the proceedings (checked when editors upload)
     "pdf_not_from_word": {"production": "reject"},
     "pdf_running_left": {"production": "reject"},
@@ -153,6 +155,34 @@ def _page_checks(pdf, stage=None) -> list[tuple[str, str]]:
     return []
 
 
+def word_page_count(path) -> int | None:
+    """The number of pages Word counted when it last saved the file (docProps/app.xml)."""
+    try:
+        with zipfile.ZipFile(path) as archive:
+            xml = archive.read("docProps/app.xml").decode("utf-8", "replace")
+    except (KeyError, zipfile.BadZipFile, OSError):
+        return None
+    match = re.search(r"<(?:\w+:)?Pages>(\d+)</(?:\w+:)?Pages>", xml)
+    return int(match.group(1)) if match else None
+
+
+def _pages_differ(path, pdf_bytes) -> list[tuple[str, str]]:
+    import io
+
+    from pypdf import PdfReader
+
+    word = word_page_count(path)
+    try:
+        pdf = len(PdfReader(io.BytesIO(pdf_bytes)).pages)
+    except Exception:  # noqa: BLE001 - reported by the page check
+        return []
+    if word and word > 1 and word != pdf:  # Word does not always store its count (then it says 1)
+        return [("pdf_pages_differ", f"The PDF has {pdf} pages, but Word counts {word}: the PDF was laid out "
+                                     "differently from the Word file. Adjust the paper so both agree (for example "
+                                     "tighten the text before the extra page break) and save the PDF again")]
+    return []
+
+
 def _layout_checks(pdf_bytes) -> list[tuple[str, str]]:
     import io
 
@@ -176,6 +206,8 @@ def check_paper(path, stage: str = "camera_ready", pdf=None) -> CheckResult:
     manuscript = read_manuscript(path)
     raw = (list(zip(manuscript.issues.codes, manuscript.issues)) + _extra_checks(path, manuscript)
            + _page_checks(io.BytesIO(pdf_bytes) if pdf_bytes else None, stage))
+    if pdf_bytes:
+        raw += _pages_differ(path, pdf_bytes)
     if stage == PRODUCTION and pdf_bytes:
         raw += _layout_checks(pdf_bytes)
     # One line per kind of missing author detail, not one per author

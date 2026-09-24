@@ -316,19 +316,19 @@ def correction_problems(submission: Submission) -> list[str]:
     return problems
 
 
-def correct(submission: Submission, user, note: str) -> Correction:
+def correct(submission: Submission, user, note: str, public: bool = False) -> Correction:
     """Publish the current version of a published paper. The DOI and first page stay; the last
     page follows the corrected PDF (which may be shorter). The old PDF is kept."""
     problems = correction_problems(submission)
     if problems:
         raise PublishError(problems[0])
     if not note.strip():
-        raise PublishError("Say what was corrected: it is shown on the paper's page")
+        raise PublishError("Say what was corrected (for the record)")
     version, first = submission.current, submission.paper.first_page
     with transaction.atomic():
         count = submission.corrections.count() + 1
         correction = Correction.objects.create(
-            submission=submission, user=user, version=version, note=note.strip(),
+            submission=submission, user=user, version=version, note=note.strip(), public=public,
             previous_version_id=submission.published_version_id, previous_pdf=submission.published_pdf.name)
         paper = _archive_record(submission, version, first, first + version.pages - 1)
         name = _store_pdf(submission, build_pdf(version, paper, first), suffix=f"-corrected-{count}")
@@ -368,13 +368,13 @@ def pdf_correction_problems(submission: Submission, data: bytes) -> list[str]:
     return []
 
 
-def correct_pdf(submission: Submission, user, note: str) -> Correction:
+def correct_pdf(submission: Submission, user, note: str, public: bool = False) -> Correction:
     """Publish the staged replacement PDF of a paper published before these tools. The DOI and
     first page stay; the old PDF address is kept in the correction record."""
     if not submission.correction_pdf:
         raise PublishError("No replacement PDF is waiting")
     if not note.strip():
-        raise PublishError("Say what was corrected: it is shown on the paper's page")
+        raise PublishError("Say what was corrected (for the record)")
     with submission.correction_pdf.open("rb") as handle:
         data = handle.read()
     problems = pdf_correction_problems(submission, data)
@@ -385,7 +385,7 @@ def correct_pdf(submission: Submission, user, note: str) -> Correction:
     paper, pages = submission.paper, len(PdfReader(io.BytesIO(data)).pages)
     with transaction.atomic():
         count = submission.corrections.count() + 1
-        correction = Correction.objects.create(submission=submission, user=user, version=None, note=note.strip(),
+        correction = Correction.objects.create(submission=submission, user=user, version=None, note=note.strip(), public=public,
                                                previous_pdf=submission.published_pdf.name or paper.full_text_url)
         name = _store_pdf(submission, data, suffix=f"-corrected-{count}")
         paper.full_text_url = public_url(name)

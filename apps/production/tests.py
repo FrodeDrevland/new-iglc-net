@@ -576,10 +576,12 @@ class PublishTests(EditorPagesTests):
         old_url = paper.full_text_url
         self._upload(123, 3)
         self.assertIn(self.client.post("/manage/production/35/123/", {"action": "correct"}).status_code, (302, 403))
-        self.client.post("/manage/production/35/123/", {"action": "stage_correction", "comment": "Figure 2 was replaced."})
+        self.client.post("/manage/production/35/123/", {"action": "stage_correction", "comment": "Figure 2 was replaced.",
+                                                          "public": "1"})
         self.assertFalse(Correction.objects.exists())
         self.client.login(username="pub", password="pw")
-        self.client.post("/manage/production/35/123/", {"action": "correct", "comment": "Figure 2 was replaced."})
+        self.client.post("/manage/production/35/123/", {"action": "correct", "comment": "Figure 2 was replaced.",
+                                                          "public": "1"})
         correction = Correction.objects.get()
         paper.refresh_from_db()
         self.assertEqual((paper.doi, paper.pages), ("10.24928/2027/0123", "1-3"))
@@ -785,10 +787,35 @@ class PdfCorrectionTests(PublishTests):
         publisher = User.objects.create_user("pub2", password="pw")
         publisher.groups.add(Group.objects.get(name="Publishers"))
         self.client.login(username="pub2", password="pw")
-        self.client.post(url, {"action": "correct_pdf", "comment": "Page overflow fixed"})
+        self.client.post(url, {"action": "correct_pdf", "comment": "Page overflow fixed"})  # note not shown
         paper.refresh_from_db()
         correction = Correction.objects.get()
         self.assertEqual((paper.pages, correction.previous_pdf), ("1-2", "https://example.org/old.pdf"))
         self.assertNotEqual(paper.full_text_url, "https://example.org/old.pdf")
         self.assertFalse(production.submissions.get().correction_pdf)
-        self.assertIn("Page overflow fixed", self.client.get(paper.get_absolute_url()).content.decode())
+        self.assertFalse(correction.public)
+        self.assertNotIn("Page overflow fixed", self.client.get(paper.get_absolute_url()).content.decode())
+        self.assertNotIn("Corrected", self.client.get(paper.get_absolute_url()).content.decode())
+
+
+
+class PageCountCheckTests(SimpleTestCase):
+    def test_word_and_pdf_page_counts_compared(self):
+        import shutil
+        import tempfile
+
+        from .checks import _pages_differ, word_page_count
+
+        folder = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, folder)
+        source = make_docx(BODY, NOTES, HEADER)
+        for pages, name in ((12, "a.docx"), (1, "b.docx")):
+            target = folder / name
+            shutil.copy(source, target)
+            with zipfile.ZipFile(target, "a") as archive:
+                archive.writestr("docProps/app.xml", f'<Properties xmlns="x"><Pages>{pages}</Pages></Properties>')
+        self.assertEqual(word_page_count(folder / "a.docx"), 12)
+        self.assertEqual([c for c, _ in _pages_differ(folder / "a.docx", make_word_pdf(13))], ["pdf_pages_differ"])
+        self.assertEqual(_pages_differ(folder / "a.docx", make_word_pdf(12)), [])
+        # Word did not store its count (it says 1): not checked
+        self.assertEqual(_pages_differ(folder / "b.docx", make_word_pdf(13)), [])

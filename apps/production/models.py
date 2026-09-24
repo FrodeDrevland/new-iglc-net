@@ -153,6 +153,7 @@ class Submission(models.Model):
         help_text="The editors' corrections to what is read from the Word file: the title in sentence case "
                   "and how names split into first and last name.")
     correction_note = models.TextField(blank=True, help_text="A correction waiting for the publisher.")
+    correction_public = models.BooleanField(default=False, help_text="Whether its note is to be shown on the paper's page.")
     correction_requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                                 on_delete=models.SET_NULL, related_name="+")
     correction_pdf = models.FileField(
@@ -243,7 +244,10 @@ class Correction(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     version = models.ForeignKey(PaperVersion, null=True, blank=True, on_delete=models.PROTECT, related_name="+",
                                 help_text="Empty for a paper published before these tools (its PDF was replaced).")
-    note = models.TextField(help_text="What was corrected. Shown on the paper's page.")
+    note = models.TextField(help_text="What was corrected (kept for the record).")
+    public = models.BooleanField(
+        default=False, help_text="Show the note on the paper's page. Worth it for a substantial change long after "
+                                 "publication; noise for a small fix soon after.")
     previous_version = models.ForeignKey(PaperVersion, null=True, on_delete=models.PROTECT, related_name="+")
     previous_pdf = models.CharField(max_length=300, blank=True, help_text="The PDF that was replaced (kept).")
 

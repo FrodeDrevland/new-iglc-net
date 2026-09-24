@@ -218,7 +218,8 @@ def paper(request, number, conftool_id):
                 messages.error(request, problems[0] if problems else "Say what was corrected.")
             else:
                 submission.correction_note, submission.correction_requested_by = comment, request.user
-                submission.save(update_fields=["correction_note", "correction_requested_by"])
+                submission.correction_public = request.POST.get("public") == "1"
+                submission.save(update_fields=["correction_note", "correction_requested_by", "correction_public"])
                 Event.objects.create(submission=submission, user=request.user,
                                      action="correction sent to the publisher", comment=comment)
                 messages.success(request, "The correction waits for the publisher's approval.")
@@ -237,7 +238,9 @@ def paper(request, number, conftool_id):
                     submission.correction_pdf.delete(save=False)
                 submission.correction_pdf.save("replacement.pdf", ContentFile(data), save=False)
                 submission.correction_note, submission.correction_requested_by = comment, request.user
-                submission.save(update_fields=["correction_pdf", "correction_note", "correction_requested_by"])
+                submission.correction_public = request.POST.get("public") == "1"
+                submission.save(update_fields=["correction_pdf", "correction_note", "correction_requested_by",
+                                               "correction_public"])
                 Event.objects.create(submission=submission, user=request.user,
                                      action="replacement PDF sent to the publisher", comment=comment)
                 messages.success(request, "The replacement PDF waits for the publisher's approval.")
@@ -245,7 +248,8 @@ def paper(request, number, conftool_id):
             if not is_publisher(request.user):
                 raise PermissionDenied
             try:
-                publishing.correct_pdf(submission, request.user, comment or submission.correction_note)
+                publishing.correct_pdf(submission, request.user, comment or submission.correction_note,
+                                       public=request.POST.get("public") == "1")
                 messages.success(request, "The corrected PDF is published.")
             except publishing.PublishError as error:
                 messages.error(request, str(error))
@@ -253,7 +257,8 @@ def paper(request, number, conftool_id):
             if not is_publisher(request.user):
                 raise PermissionDenied
             try:
-                publishing.correct(submission, request.user, comment or submission.correction_note)
+                publishing.correct(submission, request.user, comment or submission.correction_note,
+                                   public=request.POST.get("public") == "1")
                 submission.correction_note, submission.correction_requested_by = "", None
                 submission.save(update_fields=["correction_note", "correction_requested_by"])
                 messages.success(request, "The correction is published.")

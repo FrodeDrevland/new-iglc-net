@@ -63,21 +63,23 @@
   <div class="panel">
     <h3>Published (before these tools)</h3>
     <p class="small">Pages {{ submission.paper.pages }}. <a href="{{ submission.paper.get_absolute_url }}">Paper page</a> · <a href="{% url 'archive:paper_pdf' submission.paper.pk %}">PDF</a></p>
-    {% for c in corrections %}<p class="small muted">Corrected {{ c.time|date:"j M Y" }}: {{ c.note }}</p>{% endfor %}
+    {% for c in corrections %}<p class="small muted">Corrected {{ c.time|date:"j M Y" }}{% if c.public %} (note shown on the site){% endif %}: {{ c.note }}</p>{% endfor %}
     {% if submission.correction_pdf %}
       <p class="small"><b>Replacement PDF waiting for the publisher:</b> {{ submission.correction_note }}
         (<a href="{% url 'proceedings:correction_file' n submission.conftool_id %}">download</a>)</p>
       {% if can_publish %}
       <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct_pdf">
-        <p><label>Public note<br><textarea name="comment" rows="3">{{ submission.correction_note }}</textarea></label></p>
+        <p><label>What was corrected<br><textarea name="comment" rows="3">{{ submission.correction_note }}</textarea></label></p>
+        <p><label><input type="checkbox" name="public" value="1"{% if submission.correction_public %} checked{% endif %}> Show the note on the paper’s public page</label></p>
         <button class="button" type="submit">Approve and publish the new PDF</button>
       </form>
       {% endif %}
     {% elif role == "chief" %}
       <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="stage_pdf">
-        <p class="small">Replace the published PDF, for example a corrected version. It must fit the page range ({{ submission.paper.pages }}); the DOI and first page stay, the old PDF is kept, and the paper's page says it was corrected. A publisher approves it.</p>
+        <p class="small">Replace the published PDF, for example a corrected version. It must fit the page range ({{ submission.paper.pages }}); the DOI and first page stay, the old PDF is kept, and a publisher approves it.</p>
         <p><label>New PDF<br><input type="file" name="pdf" accept=".pdf" required></label></p>
-        <p><label>What was corrected (shown publicly)<br><textarea name="comment" rows="3" required></textarea></label></p>
+        <p><label>What was corrected<br><textarea name="comment" rows="3" required></textarea></label></p>
+        <p><label><input type="checkbox" name="public" value="1"> Show a “Corrected” note on the paper’s public page</label><br><span class="small muted">For a substantial change, or one long after publication. Not for a small fix soon after publication.</span></p>
         <button class="button" type="submit">Send to the publisher</button>
       </form>
     {% endif %}
@@ -88,12 +90,13 @@
     <h3>Published</h3>
     <p class="small">Version {{ submission.published_version.number }}, pages {{ submission.paper.pages }}.
       <a href="{{ submission.paper.get_absolute_url }}">Paper page</a> · <a href="{% url 'archive:paper_pdf' submission.paper.pk %}">PDF</a></p>
-    {% for c in corrections %}<p class="small muted">Corrected {{ c.time|date:"j M Y" }} (version {{ c.version.number }}): {{ c.note }}</p>{% endfor %}
+    {% for c in corrections %}<p class="small muted">Corrected {{ c.time|date:"j M Y" }} (version {{ c.version.number }}){% if c.public %}, note shown on the site{% endif %}: {{ c.note }}</p>{% endfor %}
     {% if submission.correction_note %}
       <p class="small"><b>Correction waiting for the publisher</b> (version {{ current.number }}, {{ current.pages }} pages): {{ submission.correction_note }}</p>
       {% if can_publish %}
       <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct">
-        <p><label>Public note<br><textarea name="comment" rows="3" style="width:100%">{{ submission.correction_note }}</textarea></label></p>
+        <p><label>What was corrected<br><textarea name="comment" rows="3" style="width:100%">{{ submission.correction_note }}</textarea></label></p>
+        <p><label><input type="checkbox" name="public" value="1"{% if submission.correction_public %} checked{% endif %}> Show the note on the paper’s public page</label></p>
         <button class="button" type="submit">Approve and publish the correction</button>
       </form>
       {% endif %}
@@ -101,8 +104,9 @@
       <p class="small">To correct the paper after publication, upload the corrected Word file and PDF below; the DOI and page numbers stay.{% if current.pk != submission.published_version_id %} {{ correction_problems|join:" " }}{% endif %}</p>
     {% elif role == "chief" %}
       <form method="post">{% csrf_token %}<input type="hidden" name="action" value="stage_correction">
-        <p class="small">Version {{ current.number }} ({{ current.pages }} pages) can replace the published paper. The DOI and first page stay; the paper's page will say it was corrected. A publisher approves it.</p>
-        <p><label>What was corrected (shown publicly)<br><textarea name="comment" rows="3" style="width:100%" required></textarea></label></p>
+        <p class="small">Version {{ current.number }} ({{ current.pages }} pages) can replace the published paper. The DOI and first page stay. A publisher approves it.</p>
+        <p><label>What was corrected<br><textarea name="comment" rows="3" style="width:100%" required></textarea></label></p>
+        <p><label><input type="checkbox" name="public" value="1"> Show a “Corrected” note on the paper’s public page</label><br><span class="small muted">For a substantial change, or one long after publication. Not for a small fix soon after publication.</span></p>
         <button class="button" type="submit">Send the correction to the publisher</button>
       </form>
     {% else %}
