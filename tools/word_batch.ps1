@@ -27,9 +27,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 $wdStatisticPages = 2
-$wdExportFormatPDF = 17
-$wdExportOptimizeForPrint = 0
-$wdExportCreateHeadingBookmarks = 1
 
 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
 # Word runs in its own process with its own working folder: give it full paths only.
@@ -62,8 +59,9 @@ try {
             if ($Pdf) {
                 Write-Host " pdf..." -NoNewline
                 $target = Join-Path $OutputFolder ($file.BaseName + ".pdf")
-                $doc.ExportAsFixedFormat($target, $wdExportFormatPDF, $false, $wdExportOptimizeForPrint,
-                    0, 0, 0, 0, $true, $true, $wdExportCreateHeadingBookmarks, $true, $true, $false)
+                # Save as PDF (format 17) with Word's own exporter. Only the two arguments: the
+                # long ExportAsFixedFormat call hung when made from PowerShell.
+                $doc.SaveAs2([string]$target, 17)
             }
             $rows += [pscustomobject]@{ file = $file.Name; pages = $pages }
             Write-Host (" {0,3} pages" -f $pages)
