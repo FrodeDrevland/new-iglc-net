@@ -49,3 +49,14 @@
 - [ ] Fill in the unknowns in docs/handover.md (registrar, DNS, Crossref, Sender.net)
 - [ ] Email for password resets and error reports (SMTP settings)
 - [ ] Switch-over (docs/switch-over.md)
+
+## Phase 2: manuscript pipeline
+
+- [x] Read metadata from Word files by the template's styles (apps/production/docx_reader.py); tried on all 156 IGLC 34 camera-ready files
+- [x] `read_manuscripts` command: problem report per file, comparison with the archive
+- [x] Fixed HTML entities (&amp;) stored in titles, abstracts and affiliations
+- [ ] Data model: proceedings volume, submissions, file versions, metadata status
+- [ ] Upload page for camera-ready files, with the problem report shown to the author
+- [ ] Metadata check page for authors (confirm or correct title, authors, affiliations, ORCIDs)
+- [ ] Proceedings PDF: front matter, table of contents, page numbering, headers/footers
+- [ ] Crossref deposit XML

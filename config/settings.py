@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.pages",
     "apps.governance",
     "apps.core",
+    "apps.production",
     "wagtail.embeds",
     "wagtail.sites",
     "wagtail.users",

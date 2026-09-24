@@ -22,3 +22,5 @@ inventory/recheck-report-*.csv
 _preview/
 .env.prod
 inventory/*.zip
+# Reports on manuscripts contain authors' emails. Never commit them.
+_reports/
