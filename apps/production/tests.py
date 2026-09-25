@@ -1177,3 +1177,11 @@ class CheckSettingsTests(TestCase):
                            .read("iglc-paper-check/scripts/iglc_check/check_rules.json"))
         self.assertEqual(saved["rules"]["title_long"]["review"], "off")
         self.assertEqual(saved["limits"]["max_pages"], 12)
+
+
+class CheckRulesDocTests(SimpleTestCase):
+    def test_document_is_up_to_date(self):
+        from .check_docs import DOC, render
+
+        self.assertEqual(DOC.read_text(encoding="utf-8"), render(),
+                         "docs/paper-check-rules.md is out of date: run python manage.py check_rules_doc")
