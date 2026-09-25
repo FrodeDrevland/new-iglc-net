@@ -223,16 +223,27 @@ LOGGING = {
     },
 }
 
-# Email (password resets, error reports). Without EMAIL_HOST, email is printed to the log.
-if os.environ.get("EMAIL_HOST"):
+# Email (password resets, error reports, authors' metadata checks). Three ways, see apps/core/mail.py:
+# - AZURE_EMAIL_ENDPOINT (production): Azure Communication Services, signed in with the web app's
+#   managed identity, so there is no password. E.g. https://iglc-acs.europe.communication.azure.com
+# - EMAIL_HOST: any SMTP server.
+# - Neither (the default, and the preview): mails are only written to the log.
+AZURE_EMAIL_ENDPOINT = os.environ.get("AZURE_EMAIL_ENDPOINT", "")
+if AZURE_EMAIL_ENDPOINT:
+    EMAIL_BACKEND = "apps.core.mail.AzureEmailBackend"
+elif os.environ.get("EMAIL_HOST"):
+    EMAIL_BACKEND = "apps.core.mail.SMTPBackend"
     EMAIL_HOST = os.environ["EMAIL_HOST"]
     EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
     EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
     EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "IGLC website <webmaster@iglc.net>")
+    EMAIL_BACKEND = "apps.core.mail.ConsoleBackend"
+# The sender must be one Azure knows for the domain (noreply@iglc.net).
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "IGLC.net <noreply@iglc.net>")
+# Where replies go when a mail has no Reply-To of its own (the authors' mails reply to the editors).
+EMAIL_REPLY_TO = os.environ.get("EMAIL_REPLY_TO", "IGLC General Secretary <webmaster@iglc.net>")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 # Who gets error reports: "Name <email>, Name <email>"
 ADMINS = [parseaddr(item) for item in env_list("DJANGO_ADMINS")]

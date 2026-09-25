@@ -107,8 +107,10 @@ foreach ($f in "times.ttf","timesi.ttf","timesbd.ttf") {
 ## 4. Web app
 
 ```powershell
-
-
+az appservice plan create -g $rg -n iglc-plan -l $loc --is-linux --sku B1
+az webapp create -g $rg -p iglc-plan -n $app --container-image-name mcr.microsoft.com/appsvc/staticsite:latest
+az webapp update -g $rg -n $app --https-only true
+az webapp config set -g $rg -n $app --always-on true --generic-configurations '{\"healthCheckPath\": \"/healthz\"}'
 ```
 
 The placeholder image is replaced by the first deployment (step 6).
@@ -132,18 +134,117 @@ az webapp config appsettings set -g $rg -n $app --settings `
 `SITE_NOINDEX=1` keeps search engines away until the switch-over, when `SITE_URL` changes to
 `https://www.iglc.net` (see switch-over.md).
 
-**Email: Azure Communication Services Email** (decided September 2026). The site sends
-(password resets, error reports, and from 2027 the authors' metadata-check links) through an
-Email Communication Service with iglc.net as a verified custom domain: add the domain in the
-portal and create the DNS records it lists (TXT for verification, SPF and two DKIM CNAMEs) at
-the DNS provider. Sender e.g. `noreply@iglc.net`, with replies to the General Secretary. Connect
-it to a Communication Services resource and use its SMTP credentials (an Entra app with the
-"Communication and Email Service Owner" role on that resource) in the settings below. Needs
-access to the iglc.net DNS, like the switch-over.
+Email is set up in section 4a.
 
-The settings (without them, mails are only written to the log): `EMAIL_HOST`, `EMAIL_PORT`,
-`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`. Without them, mails are only
-written to the log.
+## 4a. Email: Azure Communication Services
+
+The site sends password resets, error reports (to `DJANGO_ADMINS`) and, from 2027, the authors'
+"check your details" links and reminders and the notices to the editors when authors propose
+corrections. It sends through **Azure Communication Services Email** with iglc.net as a verified
+domain, and signs in with the web app's **managed identity**: there is no password or key to
+store, and nothing that expires. The code is `apps/core/mail.py`. Set up in September 2026.
+
+Sender `IGLC.net <noreply@iglc.net>`. Replies go to `IGLC General Secretary <webmaster@iglc.net>`
+(`EMAIL_REPLY_TO`), which Forward Email passes on to the General Secretary; the authors' mails
+reply to the proceedings editors instead.
+
+Names used below (set them again in a new window, with `$rg` and `$app`):
+
+```powershell
+$email = "iglc-email"   # Email Communication Service (holds the domain)
+$acs   = "iglc-acs"     # Communication Services resource (what the site talks to)
+```
+
+### Email service and domain
+
+```powershell
+az extension add --name communication --upgrade
+az communication email create --name $email -g $rg --location global --data-location Europe
+az communication email domain create --email-service-name $email -g $rg --domain-name iglc.net `
+  --location global --domain-management CustomerManaged --user-engmnt-tracking Disabled
+az communication email domain show --email-service-name $email -g $rg --domain-name iglc.net --query verificationRecords -o json
+```
+
+Data location Europe keeps the mail data in the EU/EEA. Tracking is off (no tracking pixels).
+
+### DNS records (Cloudflare)
+
+The iglc.net DNS is on Cloudflare. Records for Azure must be **DNS only** (grey cloud).
+
+| Type | Name | Content | Note |
+|---|---|---|---|
+| TXT | `@` | `ms-domain-verification=c294fb61-de90-4f77-83f4-07603d074f59` | Domain ownership |
+| TXT | `@` | `v=spf1 include:sendersrv.com include:spf.protection.outlook.com -all` | The existing SPF record, with Azure added (never two SPF records) |
+| CNAME | `selector1-azurecomm-prod-net._domainkey` | `selector1-azurecomm-prod-net._domainkey.azurecomm.net` | DKIM, DNS only |
+| CNAME | `selector2-azurecomm-prod-net._domainkey` | `selector2-azurecomm-prod-net._domainkey.azurecomm.net` | DKIM, DNS only |
+
+Leave the other mail records alone: the MX records and `forward-email=...` TXT records (Forward
+Email receives mail for iglc.net and forwards webmaster@, admin@ and moderator@), and Sender.net's
+`include:sendersrv.com` and `sender._domainkey` (the mailing list).
+
+Then ask Azure to check, and look at the result:
+
+```powershell
+foreach ($t in "Domain","SPF","DKIM","DKIM2") {
+  az communication email domain initiate-verification --email-service-name $email -g $rg --domain-name iglc.net --verification-type $t
+}
+az communication email domain show --email-service-name $email -g $rg --domain-name iglc.net --query verificationStates -o json
+```
+
+Domain and DKIM were verified within minutes. Azure refused the SPF record while it ended in
+`?all` ("DnsRecordsNotMatched"): it must end in `-all`. That is safe because only Sender.net
+(the mailing list) and Azure send mail as iglc.net; a new sender must be added to the record
+first. The domain can only be linked (next step) once Domain and SPF are verified.
+
+### Sender, Communication Services resource and link
+
+```powershell
+az communication email domain sender-username create --email-service-name $email -g $rg --domain-name iglc.net `
+  --sender-username noreply --username noreply --display-name "IGLC.net"
+az communication create --name $acs -g $rg --location global --data-location Europe
+$domainId = az communication email domain show --email-service-name $email -g $rg --domain-name iglc.net --query id -o tsv
+az communication update --name $acs -g $rg --linked-domains $domainId -o none
+```
+
+### The web app's identity and settings
+
+```powershell
+$principalId = az webapp identity assign -g $rg -n $app --query principalId -o tsv
+$acsId = az communication show --name $acs -g $rg --query id -o tsv
+az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal `
+  --role "Communication and Email Service Owner" --scope $acsId -o none
+$acsHost = az communication show --name $acs -g $rg --query hostName -o tsv
+az webapp config appsettings set -g $rg -n $app -o none --settings "AZURE_EMAIL_ENDPOINT=https://$acsHost" `
+  "DEFAULT_FROM_EMAIL=IGLC.net <noreply@iglc.net>" "EMAIL_REPLY_TO=IGLC General Secretary <webmaster@iglc.net>"
+```
+
+Without `AZURE_EMAIL_ENDPOINT` (and without `EMAIL_HOST`, for an SMTP server elsewhere), mails
+are only written to the log.
+
+### Test
+
+Log out, choose **Forgotten password?** on the back-office login page and ask for a reset to an
+address you can read (a Gmail address shows the most). The mail should come from
+`IGLC.net <noreply@iglc.net>` with Reply-To `webmaster@iglc.net`. In the message source ("Show
+original" in Gmail), check `spf=pass`, `dkim=pass` and `dmarc=pass`. If nothing arrives, the log
+stream (`az webapp log tail -g $rg -n $app`) shows the error from Azure.
+
+### Notes
+
+- **The preview never gets these settings.** Its database is a copy of production with the
+  authors' addresses, so it must not send real mail: it writes mails to its log
+  (`docker logs iglc-web`).
+- **Sending quota.** A new custom domain has a low sending quota (a few dozen mails a minute and
+  about a hundred an hour). Mails over the quota fail with "429" and are reported as not sent; the
+  metadata-check pages send in batches, so the rest can be sent later. Before the 2027 check
+  links go out, ask for a higher quota (Azure portal → Help + support → a quota request for
+  Communication Services Email).
+- **DMARC.** `_dmarc.iglc.net` is `v=DMARC1; p=none;`. The site's mail passes DMARC through DKIM.
+- **Delete lock.** The resource group has a `CanNotDelete` lock (`iglcstorag-xrpMigration-lock`),
+  which protects the storage account with the papers. Nothing in the group can be deleted,
+  role assignments included, until the lock is lifted; creating and changing things works. A
+  role assignment left from an abandoned SMTP attempt (shown as "Identity not found" on the
+  Communication Services resource) grants nothing and was left in place.
 
 ## 5. Let App Service pull the image
 
