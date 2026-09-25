@@ -10,12 +10,16 @@ class HealthCheckMiddleware:
 
     App Service's health check and warm-up requests use an internal host name that is not in
     ALLOWED_HOSTS, so this runs first. It returns 200 when the database answers, else 503.
+    App Service's start-up probe (/robots933456.txt, with the container's own address as host)
+    only needs an answer, so it gets a 404 here instead of a host-header error.
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.path == "/robots933456.txt":
+            return HttpResponse("", status=404, content_type="text/plain")
         if request.path == "/healthz":
             try:
                 with connection.cursor() as cursor:

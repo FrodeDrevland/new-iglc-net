@@ -220,8 +220,13 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": "WARNING"},
     "loggers": {
         "django.request": {"handlers": ["console", "mail_admins"], "level": "ERROR", "propagate": False},
+        # Requests for a host name the site does not serve (probes, bots): log them, but do not mail.
+        "django.security.DisallowedHost": {"handlers": ["console"], "level": "ERROR", "propagate": False},
     },
 }
+
+# Error reports hide connection strings too (the storage account key), see apps/core/errors.py.
+DEFAULT_EXCEPTION_REPORTER_FILTER = "apps.core.errors.ReporterFilter"
 
 # Email (password resets, error reports, authors' metadata checks). Three ways, see apps/core/mail.py:
 # - AZURE_EMAIL_ENDPOINT (production): Azure Communication Services, signed in with the web app's

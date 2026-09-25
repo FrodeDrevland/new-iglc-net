@@ -10,6 +10,31 @@ class HealthCheckTests(TestCase):
         self.assertEqual(response.content, b"ok\n")
 
 
+class AppServiceProbeTests(TestCase):
+    def test_startup_probe_is_not_a_host_error(self):
+        with self.assertNoLogs("django.security.DisallowedHost"):
+            response = self.client.get("/robots933456.txt", HTTP_HOST="169.254.129.7:8000")
+        self.assertEqual(response.status_code, 404)
+
+
+class ErrorReportTests(TestCase):
+    @override_settings(AZURE_STORAGE_CONNECTION_STRING="AccountName=x;AccountKey=secret-key",
+                       STORAGES={"default": {"BACKEND": "x", "OPTIONS": {"connection_string": "AccountKey=secret-key"}}})
+    def test_connection_strings_are_hidden(self):
+        from django.views.debug import get_default_exception_reporter_filter
+
+        safe = get_default_exception_reporter_filter().get_safe_settings()
+        self.assertNotIn("secret-key", str(safe))
+        self.assertNotIn("secret-key", str(safe["STORAGES"]))
+
+    def test_disallowed_host_is_not_mailed(self):
+        from django.core import mail
+
+        with self.assertLogs("django.security.DisallowedHost", "ERROR"):
+            self.client.get("/", HTTP_HOST="evil.example.org")
+        self.assertEqual(mail.outbox, [])
+
+
 class HostRedirectTests(TestCase):
     @override_settings(HOST_REDIRECTS={"iglc.net": "www.iglc.net"}, ALLOWED_HOSTS=["iglc.net", "www.iglc.net"])
     def test_apex_goes_to_www(self):
