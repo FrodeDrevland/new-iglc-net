@@ -402,10 +402,19 @@ class CheckLimits(BaseGenericSetting):
         "formatting set by hand: report from", default=10,
         help_text="Pieces of text (or paragraphs) formatted by hand before it is reported. A few are "
                   "normal (a symbol, a superscript size).")
+    min_image_dpi = models.PositiveIntegerField(
+        "minimum picture resolution (pixels per inch)", default=200,
+        help_text="At the size the picture is shown in the paper. The template asks for about 1,800 pixels across "
+                  "the full text width, which is some 280 pixels per inch.")
+    paragraph_words = models.PositiveIntegerField("longest paragraph (words)", default=250)
+    keywords_from_list = models.PositiveIntegerField(
+        "keywords from the suggested list (at least)", default=3,
+        help_text="0 switches this check off.")
 
     class Meta:
         verbose_name = "paper check limits"
 
     def as_dict(self):
         return {name: getattr(self, name) for name in
-                ("max_pages", "title_chars", "abstract_words", "keywords", "manual_formatting")}
+                ("max_pages", "title_chars", "abstract_words", "keywords", "manual_formatting", "min_image_dpi",
+                 "paragraph_words", "keywords_from_list")}

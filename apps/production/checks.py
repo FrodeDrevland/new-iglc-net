@@ -73,12 +73,19 @@ RULES = {
     "caption_position": {"review": "warn", "camera_ready": "warn"},
     "manual_formatting": {"review": "note", "camera_ready": "warn", "production": "note"},
     "styles_changed": {"review": "note", "camera_ready": "warn", "production": "note"},
+    "text_first_running": {"review": "note", "camera_ready": "warn", "production": "warn"},
+    "image_resolution": {"review": "note", "camera_ready": "warn", "production": "warn"},
+    "figure_table_not_cited": {"review": "warn", "camera_ready": "warn", "production": "note"},
+    "references_style": {"review": "note", "camera_ready": "warn", "production": "warn"},
+    "references_order": {"review": "warn", "camera_ready": "warn", "production": "warn"},
+    "keywords_not_from_list": {"review": "note", "camera_ready": "note", "production": "off"},
+    "long_paragraphs": {"review": "note", "camera_ready": "note", "production": "off"},
 }
 
 MAX_PAGES = 12
 # Numbers the checks use; the site's settings override them (configuration()).
 LIMITS = {"max_pages": MAX_PAGES, "title_chars": 90, "abstract_words": 200, "keywords": 5,
-          "manual_formatting": 10}
+          "manual_formatting": 10, "min_image_dpi": 200, "paragraph_words": 250, "keywords_from_list": 3}
 LEVEL_CHOICES = ("off", "note", "warn", "reject")
 # What each check looks for, for the admin page and the documentation.
 RULE_LABELS = {
@@ -120,6 +127,13 @@ RULE_LABELS = {
     "caption_position": "Captions not above tables / below figures, or in the wrong style",
     "manual_formatting": "Formatting set by hand (reported from the limit upwards)",
     "styles_changed": "Style definitions differ from the current template",
+    "text_first_running": "Body paragraphs in the wrong one of Text First / Text Running",
+    "image_resolution": "Pictures with too low a resolution for their size",
+    "figure_table_not_cited": "Figures or tables not mentioned in the text",
+    "references_style": "Reference list entries not in the References style",
+    "references_order": "Reference list not in alphabetical order",
+    "keywords_not_from_list": "Too few keywords from the suggested IGLC list",
+    "long_paragraphs": "Paragraphs longer than the limit (words)",
 }
 
 
@@ -305,10 +319,11 @@ def check_paper(path, stage: str = "camera_ready", pdf=None, rules=None, limits=
         limits = configured_limits if limits is None else limits
     limits = {**LIMITS, **limits}
     manuscript = read_manuscript(path, limits)
-    from .layout_checks import layout_checks
+    from .layout_checks import content_checks, layout_checks
 
     raw = (list(zip(manuscript.issues.codes, manuscript.issues)) + _extra_checks(path, manuscript)
            + layout_checks(path, manuscript.abstract, limits["manual_formatting"])
+           + content_checks(path, manuscript.keywords, limits)
            + _page_checks(io.BytesIO(pdf_bytes) if pdf_bytes else None, stage, limits["max_pages"]))
     if pdf_bytes:
         raw += _pages_differ(path, pdf_bytes)

@@ -1,0 +1,82 @@
+# The suggested keywords for IGLC papers (For authors → Suggested keywords).
+# One per line; variants separated by / or , ; text in brackets is an alternative form.
+action research
+benefits realization
+big room/obeya
+collaboration/collaborative
+complex/complexity
+concurrent
+continuous improvement/kaizen
+design science
+flow
+integration
+kanban
+Last Planner® System
+lean construction
+process
+production
+pull
+standardization
+sustainability
+transformation-flow-value
+value
+value stream
+variability
+visual management
+waste
+work flow
+alliancing
+cost-led procurement
+integrated form of agreement (IFOA)
+integrated project delivery (IPD)
+open book
+relational
+target cost(ing)
+transactional
+serious game
+simulation
+action learning/research
+collaboration
+commitment
+language/linguistic action perspective
+mood
+promise, reliable promising
+trust
+customization
+flexible manufacturing
+modular construction
+tolerance
+off-site construction
+Choosing by Advantages (CBA)
+set-based design (SBD)
+Target Value Delivery (TVD)
+buffer/buffer management
+constraint analysis
+daily huddle
+hand-off
+lookahead planning
+make-ready planning
+phase scheduling
+pull planning
+time compression
+inventory control
+job-sequencing
+location-based management (LBM)
+logistics
+mistakeproofing/poka yoke
+takt planning (TP)
+work structuring
+work in progress/process (WIP)
+environment
+modular and offsite construction
+prefabrication
+assembly
+BIM
+VDC
+3D printing
+AI
+psychological safety
+health
+safety
+quality
+theory

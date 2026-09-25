@@ -20,6 +20,9 @@ The stages are the paper **for review** (full and revised papers, anonymous), th
 | Maximum abstract length | 200 words |
 | Maximum keywords | 5 |
 | Formatting set by hand: reported from | 10 pieces of text or paragraphs |
+| Minimum picture resolution | 200 pixels per inch at the size shown |
+| Longest paragraph | 250 words |
+| Keywords from the suggested list | at least 3 |
 
 ## The checks
 
@@ -55,16 +58,28 @@ The stages are the paper **for review** (full and revised papers, anonymous), th
 | **References cited in the abstract** (`abstract_references`) | The abstract contains a citation: (Author, 2020), Author (2020), “et al.” or a numbered reference such as [12]. Years alone, such as (1993–2025), are not counted. | Warn | Warn | Warn |
 | **No Keywords heading** (`keywords_missing`) | No Heading 1 paragraph reads “Keywords”. | **Reject** | **Reject** | **Reject** |
 | **More keywords than the limit** (`keywords_many`) | More keywords than the limit (5), counted by commas and semicolons. | Warn | Warn | Warn |
+| **Too few keywords from the suggested IGLC list** (`keywords_not_from_list`) | Fewer than 3 keywords match the list of suggested IGLC keywords (spelling variants such as -ise/-ize and abbreviations in brackets are accepted). | Note | Note | – |
 | **A mandatory heading (Introduction, References) is missing** (`heading_missing`) | No Heading 1 paragraph reads “Introduction” or “References”. | **Reject** | **Reject** | **Reject** |
+
+### Figures, tables and references
+
+| Check | How it is detected | Review | Camera-ready | Editors' upload |
+|---|---|---|---|---|
+| **Pictures with too low a resolution for their size** (`image_resolution`) | A picture (PNG, JPEG, GIF, BMP) has fewer pixels than the limit (200 pixels per inch) at the width it is shown in the paper. Vector pictures (EMF, SVG …) pass. | Note | Warn | Warn |
+| **Figures or tables not mentioned in the text** (`figure_table_not_cited`) | A caption numbered “Figure n” or “Table n” has no mention of that number in the text (“Figure 3”, “Fig. 3”, “Figures 2 and 3”, “Tables 1–4” all count). | Warn | Warn | Note |
+| **Reference list entries not in the References style** (`references_style`) | Paragraphs after the References heading that are not in the References style. | Note | Warn | Warn |
+| **Reference list not in alphabetical order** (`references_order`) | Two neighbouring entries of the reference list whose first authors are not in alphabetical order (accents ignored). | Warn | Warn | Warn |
 
 ### Template and formatting
 
 | Check | How it is detected | Review | Camera-ready | Editors' upload |
 |---|---|---|---|---|
-| **Paragraphs in styles that are not the template's** (`non_template_styles`) | Paragraphs with text use a style that is not one of the template's (often Normal or a style from another template). One finding per style, with the number of paragraphs. | Warn | Warn | Warn |
+| **Paragraphs in styles that are not the template's** (`non_template_styles`) | Paragraphs with text use a style that is not one of the template's (often Normal or a style from another template, or Heading 4 and lower). One finding per style, with the number of paragraphs. | Warn | Warn | Warn |
+| **Body paragraphs in the wrong one of Text First / Text Running** (`text_first_running`) | A body paragraph that follows another body paragraph must be in Text Running; one that follows anything else (a heading, figure, table, list, quote or caption) in Text First. Paragraphs after one in a non-template style (often Normal) are not judged; those are reported by the style check. | Note | Warn | Warn |
 | **Style definitions differ from the current template** (`styles_changed`) | The definition of a template style (font, size, bold/italic/capitals, spacing, indents, alignment) or the default font differs from the IGLC 35 template. Papers written in an older template are caught here (its Title style has less space above). | Note | Warn | Note |
 | **Formatting set by hand (reported from the limit upwards)** (`manual_formatting`) | Font, font size, spacing or indents set by hand to something else than the style says, counted per piece of text or paragraph; reported from the limit (10) upwards. Bold, italic, superscript, symbols and equations are not counted. | Note | Warn | Note |
 | **Empty paragraphs between paragraphs** (`empty_paragraphs`) | Empty paragraphs between the paper's paragraphs, tables and figures. Empty paragraphs at the very end, page breaks and section breaks are not counted. | Note | Warn | Note |
+| **Paragraphs longer than the limit (words)** (`long_paragraphs`) | A Text First or Text Running paragraph has more words than the limit (250). | Note | Note | – |
 | **Page size or margins differ from the template** (`page_setup_changed`) | A section's page size is not A4 (landscape A4 is accepted) or its margins are not 2.5 cm. | **Reject** | **Reject** | **Reject** |
 | **Figures not placed “In line with text”** (`figure_floating`) | A picture or drawing object is not placed “In line with text” (it floats, wrapped around text or in front of/behind it). | Warn | Warn | Warn |
 | **Captions not above tables / below figures, or in the wrong style** (`caption_position`) | A table caption is not directly above a table, a figure caption not directly below a figure, or a caption starting “Table …” is in the Figure caption style (or the other way round). | Warn | Warn | Warn |
@@ -109,17 +124,11 @@ Items in the template's submission checklist, and a few others, that no check co
 |---|---|---|
 | Pages 11 and 12 contain only references | From the PDF: find the References heading and check that no page after page 10 has text before it. | Moderate |
 | Tables do not break across pages | From the PDF: find each table's rows and check they are on one page. | Moderate |
-| Figures of sufficient resolution | Read the pixel size of each embedded image and compare it with its size on the page (for example at least 150–300 pixels per inch). Vector graphics pass. | Easy |
-| Every figure and table cited in the text | Look for “Figure 3” / “Table 2” in the body text for every caption number. | Easy |
 | Every in-text citation in the reference list, and the other way round | Match (Author, Year) citations against the reference list entries. | Moderate, with false alarms |
-| Reference list in the References style, sorted alphabetically | Check the style of the paragraphs after the References heading and their order by first author. | Easy |
 | References in APA 7th edition | Pattern checks on each reference (authors, (year), title, source, DOI as https://doi.org/…). Only the most common mistakes can be caught. | Hard |
-| Keywords from the suggested IGLC list | Compare the keywords with the list on the website (as a note: other keywords are allowed). | Easy |
-| No overly long paragraphs | Count the words per paragraph and note paragraphs over a limit (for example 250 words). | Easy |
 | UK or US English used consistently | Count spelling pairs (organisation/organization, colour/color …) and note papers that mix both. | Moderate |
 | Metric units | Look for imperial units (ft, feet, inch, lb, sq ft, gallon, °F) without a metric value nearby. | Moderate |
 | Self-citations that reveal the authors (review) | Look for “our previous work (…)” and similar phrases next to citations. | Hard |
-| Headings deeper than Heading 3 | Paragraphs in Heading 4 or lower. | Easy |
 | Plagiarism report and rate below 15% | Needs a plagiarism service; the report is uploaded to ConfTool. | Not automatic |
 | Relevance to lean construction; academic paper; cites the lean construction literature | Needs the chairs' judgement (citations of IGLC papers could be counted as a hint). | Not automatic |
 | Language quality and spelling | Needs people (or a language tool; results vary). | Not automatic |

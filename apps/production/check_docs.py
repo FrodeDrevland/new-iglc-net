@@ -21,8 +21,11 @@ GROUPS = [
                            "author_no_affiliation", "footnote_missing", "author_no_email", "author_no_orcid",
                            "orcid_invalid", "author_title_in_name"]),
     ("Abstract, keywords and headings", ["abstract_missing", "abstract_long", "abstract_references",
-                                         "keywords_missing", "keywords_many", "heading_missing"]),
-    ("Template and formatting", ["non_template_styles", "styles_changed", "manual_formatting", "empty_paragraphs",
+                                         "keywords_missing", "keywords_many", "keywords_not_from_list",
+                                         "heading_missing"]),
+    ("Figures, tables and references", ["image_resolution", "figure_table_not_cited", "references_style",
+                                        "references_order"]),
+    ("Template and formatting", ["non_template_styles", "text_first_running", "styles_changed", "manual_formatting", "empty_paragraphs", "long_paragraphs",
                                  "page_setup_changed", "figure_floating", "caption_position"]),
     ("Submission checklist", ["checklist_missing", "checklist_present"]),
     ("Anonymity (papers under review)", ["not_anonymous", "file_properties_names"]),
@@ -57,8 +60,22 @@ DETAILS = {
     "keywords_many": "More keywords than the limit ({keywords}), counted by commas and semicolons.",
     "heading_missing": "No Heading 1 paragraph reads “Introduction” or “References”.",
     "non_template_styles": "Paragraphs with text use a style that is not one of the template's (often Normal or "
-                           "a style from another template). One finding per style, with the number of "
-                           "paragraphs.",
+                           "a style from another template, or Heading 4 and lower). One finding per style, with the "
+                           "number of paragraphs.",
+    "text_first_running": "A body paragraph that follows another body paragraph must be in Text Running; one "
+                          "that follows anything else (a heading, figure, table, list, quote or caption) in "
+                          "Text First. Paragraphs after one in a non-template style (often Normal) are not "
+                          "judged; those are reported by the style check.",
+    "image_resolution": "A picture (PNG, JPEG, GIF, BMP) has fewer pixels than the limit ({min_image_dpi} pixels "
+                        "per inch) at the width it is shown in the paper. Vector pictures (EMF, SVG …) pass.",
+    "figure_table_not_cited": "A caption numbered “Figure n” or “Table n” has no mention of that number in the "
+                              "text (“Figure 3”, “Fig. 3”, “Figures 2 and 3”, “Tables 1–4” all count).",
+    "references_style": "Paragraphs after the References heading that are not in the References style.",
+    "references_order": "Two neighbouring entries of the reference list whose first authors are not in "
+                        "alphabetical order (accents ignored).",
+    "keywords_not_from_list": "Fewer than {keywords_from_list} keywords match the list of suggested IGLC keywords "
+                              "(spelling variants such as -ise/-ize and abbreviations in brackets are accepted).",
+    "long_paragraphs": "A Text First or Text Running paragraph has more words than the limit ({paragraph_words}).",
     "styles_changed": "The definition of a template style (font, size, bold/italic/capitals, spacing, indents, "
                       "alignment) or the default font differs from the IGLC 35 template. Papers written in an "
                       "older template are caught here (its Title style has less space above).",
@@ -103,27 +120,16 @@ CANDIDATES = [
      "page after page 10 has text before it.", "Moderate"),
     ("Tables do not break across pages", "From the PDF: find each table's rows and check they are on one page.",
      "Moderate"),
-    ("Figures of sufficient resolution", "Read the pixel size of each embedded image and compare it with its size "
-     "on the page (for example at least 150–300 pixels per inch). Vector graphics pass.", "Easy"),
-    ("Every figure and table cited in the text", "Look for “Figure 3” / “Table 2” in the body text for every "
-     "caption number.", "Easy"),
     ("Every in-text citation in the reference list, and the other way round", "Match (Author, Year) citations "
      "against the reference list entries.", "Moderate, with false alarms"),
-    ("Reference list in the References style, sorted alphabetically", "Check the style of the paragraphs after "
-     "the References heading and their order by first author.", "Easy"),
     ("References in APA 7th edition", "Pattern checks on each reference (authors, (year), title, source, DOI "
      "as https://doi.org/…). Only the most common mistakes can be caught.", "Hard"),
-    ("Keywords from the suggested IGLC list", "Compare the keywords with the list on the website (as a note: "
-     "other keywords are allowed).", "Easy"),
-    ("No overly long paragraphs", "Count the words per paragraph and note paragraphs over a limit "
-     "(for example 250 words).", "Easy"),
     ("UK or US English used consistently", "Count spelling pairs (organisation/organization, "
      "colour/color …) and note papers that mix both.", "Moderate"),
     ("Metric units", "Look for imperial units (ft, feet, inch, lb, sq ft, gallon, °F) without a metric value "
      "nearby.", "Moderate"),
     ("Self-citations that reveal the authors (review)", "Look for “our previous work (…)” and similar "
      "phrases next to citations.", "Hard"),
-    ("Headings deeper than Heading 3", "Paragraphs in Heading 4 or lower.", "Easy"),
     ("Plagiarism report and rate below 15%", "Needs a plagiarism service; the report is uploaded to ConfTool.",
      "Not automatic"),
     ("Relevance to lean construction; academic paper; cites the lean construction literature",
@@ -171,6 +177,9 @@ def render(discussion: bool = False) -> str:
         f"| Maximum abstract length | {LIMITS['abstract_words']} words |",
         f"| Maximum keywords | {LIMITS['keywords']} |",
         f"| Formatting set by hand: reported from | {LIMITS['manual_formatting']} pieces of text or paragraphs |",
+        f"| Minimum picture resolution | {LIMITS['min_image_dpi']} pixels per inch at the size shown |",
+        f"| Longest paragraph | {LIMITS['paragraph_words']} words |",
+        f"| Keywords from the suggested list | at least {LIMITS['keywords_from_list']} |",
         "",
         "## The checks",
         "",

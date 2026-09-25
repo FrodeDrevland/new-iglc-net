@@ -45,6 +45,12 @@ read, so they can see whether the metadata (title, authors, affiliations, ORCIDs
 | Too many pages | At most 12 pages, including references; the submission checklist at the end does not count. Shortening is the author's decision. |
 | Submission checklist missing | Copy the checklist from the end of the IGLC template to the end of the paper and tick the boxes that apply. |
 | Reference in the abstract | Rewrite the sentence without the citation. The wording is the author's decision. |
+| Body paragraph in the wrong one of Text First / Text Running | A body paragraph directly after another body paragraph uses **Text Running**; the first one after a heading, figure, table, list, quote or caption uses **Text First**. |
+| Picture resolution too low | Insert the original image file, or export the chart or diagram again at a larger size (the template asks for about 1,800 pixels across the full text width). Vector formats (EMF, SVG) are best for diagrams. |
+| Figure or table not mentioned in the text | Refer to it in the text before it appears ("as Figure 3 shows …"). Where to mention it is the author's decision. |
+| Reference list not in the References style, or not alphabetical | Apply the **References** style to every entry; sort the entries by first author's surname. |
+| Few keywords from the suggested list | Consider keywords from the IGLC list (For authors → Suggested keywords); at least three are asked for. The choice is the author's. |
+| Long paragraphs | Split paragraphs over the limit where the argument allows. The wording is the author's decision. |
 | Empty paragraphs | Delete the empty lines (Home → ¶ shows them); the styles give the space between paragraphs. |
 | Figure not "In line with text" | Right-click the picture → Wrap Text → In Line with Text, in its own paragraph in the **Figure** style. |
 | Caption in the wrong place or style | Table captions go directly above the table (**Table caption**), figure captions directly below the figure (**Figure caption**). |
@@ -62,6 +68,7 @@ as `PAPER-checked.docx`, never in the original:
   Text Running otherwise, the caption styles for captions);
 - apply the Title and Authors styles;
 - delete empty paragraphs between paragraphs;
+- switch body paragraphs between Text First and Text Running as the rule above says;
 - clear character and paragraph formatting set by hand (keep bold, italic, superscript and subscript);
 - accept tracked changes and remove comments, if the author confirms;
 - remove personal information from the file properties (review stage).

@@ -28,7 +28,7 @@ def sup(text):
 
 STYLES = {"Title": "Title", "Authors": "Authors", "Heading1": "heading 1", "TextFirst": "Text First",
           "TextRunning": "Text Running", "Normal": "Normal", "Figure": "Figure",
-          "Figurecaption": "Figure caption", "Tablecaption": "Table caption"}
+          "Figurecaption": "Figure caption", "Tablecaption": "Table caption", "Heading2": "heading 2"}
 
 
 def make_docx(body, notes, header=""):
@@ -1185,3 +1185,73 @@ class CheckRulesDocTests(SimpleTestCase):
 
         self.assertEqual(DOC.read_text(encoding="utf-8"), render(),
                          "docs/paper-check-rules.md is out of date: run python manage.py check_rules_doc")
+
+
+class BodyTextStyleTests(SimpleTestCase):
+    def codes(self, body):
+        from .layout_checks import layout_checks
+
+        return {code: message for code, message in layout_checks(make_docx(body, NOTES))}
+
+    def test_right_sequence_passes(self):
+        body = (p("Heading1", t("Method")) + p("TextFirst", t("One.")) + p("TextRunning", t("Two."))
+                + p("TextRunning", t("Three.")) + p("Figure", drawing()) + p("Figurecaption", t("Figure 1: X"))
+                + p("TextFirst", t("After the figure.")) + p("TextRunning", t("And on.")))
+        self.assertNotIn("text_first_running", self.codes(body))
+
+    def test_text_first_after_body_text(self):
+        body = p("Heading1", t("Method")) + p("TextFirst", t("One.")) + p("TextFirst", t("Two."))
+        self.assertIn("1 in Text First", self.codes(body)["text_first_running"])
+
+    def test_text_running_after_heading_or_figure(self):
+        body = (p("Heading2", t("Data")) + p("TextRunning", t("After a heading."))
+                + p("Figure", drawing()) + p("Figurecaption", t("Figure 1: X")) + p("TextRunning", t("After it.")))
+        self.assertIn("2 in Text Running", self.codes(body)["text_first_running"])
+
+    def test_not_judged_after_a_non_template_style(self):
+        body = p("Heading1", t("Method")) + p("Normal", t("Stray.")) + p("TextRunning", t("Next."))
+        self.assertNotIn("text_first_running", self.codes(body))
+
+
+class ContentCheckTests(SimpleTestCase):
+    def codes(self, body, keywords=(), **limits):
+        from .checks import LIMITS
+        from .layout_checks import content_checks
+
+        return {code: message for code, message in
+                content_checks(make_docx(body, NOTES), list(keywords), {**LIMITS, **limits})}
+
+    def test_figures_and_tables_cited(self):
+        body = (p("TextFirst", t("As Figure 1 and Tables 1–2 show.")) + p("Figurecaption", t("Figure 1: A"))
+                + p("Tablecaption", t("Table 1: B")) + p("Tablecaption", t("Table 2: C"))
+                + p("Figurecaption", t("Figure 2: D")))
+        self.assertEqual(self.codes(body)["figure_table_not_cited"].split(" (")[0], "Not mentioned in the text: Figure 2")
+
+    def test_reference_list(self):
+        refs = (p("Heading1", t("References")) + p("References", t("Ballard, G. (2000). Last planner."))
+                + p("References", t("Alarcón, L. (1997). Lean construction.")) + p("TextFirst", t("Koskela, L. (1992).")))
+        found = self.codes(refs)
+        self.assertIn("Alarcón", found["references_order"])
+        self.assertIn("1 entry", found["references_style"])
+        ordered = (p("Heading1", t("References")) + p("References", t("Alarcón, L. (1997). Lean."))
+                   + p("References", t("Ballard G. (2000). Last planner.")))
+        self.assertNotIn("references_order", self.codes(ordered))
+
+    def test_keywords_from_the_list(self):
+        self.assertIn("keywords_not_from_list", self.codes(BODY, ["takt", "robots", "digital twins"]))
+        self.assertNotIn("keywords_not_from_list",
+                         self.codes(BODY, ["Last Planner System", "standardisation", "IPD", "robots"]))
+
+    def test_long_paragraphs(self):
+        long = p("TextRunning", t("word " * 300))
+        self.assertIn("300", self.codes(BODY + long)["long_paragraphs"])
+        self.assertNotIn("long_paragraphs", self.codes(BODY + long, paragraph_words=400))
+
+    def test_image_size_reader(self):
+        import struct
+
+        from .layout_checks import _image_size
+
+        png = b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + struct.pack(">II", 1800, 900)
+        self.assertEqual(_image_size(png), (1800, 900))
+        self.assertIsNone(_image_size(b"\x01\x00\x00\x00 EMF"))
