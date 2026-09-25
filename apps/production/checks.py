@@ -42,8 +42,8 @@ RULES = {
     "footnote_missing": {"camera_ready": "reject"},
     "author_no_email": {"camera_ready": "warn"},
     "author_no_orcid": {"camera_ready": "warn"},
-    "orcid_invalid": {"camera_ready": "warn"},
-    "orcid_duplicate": {"camera_ready": "warn"},
+    "orcid_invalid": {"camera_ready": "reject"},  # Crossref refuses the record
+    "orcid_duplicate": {"camera_ready": "reject"},  # Crossref refuses the record
     "author_title_in_name": {"camera_ready": "warn"},
     "abstract_missing": {"review": "reject", "camera_ready": "reject"},
     "abstract_long": {"review": "warn", "camera_ready": "warn"},
