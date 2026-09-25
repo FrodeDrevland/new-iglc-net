@@ -1,3 +1,5 @@
+import io
+
 from django.test import TestCase, override_settings
 
 
@@ -129,3 +131,126 @@ class SiteHelpTests(TestCase):
     def test_in_help_menu(self):
         self.client.force_login(self.organiser)
         self.assertContains(self.client.get("/manage/"), "Site documentation")
+
+
+class _Response(io.BytesIO):
+    status = 202
+
+
+@override_settings(EMAIL_REPLY_TO="IGLC General Secretary <webmaster@iglc.net>",
+                   DEFAULT_FROM_EMAIL="IGLC.net <noreply@iglc.net>",
+                   AZURE_EMAIL_ENDPOINT="https://iglc-acs.europe.communication.azure.com/")
+class EmailBackendTests(TestCase):
+    def setUp(self):
+        from apps.core import mail
+
+        mail._token_cache.update(token="", expires=0.0)
+
+    def _message(self, **kwargs):
+        from django.core.mail import EmailMultiAlternatives
+
+        return EmailMultiAlternatives("Password reset", "Plain body", to=["Ann Smith <ann@example.org>"], **kwargs)
+
+    def test_payload(self):
+        from email.mime.text import MIMEText
+
+        from apps.core.mail import acs_payload
+
+        message = self._message(cc=["cc@example.org"], bcc=["bcc@example.org"], reply_to=["Ed <ed@example.org>"],
+                                headers={"X-IGLC": "1", "Reply-To": "ignored@example.org"})
+        message.attach_alternative("<p>HTML body</p>", "text/html")
+        message.attach("notes.txt", "hello", "text/plain")
+        message.attach(MIMEText("mime part"))
+        payload = acs_payload(message)
+        self.assertEqual(payload["senderAddress"], "noreply@iglc.net")
+        self.assertEqual(payload["content"], {"subject": "Password reset", "plainText": "Plain body",
+                                              "html": "<p>HTML body</p>"})
+        self.assertEqual(payload["recipients"]["to"], [{"address": "ann@example.org", "displayName": "Ann Smith"}])
+        self.assertEqual(payload["recipients"]["cc"], [{"address": "cc@example.org"}])
+        self.assertEqual(payload["recipients"]["bcc"], [{"address": "bcc@example.org"}])
+        self.assertEqual(payload["replyTo"], [{"address": "ed@example.org", "displayName": "Ed"}])
+        self.assertEqual(payload["headers"], {"X-IGLC": "1"})
+        self.assertTrue(payload["userEngagementTrackingDisabled"])
+        self.assertEqual(payload["attachments"][0], {"name": "notes.txt", "contentType": "text/plain",
+                                                     "contentInBase64": "aGVsbG8="})
+        self.assertEqual(len(payload["attachments"]), 2)
+
+    def test_html_only_message(self):
+        from django.core.mail import EmailMessage
+
+        from apps.core.mail import acs_payload
+
+        message = EmailMessage("Hi", "<p>Hi</p>", to=["a@example.org"])
+        message.content_subtype = "html"
+        self.assertEqual(acs_payload(message)["content"], {"subject": "Hi", "html": "<p>Hi</p>"})
+
+    def test_default_reply_to_only_when_missing(self):
+        import io
+
+        from apps.core.mail import ConsoleBackend
+
+        plain, own = self._message(), self._message(reply_to=["ed@example.org"])
+        ConsoleBackend(stream=io.StringIO()).send_messages([plain, own])
+        self.assertEqual(plain.reply_to, ["IGLC General Secretary <webmaster@iglc.net>"])
+        self.assertEqual(own.reply_to, ["ed@example.org"])
+
+    def test_azure_send(self):
+        import json
+        from unittest import mock
+
+        from apps.core.mail import AzureEmailBackend
+
+        with mock.patch("apps.core.mail.managed_identity_token", return_value="tok"), \
+                mock.patch("apps.core.mail.urlopen", return_value=_Response()) as urlopen:
+            self.assertEqual(AzureEmailBackend().send_messages([self._message()]), 1)
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://iglc-acs.europe.communication.azure.com/emails:send"
+                                           "?api-version=2023-03-31")
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(request.get_header("Authorization"), "Bearer tok")
+        body = json.loads(request.data)
+        self.assertEqual(body["replyTo"], [{"address": "webmaster@iglc.net", "displayName": "IGLC General Secretary"}])
+
+    def test_azure_throttled(self):
+        import io
+        from unittest import mock
+        from urllib.error import HTTPError
+
+        from apps.core.mail import AzureEmailBackend, EmailSendError
+
+        def throttled(*args, **kwargs):
+            raise HTTPError("url", 429, "Too Many Requests", {"Retry-After": "60"}, io.BytesIO(b"quota"))
+
+        with mock.patch("apps.core.mail.managed_identity_token", return_value="tok"), \
+                mock.patch("apps.core.mail.urlopen", side_effect=throttled):
+            with self.assertRaisesMessage(EmailSendError, "429"):
+                AzureEmailBackend().send_messages([self._message()])
+            with self.assertLogs("apps.core.mail", "ERROR"):
+                self.assertEqual(AzureEmailBackend(fail_silently=True).send_messages([self._message()]), 0)
+
+    def test_managed_identity_token_is_cached(self):
+        import json
+        import time
+        from unittest import mock
+
+        from apps.core.mail import managed_identity_token
+
+        token = json.dumps({"access_token": "abc", "expires_on": str(int(time.time()) + 3600)}).encode()
+        env = {"IDENTITY_ENDPOINT": "http://169.254.129.1:8081/msi/token", "IDENTITY_HEADER": "h"}
+        with mock.patch.dict("os.environ", env), \
+                mock.patch("apps.core.mail.urlopen", return_value=_Response(token)) as urlopen:
+            self.assertEqual(managed_identity_token(), "abc")
+            self.assertEqual(managed_identity_token(), "abc")
+        self.assertEqual(urlopen.call_count, 1)
+        request = urlopen.call_args.args[0]
+        self.assertIn("resource=https%3A%2F%2Fcommunication.azure.com%2F", request.full_url)
+        self.assertEqual(request.get_header("X-identity-header"), "h")
+
+    def test_no_managed_identity(self):
+        from unittest import mock
+
+        from apps.core.mail import EmailSendError, managed_identity_token
+
+        with mock.patch.dict("os.environ", {}, clear=True):
+            with self.assertRaisesMessage(EmailSendError, "managed identity"):
+                managed_identity_token()
