@@ -19,7 +19,7 @@ GROUPS = [
     ("File", ["not_docx", "track_changes_or_comments"]),
     ("Title and authors", ["title_missing", "title_wrong_style", "title_capitals", "title_long", "authors_missing",
                            "author_no_affiliation", "footnote_missing", "author_no_email", "author_no_orcid",
-                           "orcid_invalid", "author_title_in_name"]),
+                           "orcid_invalid", "orcid_duplicate", "author_title_in_name"]),
     ("Abstract, keywords and headings", ["abstract_missing", "abstract_long", "abstract_references",
                                          "keywords_missing", "keywords_many", "keywords_not_from_list",
                                          "heading_missing"]),
@@ -51,6 +51,8 @@ DETAILS = {
     "author_no_orcid": "An author's footnote contains no ORCID iD.",
     "orcid_invalid": "An ORCID iD is written wrongly or its check digit is wrong (0000-0000-0000-0000 fails "
                      "too).",
+    "orcid_duplicate": "Two authors' footnotes give the same ORCID iD (usually a footnote copied from a co-author). "
+                       "Crossref rejects such a record.",
     "author_title_in_name": "An author name contains Dr, Prof or PhD.",
     "abstract_missing": "No Heading 1 paragraph reads “Abstract”.",
     "abstract_long": "The abstract has more words than the limit ({abstract_words}).",

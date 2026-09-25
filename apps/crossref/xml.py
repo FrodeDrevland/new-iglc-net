@@ -82,10 +82,34 @@ def _affiliation_and_orcid(author) -> tuple[list[str], str]:
     return institutions(affiliation), (f"https://orcid.org/{orcid.group(1)}" if orcid else "")
 
 
+def orcid_issues(paper) -> dict[int, str]:
+    """Authors (by pk) whose ORCID iD Crossref would reject: a wrong check digit, or the same iD on
+    two authors of the paper. Those iDs are left out of the deposit (the rest of the record goes)."""
+    from apps.production.docx_reader import orcid_checksum_ok
+
+    found, seen = {}, {}
+    for author in paper.authors.select_related("person").all():
+        _, orcid = _affiliation_and_orcid(author)
+        if not orcid:
+            continue
+        number = orcid.rsplit("/", 1)[-1]
+        name = f"{author.first_name} {author.last_name}".strip()
+        if not orcid_checksum_ok(number):
+            found[author.pk] = f"{name}: ORCID {number} is not valid (wrong check digit)"
+        elif number in seen:
+            first_pk, first_name = seen[number]
+            found[first_pk] = f"{first_name}: ORCID {number} is also given for {name}"
+            found[author.pk] = f"{name}: ORCID {number} is also given for {first_name}"
+        else:
+            seen[number] = (author.pk, name)
+    return found
+
+
 def _contributors(parent, paper):
     authors = list(paper.authors.select_related("person").all())
     if not authors:
         return
+    rejected = orcid_issues(paper)
     contributors = _e(parent, "contributors")
     for index, author in enumerate(authors):
         person = _e(contributors, "person_name", sequence="first" if index == 0 else "additional",
@@ -98,7 +122,7 @@ def _contributors(parent, paper):
             affiliations = _e(person, "affiliations")
             for name in names:
                 _e(_e(affiliations, "institution"), "institution_name", name)
-        if orcid:
+        if orcid and author.pk not in rejected:
             _e(person, "ORCID", orcid)
 
 

@@ -436,6 +436,7 @@ def publish(request, number):
         "deposits": production.conference.crossref_deposits.select_related("user")[:10],
         "metadata": _metadata_summary(production),
         "crossref": _crossref_settings(),
+        "orcid_issues": _orcid_issues(production),
     })
 
 
@@ -451,6 +452,19 @@ def _metadata_summary(production):
     return {"not_asked": len(checks.pending(production)),
             "counts": [(label, counts.get(key, 0)) for key, label in MetadataCheck.Status.choices],
             "waiting": counts.get(MetadataCheck.Status.SENT, 0)}
+
+
+def _orcid_issues(production):
+    """Papers with ORCID iDs that Crossref would reject; they are left out of the deposit."""
+    from apps.archive.models import Paper
+    from apps.crossref.xml import orcid_issues
+
+    out = []
+    for paper in Paper.objects.filter(conference=production.conference).prefetch_related("authors"):
+        issues = orcid_issues(paper)
+        if issues:
+            out.append((paper, sorted(set(issues.values()))))
+    return out
 
 
 def _crossref_settings():

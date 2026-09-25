@@ -84,3 +84,30 @@ class CrossrefTests(TestCase):
         item = crossref.make(self.conference, [self.paper])
         with self.assertRaises(crossref.DepositError):
             crossref.send(item)
+
+
+class OrcidIssueTests(TestCase):
+    def test_bad_and_duplicate_orcids_left_out(self):
+        from datetime import date
+
+        from apps.archive.models import Author, Conference, Paper
+
+        from .xml import conference_xml, orcid_issues
+
+        conference = Conference.objects.create(number=34, city="Singapore", start_date=date(2026, 6, 22))
+        paper = Paper.objects.create(conference=conference, title="T", doi="10.24928/2026/0001",
+                                     first_page=1, last_page=2)
+        good = "Prof., NTNU, Norway, a@ntnu.no, orcid.org/0000-0002-1825-0097"
+        Author.objects.create(paper=paper, first_name="Ann", last_name="A", order=1, title_and_contact=good)
+        Author.objects.create(paper=paper, first_name="Bo", last_name="B", order=2, title_and_contact=good)
+        Author.objects.create(paper=paper, first_name="Cy", last_name="C", order=3,
+                              title_and_contact="NTNU, orcid.org/0000-0000-0000-0000")
+        Author.objects.create(paper=paper, first_name="Di", last_name="D", order=4,
+                              title_and_contact="NTNU, orcid.org/0000-0003-1415-9269")
+        issues = orcid_issues(paper)
+        self.assertEqual(len(issues), 3)
+        _, xml = conference_xml(conference, [paper])
+        text = xml.decode()
+        self.assertNotIn("0000-0002-1825-0097", text)
+        self.assertNotIn("0000-0000-0000-0000", text)
+        self.assertIn("0000-0003-1415-9269", text)

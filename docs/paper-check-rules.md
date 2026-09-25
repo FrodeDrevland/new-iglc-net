@@ -47,6 +47,7 @@ The stages are the paper **for review** (full and revised papers, anonymous), th
 | **No email address in an author's footnote** (`author_no_email`) | An author's footnote contains no email address. | – | Warn | Warn |
 | **No ORCID iD in an author's footnote** (`author_no_orcid`) | An author's footnote contains no ORCID iD. | – | Warn | Warn |
 | **An ORCID iD is not valid** (`orcid_invalid`) | An ORCID iD is written wrongly or its check digit is wrong (0000-0000-0000-0000 fails too). | – | Warn | Warn |
+| **The same ORCID iD given for two authors** (`orcid_duplicate`) | Two authors' footnotes give the same ORCID iD (usually a footnote copied from a co-author). Crossref rejects such a record. | – | Warn | Warn |
 | **An author name includes a title (Dr, Prof …)** (`author_title_in_name`) | An author name contains Dr, Prof or PhD. | – | Warn | Warn |
 
 ### Abstract, keywords and headings

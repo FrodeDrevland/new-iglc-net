@@ -332,6 +332,13 @@ def _read_authors(paragraphs, notes, note_order, issues) -> list[ManuscriptAutho
         if re.search(r"\b(dr|prof|phd)\b\.?", name, re.I):
             issues.add("author_title_in_name", f"Author name “{name}” includes a title")
         authors.append(author)
+    seen = {}
+    for author in authors:
+        if author.orcid and author.orcid in seen:
+            issues.add("orcid_duplicate", f"The same ORCID iD ({author.orcid}) is given for {seen[author.orcid]} and "
+                                          f"{author.name}: each author has their own")
+        elif author.orcid:
+            seen[author.orcid] = author.name
     return authors
 
 

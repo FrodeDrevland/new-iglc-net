@@ -64,6 +64,8 @@
 {% if not crossref.configured %}<p class="upload-report">The Crossref login is not set up on this server (CROSSREF_LOGIN and CROSSREF_PASSWORD). Deposits can be made and downloaded, not sent.</p>
 {% elif crossref.test %}<p class="upload-report">Deposits go to Crossref’s <b>test system</b>: nothing is registered. Set CROSSREF_TEST=false on the live site.</p>{% endif %}
 <p class="small muted">DOIs will point to {{ crossref.site }}.</p>
+{% if orcid_issues %}<div class="upload-report"><p><b>ORCID iDs Crossref would reject</b> ({{ orcid_issues|length }} paper{{ orcid_issues|length|pluralize }}). They are left out of the deposit, so the papers are still registered, without these iDs. Correct them in the author's footnote on the paper's archive record (Archive → Papers), then make and send a new deposit.</p>
+<ul>{% for paper, issues in orcid_issues %}<li><a href="{% url 'archive_paper:edit' paper.pk %}">{{ paper.doi }}</a>: {{ issues|join:"; " }}</li>{% endfor %}</ul></div>{% endif %}
 <form method="post">{% csrf_token %}<input type="hidden" name="action" value="crossref_make">
   <button class="button button-secondary" type="submit">Make a deposit</button></form>
 <table class="listing prod-table"><thead><tr><th>Made</th><th>Papers</th><th>Status</th><th>Files</th><th></th></tr></thead><tbody>

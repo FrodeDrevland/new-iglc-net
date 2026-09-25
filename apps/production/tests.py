@@ -1255,3 +1255,12 @@ class ContentCheckTests(SimpleTestCase):
         png = b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\rIHDR" + struct.pack(">II", 1800, 900)
         self.assertEqual(_image_size(png), (1800, 900))
         self.assertIsNone(_image_size(b"\x01\x00\x00\x00 EMF"))
+
+
+class DuplicateOrcidTests(SimpleTestCase):
+    def test_same_orcid_for_two_authors(self):
+        notes = {"2": ["Professor, NTNU, Norway, a@ntnu.no, orcid.org/0000-0002-1825-0097"],
+                 "3": ["PhD student, NTNU, Norway, b@ntnu.no, orcid.org/0000-0002-1825-0097"]}
+        body = BODY.replace(sup("2"), fn(3)).replace(fn(3) + t(", &amp; Cy Lee") + fn(3), fn(3) + t(", &amp; Cy Lee") + fn(3))
+        result = read_manuscript(make_docx(body, notes))
+        self.assertIn("orcid_duplicate", result.issues.codes)
