@@ -77,3 +77,55 @@ class LoginLogoutTests(TestCase):
         self.assertIn("/manage/production/", page)
         # Django's admin is a fallback for superusers only
         self.assertEqual(self.client.get("/django-admin/").status_code, 200)
+
+
+class SiteHelpTests(TestCase):
+    """Help → Site documentation: docs/*.md in the back office, by audience."""
+
+    def setUp(self):
+        from django.contrib.auth.models import Group, Permission, User
+
+        self.admin = User.objects.create_superuser("root", "r@example.org", "pw")
+        self.organiser = User.objects.create_user("org", password="pw")
+        group = Group.objects.create(name="Some organisers")
+        group.permissions.add(Permission.objects.get(codename="access_admin"))
+        self.organiser.groups.add(group)
+
+    def test_every_document_exists(self):
+        from django.conf import settings
+
+        from .help import DOCS, title
+
+        for doc in DOCS:
+            self.assertTrue((settings.BASE_DIR / doc.path).exists(), doc.path)
+            self.assertNotEqual(title(doc), doc.slug, doc.path)
+
+    def test_superuser_reads_everything(self):
+        from django.urls import reverse
+
+        from .help import DOCS
+
+        self.client.force_login(self.admin)
+        index = self.client.get(reverse("site_help:index"))
+        self.assertContains(index, "Production on Azure")
+        for doc in DOCS:
+            response = self.client.get(reverse("site_help:doc", args=[doc.slug]))
+            self.assertEqual(response.status_code, 200, doc.slug)
+        page = self.client.get(reverse("site_help:doc", args=["switch-over"]))
+        self.assertContains(page, 'href="/manage/site-help/deploy-azure/"')
+
+    def test_organiser_sees_only_general_documents(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.organiser)
+        index = self.client.get(reverse("site_help:index"))
+        self.assertContains(index, "Conference websites")
+        self.assertNotContains(index, "Production on Azure")
+        self.assertNotContains(index, "Editors’ guide")
+        self.assertEqual(self.client.get(reverse("site_help:doc", args=["conference-sites"])).status_code, 200)
+        self.assertEqual(self.client.get(reverse("site_help:doc", args=["deploy-azure"])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("site_help:doc", args=["production-process"])).status_code, 404)
+
+    def test_in_help_menu(self):
+        self.client.force_login(self.organiser)
+        self.assertContains(self.client.get("/manage/"), "Site documentation")

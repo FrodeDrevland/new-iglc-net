@@ -54,7 +54,7 @@ To (re)build them: download both families from fonts.google.com ("Get font" > "D
 | `apps/archive/` | Papers, authors, conferences, volumes, links; old-URL redirects (`legacy.py`); exports |
 | `apps/pages/` | Wagtail page types for content pages |
 | `apps/governance/` | Committees and officers |
-| `apps/core/` | Health check and host redirects for hosting |
+| `apps/core/` | Health check, host redirects, and the site documentation under Help in the back office |
 | `templates/`, `static/` | Templates, CSS and fonts |
 | `tools/url_inventory.py` | URL inventory and checking, standard library only |
 | `docs/url-inventory.md` | Every old URL and where it goes |

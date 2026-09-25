@@ -49,4 +49,24 @@
 .iglc-prod .guide h2 { margin-top: 2.25rem; scroll-margin-top: 1rem; }
 .iglc-prod .guide-contents ol { columns: 2; margin: 0; list-style: decimal; padding-left: 1.5rem; }
 @media (max-width: 50rem) { .iglc-prod .guide-contents ol { columns: 1; } }
-.iglc-prod .guide-code { background: var(--w-color-surface-menus, #f6f6f8); padding: .6rem .8rem; border-radius: 4px; overflow-x: auto; font-size: .85rem; }
+.iglc-prod .guide-code { background: rgba(128, 128, 128, .14); padding: .6rem .8rem; border-radius: 4px; overflow-x: auto; font-size: .85rem; }
+/* Site documentation (Help → Site documentation): Markdown from docs/ */
+.iglc-prod .help-index { max-width: 60rem; }
+.iglc-prod .help-list { list-style: none; padding: 0; }
+.iglc-prod .help-list li { margin-bottom: 1rem; }
+.iglc-prod .help-list a { font-weight: 600; }
+.iglc-prod .help-summary { color: var(--w-color-text-meta, #5c5c5c); }
+.iglc-prod .help-doc .toc ul { columns: 2; margin: 0; padding-left: 1.25rem; list-style: disc; }
+@media (max-width: 50rem) { .iglc-prod .help-doc .toc ul { columns: 1; } }
+.iglc-prod .help-doc ul, .iglc-prod .help-doc ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+.iglc-prod .help-doc ul { list-style: disc; }
+.iglc-prod .help-doc ol { list-style: decimal; }
+.iglc-prod .help-doc li { margin-bottom: .3rem; }
+.iglc-prod .help-doc h3 { margin-top: 1.5rem; }
+.iglc-prod .help-doc p { margin-bottom: .9rem; }
+.iglc-prod .help-doc code { background: rgba(128, 128, 128, .14); color: inherit; border: 0; padding: .05rem .3rem; border-radius: 3px; font-size: .88em; }
+.iglc-prod .help-doc pre { background: rgba(128, 128, 128, .14); color: inherit; white-space: pre; padding: .6rem .8rem; border-radius: 4px; overflow-x: auto; font-size: .85rem; margin-bottom: 1rem; }
+.iglc-prod .help-doc pre code { background: none; padding: 0; }
+.iglc-prod .help-doc table { border-collapse: collapse; margin-bottom: 1rem; display: block; overflow-x: auto; }
+.iglc-prod .help-doc th, .iglc-prod .help-doc td { border: 1px solid var(--w-color-border-furniture, #e0e0e0); padding: .35rem .6rem; text-align: left; vertical-align: top; }
+.iglc-prod .help-doc th { background: rgba(128, 128, 128, .14); }

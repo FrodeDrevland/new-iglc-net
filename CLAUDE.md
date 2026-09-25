@@ -35,4 +35,5 @@ The old site is in Frode's Google Drive under 80. Koding/Visual Studio/IGLC (ASP
 - Fresh checkouts need `python manage.py makemigrations archive pages` once; commit the generated migrations.
 - Conference websites (apps/conferences, docs/conference-sites.md): Wagtail pages in a second Wagtail Site at CONFERENCE_HOST (conference.<site host>), with their own URLconf (config/conference_urls.py) set by ConferenceHostMiddleware. Templates there must not reverse main-site URL names; link to the main site with main_site_url.
 - Old-URL redirects live in apps/archive/legacy.py; the full route list is docs/url-inventory.md. Update both together.
+- Documents in docs/ can be read in the back office (Help → Site documentation). A new document must be added to DOCS in apps/core/help.py, with who may read it (everyone, editors, superusers); a test checks every listed file exists. Write them in CommonMark (markdown-it-py renders them).
 - tools/url_inventory.py uses only the standard library; run it where iglc.net and api.crossref.org are reachable.

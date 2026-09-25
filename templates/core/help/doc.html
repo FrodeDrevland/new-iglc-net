@@ -1,0 +1,10 @@
+{% extends "production/editor/_base.html" %}
+{% block titletag %}{{ title }}{% endblock %}
+{% block main %}
+<div class="page-head"><p class="kicker"><a href="{% url 'site_help:index' %}">Site documentation</a></p>
+  <h1>{{ title }}</h1></div>
+<div class="guide help-doc">
+  {% if toc %}<nav class="panel guide-contents">{{ toc|safe }}</nav>{% endif %}
+  {{ body|safe }}
+</div>
+{% endblock %}

@@ -11,3 +11,5 @@ pypdf>=6.0
 reportlab>=4.2
 # Word templates for the full proceedings
 python-docx>=1.1
+# The site documentation (docs/*.md) in the back office, under Help
+markdown-it-py>=3.0

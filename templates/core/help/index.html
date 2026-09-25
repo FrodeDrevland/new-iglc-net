@@ -1,0 +1,16 @@
+{% extends "production/editor/_base.html" %}
+{% block titletag %}Site documentation{% endblock %}
+{% block main %}
+<div class="page-head"><h1>Site documentation</h1>
+  <p class="lead">How iglc.net and its back office work. The documents are the ones kept with the site's code, so they change when the site does.</p></div>
+
+<div class="help-index">
+{% for group, docs in groups.items %}
+<h2>{{ group }}</h2>
+<ul class="help-list">
+  {% for doc, title in docs %}<li><a href="{% url 'site_help:doc' doc.slug %}">{{ title }}</a><br><span class="help-summary">{{ doc.summary }}</span></li>{% endfor %}
+  {% if group == "Papers and proceedings" and editors_guide %}<li><a href="{% url 'proceedings:guide' %}">Editors’ guide</a><br><span class="help-summary">Step by step: editing, uploading, approving and publishing the papers.</span></li>{% endif %}
+</ul>
+{% endfor %}
+</div>
+{% endblock %}
