@@ -35,10 +35,11 @@ def _setup(request, year=None):
     on_programme_host = getattr(request, "programme_host", False)
     site_root = home.get_site().root_url if on_programme_host else ""
     if on_programme_host:
-        links = {"now": "/", "today": "/today/", "my": "/my/", "calendar": "/calendar.ics"}
+        links = {"now": "/", "today": "/today/", "my": "/my/", "calendar": "/calendar.ics", "booklet": "/programme.pdf"}
     else:
-        links = {name: public.url(name, year) for name in ("now", "today", "my", "calendar")}
-    context = {"home": home, "conference": home.conference, "programme": programme, "year": year,
+        links = {name: public.url(name, year) for name in ("now", "today", "my", "calendar", "booklet")}
+    worker = "/sw.js" if on_programme_host else public.url("service_worker", year)
+    context = {"worker": worker, "worker_scope": "/" if on_programme_host else f"/{year}/programme/", "home": home, "conference": home.conference, "programme": programme, "year": year,
                "base": site_root, "links": links, "main_site_url": settings.SITE_URL,
                "home_url": public.home_url(home), "programme_page_url": f"{public.home_url(home)}programme/",
                "venue_url": settings.PROGRAMME_URL,
@@ -162,3 +163,21 @@ def session_calendar(request, year, pk):
         raise Http404
     return _calendar_response(programme, [session], f"IGLC {programme.conference.number}", context,
                               f"iglc{programme.conference.number}-session-{session.pk}.ics")
+
+
+def booklet(request, year=None):
+    from .booklet import booklet as make
+
+    programme, context = _setup(request, year)
+    response = HttpResponse(make(programme, context["home"]), content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="iglc{programme.conference.number}-programme.pdf"'
+    return response
+
+
+def service_worker(request, year=None):
+    from . import offline
+
+    programme, context = _setup(request, year)
+    pages = (offline.venue_pages(programme) if context["on_programme_host"]
+             else offline.conference_pages(programme, context["year"]))
+    return offline.worker(programme, pages)

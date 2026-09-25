@@ -63,7 +63,7 @@ def day(request, year, day):
 def session(request, year, pk):
     programme, context = _setup(request, year)
     session = get_object_or_404(Session.objects.select_related("location", "part", "keynote", "track")
-                                .prefetch_related("people", "items__submission__paper__authors"),
+                                .prefetch_related("people", "items__submission__paper__authors", "items__submission__presentation"),
                                 pk=pk, programme=programme)
     if not _may_see(session.part, request, programme):
         raise Http404

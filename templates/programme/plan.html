@@ -1,0 +1,103 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}Plan by dragging · {{ programme }}{% endblock %}
+{% block main %}
+{% include "programme/_head.html" with title="Plan by dragging" lead="Drag papers from the list into the paper and poster sessions of the day, between sessions, or back to the list; drag within a session to change the order. Then save. Presenters, minutes and people are set on each session's page." %}
+{% if days %}<p class="prod-filters">{% for d in days %}<a class="button {% if d == day %}{% else %}button-secondary{% endif %} button-small" href="?day={{ d|date:'Y-m-d' }}">{{ d|date:"D j M" }}</a>{% endfor %}</p>{% endif %}
+{% if not slots %}<p>There is no paper or poster session you can edit on this day. Add sessions first (kind: paper session or poster session).</p>{% else %}
+<div class="plan" id="plan" data-day="{{ day|date:'Y-m-d' }}">
+  <aside class="plan-pool">
+    <h2>Not placed (<span id="pool-count">{{ unplaced|length }}</span>)</h2>
+    <label class="small">Track <select id="track-filter"><option value="">all</option>{% for t in tracks %}<option value="{{ t.pk }}">{{ t.title }}</option>{% endfor %}</select></label>
+    <ul class="plan-list" data-pool>
+      {% for s in unplaced %}<li draggable="true" data-entry="s{{ s.pk }}" data-track="{{ s.track_id|default:'' }}"><strong>{{ s.conftool_id }}</strong> {{ s.title }}<br><span class="muted small">{% for a in s.registered_authors %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if s.track %} · {{ s.track.title }}{% endif %}{% if s.presentation.presenter %} · presenter {{ s.presentation.presenter }}{% endif %}</span></li>{% endfor %}
+    </ul>
+  </aside>
+  <div class="plan-sessions">
+    {% for times, sessions in slots %}
+    <section class="plan-slot"><h2>{{ times.0|time:"H:i" }}–{{ times.1|time:"H:i" }}</h2>
+      <div class="plan-slot-sessions">
+      {% for s in sessions %}
+        <div class="plan-session" style="--part: {{ s.part.colour }}">
+          <h3><a href="{% url 'programme:session' programme.number s.pk %}">{% if s.code %}{{ s.code }} {% endif %}{{ s.display_title }}</a></h3>
+          <p class="muted small">{{ s.location.name|default:"no location" }} · {{ s.get_kind_display }}{% if s.track %} · {{ s.track.title }}{% endif %} · <span data-count>{{ s.items.all|length }}</span></p>
+          <ul class="plan-list" data-session="{{ s.pk }}">
+            {% for i in s.items.all %}<li draggable="true" data-entry="{% if i.submission %}s{{ i.submission.pk }}{% else %}i{{ i.pk }}{% endif %}"{% if i.submission %} data-track="{{ i.submission.track_id|default:'' }}"{% else %} data-free{% endif %}>{% if i.submission %}<strong>{{ i.submission.conftool_id }}</strong> {{ i.submission.title }}{% else %}{{ i.title }}{% endif %}{% if i.presenter %}<br><span class="muted small">{{ i.presenter }}</span>{% endif %}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+<p class="plan-save"><button class="button" id="plan-save" type="button" disabled>Save</button> <span id="plan-status" class="muted" role="status"></span> {% csrf_token %}</p>
+<p class="small muted">Without a mouse: use Papers (to add papers to a session) and each session's page (order and removal).</p>
+{% endif %}
+{% endblock %}
+{% block page_js %}
+<script>
+(function () {
+  const plan = document.getElementById("plan");
+  if (!plan) return;
+  const save = document.getElementById("plan-save"), status = document.getElementById("plan-status");
+  let dragged = null, dirty = false;
+
+  function counts() {
+    plan.querySelectorAll(".plan-session").forEach(card => {
+      card.querySelector("[data-count]").textContent = card.querySelectorAll("li").length;
+    });
+    document.getElementById("pool-count").textContent = plan.querySelectorAll("[data-pool] li").length;
+  }
+  function changed() { dirty = true; save.disabled = false; status.textContent = "Not saved yet."; counts(); }
+  function below(list, y) {
+    return [...list.querySelectorAll(":scope > li")].filter(li => li !== dragged)
+      .find(li => { const box = li.getBoundingClientRect(); return y < box.top + box.height / 2; }) || null;
+  }
+  plan.addEventListener("dragstart", e => {
+    dragged = e.target.closest("li[draggable]");
+    if (!dragged) return;
+    dragged.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", dragged.dataset.entry);
+  });
+  plan.addEventListener("dragend", () => { if (dragged) dragged.classList.remove("dragging"); dragged = null; });
+  plan.addEventListener("dragover", e => {
+    if (!dragged) return;
+    const list = e.target.closest(".plan-list") || (e.target.closest(".plan-session") || {}).querySelector?.(".plan-list");
+    if (!list) return;
+    if (list.hasAttribute("data-pool") && dragged.hasAttribute("data-free")) return;  // only papers go back
+    e.preventDefault();
+    const before = below(list, e.clientY);
+    if (dragged.parentNode !== list || dragged.nextSibling !== before) {
+      list.insertBefore(dragged, before);
+      changed();
+    }
+  });
+  plan.addEventListener("drop", e => e.preventDefault());
+  document.getElementById("track-filter").addEventListener("change", e => {
+    plan.querySelectorAll("[data-pool] li").forEach(li => { li.hidden = e.target.value && li.dataset.track !== e.target.value; });
+  });
+  save.addEventListener("click", async () => {
+    const sessions = {};
+    plan.querySelectorAll("[data-session]").forEach(list => {
+      sessions[list.dataset.session] = [...list.querySelectorAll(":scope > li")].map(li => li.dataset.entry);
+    });
+    save.disabled = true;
+    status.textContent = "Saving…";
+    const token = document.querySelector(".plan-save [name=csrfmiddlewaretoken]").value;
+    try {
+      const response = await fetch(location.pathname + "?day=" + plan.dataset.day, {method: "POST",
+        headers: {"Content-Type": "application/json", "X-CSRFToken": token}, body: JSON.stringify({sessions})});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Not saved.");
+      dirty = false;
+      status.textContent = "Saved.";
+    } catch (error) {
+      save.disabled = false;
+      status.textContent = error.message + " Reload the page to see what is saved.";
+    }
+  });
+  window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+})();
+</script>
+{% endblock %}

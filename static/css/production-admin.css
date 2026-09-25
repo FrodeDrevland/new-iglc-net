@@ -86,3 +86,15 @@
 .iglc-prod .badge.note { background: var(--w-color-info-50, #e2f5fc); }
 .iglc-prod .facts { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; }
 .iglc-prod .facts dt { font-weight: 600; }
+/* Planning by dragging (templates/programme/plan.html) */
+.iglc-prod .plan { display: grid; grid-template-columns: 22rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+@media (max-width: 70rem) { .iglc-prod .plan { grid-template-columns: 1fr; } }
+.iglc-prod .plan-pool { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; border: 1px solid var(--w-color-border-furniture, #e0e0e0); border-radius: 5px; padding: .5rem .75rem; }
+.iglc-prod .plan-pool h2 { margin-top: .25rem; }
+.iglc-prod .plan-list { list-style: none; padding: 0; margin: .5rem 0 0; min-height: 2.5rem; }
+.iglc-prod .plan-list li { padding: .4rem .5rem; margin-bottom: .3rem; border: 1px solid var(--w-color-border-furniture, #e0e0e0); border-radius: 4px; background: var(--w-color-surface-page, #fff); cursor: grab; font-size: .9rem; }
+.iglc-prod .plan-slot h2 { font-size: 1rem; margin: 1rem 0 .4rem; }
+.iglc-prod .plan-slot-sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: .75rem; }
+.iglc-prod .plan-session { border: 1px solid var(--w-color-border-furniture, #e0e0e0); border-left: 5px solid var(--part, #ccc); border-radius: 5px; padding: .5rem .6rem; background: var(--w-color-surface-menus, #f6f6f8); }
+.iglc-prod .plan-session h3 { margin: 0 0 .2rem; font-size: .95rem; }
+.iglc-prod .plan-save { position: sticky; bottom: 0; background: var(--w-color-surface-page, #fff); padding: .6rem 0; border-top: 1px solid var(--w-color-border-furniture, #e0e0e0); }

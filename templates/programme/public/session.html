@@ -4,7 +4,7 @@
 {% block canonical %}{% endblock %}
 {% block meta %}{% if private %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
 {% block content %}
-<article class="conf-page conf-programme conf-session-page" style="--part: {{ session.part.colour }}">
+<article class="conf-page conf-programme conf-session-page" data-sw="{% programme_url 'service_worker' year %}" data-sw-scope="/{{ year }}/programme/" style="--part: {{ session.part.colour }}">
   <p class="conf-crumbs">{% if private %}<a href="{% programme_url 'private' year key %}">{{ session.part.name }}</a>{% else %}<a href="{% pageurl programme_page %}">{{ programme_page.title }}</a> · <a href="{% programme_url 'day' year session.date|date:'Y-m-d' %}">{{ session.date|date:"l j F" }}</a>{% endif %}</p>
   <h1>{% if session.code %}{{ session.code }} {% endif %}{{ session.display_title }}</h1>
   {% include "programme/public/_status.html" %}
@@ -29,6 +29,7 @@
       <strong>{% if i.url %}<a href="{{ main_site_url }}{{ i.url }}">{{ i.display_title }}</a>{% else %}{{ i.display_title }}{% endif %}</strong>
       <br>{% for n in i.author_names %}{% if n == i.presenter %}<span class="presenter" title="Presenter">{{ n }}</span>{% else %}{{ n }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% if i.speaker and not i.submission %}{{ i.speaker }}{% endif %}
       {% if i.presenter %}<br><span class="muted small">Presented by {{ i.presenter }}{% if i.presentation == "poster" and session.kind != "posters" %}, as a poster{% endif %}{% if i.minutes %} · {{ i.minutes }} min{% endif %}</span>{% endif %}
+      {% if i.slides_url %}<br><a class="small" href="{{ i.slides_url }}">Slides</a>{% endif %}
       {% if i.paper and i.paper.abstract %}<details><summary>Abstract</summary><p>{{ i.paper.abstract }}</p></details>{% endif %}
     </li>{% endfor %}</ol>
   {% endif %}{% endwith %}

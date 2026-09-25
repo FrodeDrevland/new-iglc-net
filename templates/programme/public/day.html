@@ -3,7 +3,7 @@
 {% block title %}Programme, {{ day.date|date:"l j F" }}{% endblock %}
 {% block canonical %}{% endblock %}
 {% block content %}
-<article class="conf-page conf-programme">
+<article class="conf-page conf-programme" data-sw="{% programme_url 'service_worker' year %}" data-sw-scope="/{{ year }}/programme/">
   <p class="conf-crumbs"><a href="{% pageurl programme_page %}">{{ programme_page.title }}</a></p>
   <h1>{{ day.date|date:"l j F Y" }}</h1>
   {% include "programme/public/_status.html" %}

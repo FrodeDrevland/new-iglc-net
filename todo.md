@@ -75,5 +75,6 @@
 - [x] Step 3, public programme: day, session, location and part views, grid on large screens, private link for non-public parts
 - [x] Step 4, at the venue: program.iglc.net, now and next, my programme, calendar files and feeds, QR room signs, change marks
 - [ ] program.iglc.net: DNS and certificate on Azure (docs/switch-over.md), and program.iglc on the preview's SWAG (docs/deploy-unraid.md)
-- [ ] Step 5, later: PDF booklet, offline, drag-and-drop planning, slide uploads
+- [x] Step 5: PDF booklet, offline, drag-and-drop planning, slide uploads
+- [ ] Presenters from the IGLC's own submission system (with phase 5, 2028)
 

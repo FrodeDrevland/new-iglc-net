@@ -325,6 +325,12 @@ def backing_report(request, number):
             messages.success(request, f"Paper {submission.conftool_id}: "
                                       + (f"backed by {registration}." if registration else "backer left to the matching."))
         return redirect("programme:backing", number=number)
+    elif action == "link_slides":
+        from . import slides
+
+        count = slides.link_all(programme)
+        messages.success(request, f"Slides are on the pages of {count} published paper{'s' if count != 1 else ''}.")
+        return redirect("programme:backing", number=number)
     elif action == "withdraw":
         done, refused = [], []
         for submission in _submissions(programme).filter(pk__in=request.POST.getlist("paper")):
@@ -360,6 +366,8 @@ def backing_report(request, number):
         "to_request": len(backing.to_request(programme)), "to_remind": len(backing.to_remind(programme)),
         "to_warn": len(backing.to_warn(programme)),
         "no_registrations": not programme.registrations.exists(),
+        "slides": PaperPresentation.objects.filter(submission__production__conference=programme.conference)
+                  .exclude(slides="").count(),
         "defaults": {"request_subject": backing.DEFAULT_REQUEST_SUBJECT, "warning_subject": backing.DEFAULT_WARNING_SUBJECT},
     })
 
@@ -382,3 +390,84 @@ def room_signs(request, number):
     response = HttpResponse(make(programme, locations, home), content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="iglc{number}-room-signs.pdf"'
     return response
+
+
+@login_required
+def booklet(request, number):
+    """The booklet also while the programme is hidden, for the people who work on it."""
+    from django.http import HttpResponse
+
+    from .booklet import booklet as make
+
+    programme = _programme(request, number)
+    response = HttpResponse(make(programme, getattr(programme.conference, "site_home", None)),
+                            content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="iglc{number}-programme.pdf"'
+    return response
+
+
+@login_required
+def plan(request, number):
+    """Drag and drop: papers into sessions, between sessions and in order, one day at a time."""
+    import json
+    from collections import OrderedDict
+
+    from django.http import JsonResponse
+
+    programme = _programme(request, number)
+    parts = access.editable_parts(request.user, programme)
+    sessions_all = programme.sessions.filter(kind__in=Session.WITH_PAPERS).select_related("location", "part")
+    days = sorted(set(sessions_all.values_list("date", flat=True)))
+    wanted = request.GET.get("day") or request.POST.get("day") or ""
+    day = next((d for d in days if d.isoformat() == wanted), days[0] if days else None)
+    shown = [s for s in sessions_all.filter(date=day, part__in=parts).prefetch_related(
+        "items__submission__track", "items__submission__presentation")] if day else []
+    if request.method == "POST":
+        try:
+            layout = json.loads(request.body.decode("utf-8")).get("sessions", {})
+            _save_plan(programme, shown, layout)
+        except (ValueError, KeyError, SessionItem.DoesNotExist) as error:
+            return JsonResponse({"error": f"Not saved: {error}"}, status=400)
+        return JsonResponse({"ok": True})
+    slots = OrderedDict()
+    for s in shown:
+        slots.setdefault((s.start, s.end), []).append(s)
+    return render(request, "programme/plan.html", {
+        "programme": programme, "days": days, "day": day, "slots": slots.items(), "parts": parts,
+        "unplaced": checks.unplaced(programme).select_related("presentation"),
+        "tracks": programme.conference.tracks.all()})
+
+
+def _save_plan(programme, shown, layout):
+    from .models import PaperPresentation
+
+    shown_ids = {s.pk: s for s in shown}
+    items = {i.pk: i for i in SessionItem.objects.filter(session__in=shown).select_related("submission")}
+    by_paper = {i.submission_id: i for i in items.values() if i.submission_id}
+    pool = {s.pk: s for s in checks.unplaced(programme)}
+    seen = set()
+    with transaction.atomic():
+        for session_id, entries in layout.items():
+            session = shown_ids.get(int(session_id))
+            if session is None:
+                raise ValueError("a session that cannot be edited here")
+            for order, entry in enumerate(entries, start=1):
+                kind, pk = entry[0], int(entry[1:])
+                if kind == "i":
+                    item = items[pk]
+                elif pk in by_paper:
+                    item = by_paper[pk]
+                elif pk in pool:
+                    answer = PaperPresentation.objects.filter(submission_id=pk).first()
+                    item = SessionItem(submission=pool[pk], presenter=answer.presenter if answer else "")
+                else:
+                    raise ValueError(f"paper {pk} is placed elsewhere or withdrawn")
+                if item.session_id != session.pk and item.submission_id:
+                    item.presentation = (SessionItem.Presentation.POSTER if session.kind == Session.Kind.POSTERS
+                                         else SessionItem.Presentation.TALK)
+                item.session, item.order = session, order
+                item.save()
+                seen.add(item.pk)
+        for item in items.values():
+            if item.pk not in seen and item.submission_id:
+                item.delete()  # dragged back to the papers not placed

@@ -18,4 +18,6 @@ urlpatterns = [
     path("today/", venue_views.today, name="today"),
     path("my/", venue_views.my, name="my"),
     path("calendar.ics", venue_views.calendar, name="calendar"),
+    path("programme.pdf", venue_views.booklet, name="booklet"),
+    path("sw.js", venue_views.service_worker, name="service_worker"),
 ]

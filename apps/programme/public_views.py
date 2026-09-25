@@ -19,7 +19,16 @@ def confirm(request, token):
     data = {"answer": presentation.answer, "presenter": presentation.presenter, "backer": presentation.backer,
             "backer_email": presentation.backer_email, "comment": presentation.comment,
             "responder": presentation.responder}
-    if request.method == "POST" and not withdrawn:
+    slides_error = ""
+    if request.method == "POST" and request.POST.get("action") == "slides" and not withdrawn:
+        from . import slides
+
+        upload = request.FILES.get("slides")
+        slides_error = slides.problem(upload)
+        if not slides_error:
+            slides.save(presentation, upload, request.POST.get("responder", "").strip()[:200])
+            return redirect("programme_public:confirm", token=token)
+    elif request.method == "POST" and not withdrawn:
         data = {key: request.POST.get(key, "").strip() for key in data}
         if data["answer"] not in PaperPresentation.Answer.values:
             errors.append("Please say whether the paper will be presented.")
@@ -40,5 +49,5 @@ def confirm(request, token):
         "presentation": presentation, "submission": submission, "conference": conference, "programme": programme,
         "title": submission.paper.title if submission.paper_id else submission.title, "authors": authors,
         "data": data, "errors": errors, "answers": PaperPresentation.Answer.choices, "withdrawn": withdrawn,
-        "backed": row is not None and row.status == "backed", "limit": backing.LIMIT,
+        "backed": row is not None and row.status == "backed", "limit": backing.LIMIT, "slides_error": slides_error,
     })

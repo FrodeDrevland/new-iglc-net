@@ -26,5 +26,14 @@
     <p class="small muted">The presenter must also be registered for the technical/academic conference. Your co-authors receive a copy of the answer.</p>
     <p><button class="button" type="submit">Send</button></p>
   </form>
+  <h2 id="slides">Slides</h2>
+  <p>You can upload the presentation here (PDF or PowerPoint, up to 50 MB), before or after the conference. It is shown with the paper in the programme{% if submission.paper_id %} and on the paper’s page in the proceedings{% else %} and, once the paper is published, on its page in the proceedings{% endif %}. Uploading again replaces it.</p>
+  {% if presentation.slides %}<p class="upload-report">Uploaded {{ presentation.slides_uploaded|date:"j F Y" }}: <a href="{{ presentation.slides.url }}">the current slides</a>.</p>{% endif %}
+  {% if slides_error %}<div class="upload-report"><p>{{ slides_error }}</p></div>{% endif %}
+  <form method="post" enctype="multipart/form-data" class="metadata-check">{% csrf_token %}<input type="hidden" name="action" value="slides">
+    <p><label>Slides<br><input type="file" name="slides" accept=".pdf,.pptx" required></label></p>
+    <p><label>Your name<br><input type="text" name="responder" value="{{ data.responder }}"></label></p>
+    <p><button class="button secondary" type="submit">Upload the slides</button></p>
+  </form>
 {% endif %}
 {% endblock %}

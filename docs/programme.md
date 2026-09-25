@@ -2,8 +2,8 @@
 
 The plan for the programme of each IGLC conference: sessions, rooms, chairs and papers, and the
 check that every presented paper is backed by a registration. This is phase 3, second step. Agreed
-with the General Secretary, September 2026. Development steps 1 to 4 (the back office, registration backing,
-the public programme and the programme at the venue) are built; step 5 is for later.
+with the General Secretary, September 2026. Development steps 1 to 5 are built, except presenters from the
+IGLC's own submission system, which waits for that system (2028).
 
 Code: `apps/programme`. Back office: Manage → Conference programme (`/manage/programme/`).
 
@@ -168,6 +168,25 @@ After the conference the frozen programme stays as the record of what was presen
 - **Room signs**: Locations → Room signs (PDF), one A4 page per location with a QR code for its page
   on the conference site (what is on there, and its map).
 
+## Extras
+
+- **Plan by dragging** (programme overview): one day at a time, drag papers from the list of papers
+  not placed into paper and poster sessions, between sessions, back to the list, and into order;
+  then save. A paper dragged into a poster session becomes a poster. Keyboard users use Papers and
+  the session pages instead.
+- **Booklet**: the programme as an A5 PDF (title page, parts, every day's sessions with chairs,
+  papers and presenters, late changes, locations, and an index of people with their sessions), at
+  /2027/programme/programme.pdf and on program.iglc.net, and in the back office (Booklet (PDF)) also
+  while the programme is hidden. It uses the proceedings' Times New Roman where the site has it,
+  else Helvetica.
+- **Offline**: once a visitor has opened the programme (on program.iglc.net, or the programme page on
+  the conference site), their browser keeps its pages, so they open without a network; the pages
+  are fetched again when the programme changes. The venue pages say when they are shown offline.
+- **Slides**: authors upload their slides (PDF or PowerPoint, up to 50 MB) on the same secret-link
+  page as their answer. They are shown with the paper in the programme and put on the published
+  paper's page (its Presentation button); for papers published later, Backing of the papers → "Put
+  them on the published papers' pages".
+
 ## Development steps
 
 1. **Back office** (built): the models, locations, parts with their editor groups and public flag,
@@ -180,8 +199,9 @@ After the conference the frozen programme stays as the record of what was presen
 4. **At the venue** (built): program.iglc.net, now and next, my programme (kept in the visitor's
    browser, no login), calendar files and subscribable feeds, QR codes for room signs, marks for
    changed and cancelled sessions, and a notice banner.
-5. **Later**: a designed PDF booklet, working offline at the venue, drag-and-drop planning,
-   presenters' slide uploads, and presenters from the IGLC's own submission system (2028).
+5. **Extras** (built, see above): the PDF booklet, working offline at the venue, drag-and-drop
+   planning and presenters' slide uploads. Presenters from the IGLC's own submission system follow
+   with that system (2028).
 
 The IGLC 35 programme is to be public in June 2027.
 

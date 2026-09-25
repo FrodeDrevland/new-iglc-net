@@ -11,7 +11,7 @@
   {% with c=home.colours %}<style>:root { --conf-primary: {{ c.primary }}; --conf-accent: {{ c.accent }}; --conf-on-accent: {{ c.on_accent }}; --conf-accent-text: {{ c.accent_text }}; --conf-heading: {{ c.heading_font|safe }}; }</style>{% endwith %}
   <script src="{% static 'js/programme.js' %}" defer></script>
 </head>
-<body class="conference-site venue">
+<body class="conference-site venue" data-sw="{{ worker }}" data-sw-scope="{{ worker_scope }}">
   <a class="skip" href="#main">Skip to content</a>
   <header class="conf-header venue-header">
     <div class="wrap">
@@ -27,11 +27,12 @@
     </nav>
   </header>
   <main id="main" class="wrap venue-main">
+    <p class="conf-notice" data-offline-note hidden>You are offline: this is the programme as it was last loaded.</p>
     {% include "programme/public/_status.html" %}
     {% block content %}{% endblock %}
   </main>
   <footer class="venue-footer wrap">
-    <p><a href="{{ home_url }}">The IGLC {{ conference.number }} website</a> · <a href="{{ links.calendar }}">Calendar file</a> · <a href="{{ main_site_url }}/">iglc.net</a></p>
+    <p><a href="{{ home_url }}">The IGLC {{ conference.number }} website</a> · <a href="{{ links.calendar }}">Calendar file</a> · <a href="{{ links.booklet }}">Printable programme</a> · <a href="{{ main_site_url }}/">iglc.net</a></p>
   </footer>
 </body>
 </html>

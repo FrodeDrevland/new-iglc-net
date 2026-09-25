@@ -322,6 +322,11 @@ class SessionItem(models.Model):
     def url(self):
         return self.paper.get_absolute_url() if self.paper else ""
 
+    @property
+    def slides_url(self):
+        presentation = getattr(self.submission, "presentation", None) if self.submission_id else None
+        return presentation.slides.url if presentation and presentation.slides else ""
+
 
 # ---------------------------------------------------------------- registrations and backing
 
@@ -366,6 +371,15 @@ class Registration(models.Model):
         return self.active and self.paid and self.type_id is not None and self.type.counts
 
 
+def _slides_path(instance, filename):
+    from pathlib import Path
+
+    submission = instance.submission
+    suffix = Path(filename).suffix.lower()
+    return (f"presentations/iglc{submission.production.conference.number}/"
+            f"iglc{submission.production.conference.number}-{submission.conftool_id}-slides{suffix}")
+
+
 class PaperPresentation(models.Model):
     """One accepted paper: will it be presented, by whom, and which registered author backs it.
     The authors answer through a secret link; the editors can choose the backer themselves."""
@@ -390,6 +404,9 @@ class PaperPresentation(models.Model):
     responded = models.DateTimeField(null=True, blank=True)
     registration = models.ForeignKey(Registration, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
                                      help_text="Chosen by the editors: this registration backs the paper.")
+    slides = models.FileField(upload_to=_slides_path, blank=True, max_length=300,
+                              help_text="The presentation (PDF or PowerPoint), uploaded by the authors. Public.")
+    slides_uploaded = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["submission__conftool_id"]

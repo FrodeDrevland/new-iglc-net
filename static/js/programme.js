@@ -42,7 +42,23 @@
     }
   }
 
+  // Offline at the venue: a service worker keeps the programme's pages (apps/programme/offline.py).
+  function offline() {
+    const holder = document.querySelector("[data-sw]");
+    if (holder && "serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname.endsWith(".localhost"))) {
+      navigator.serviceWorker.register(holder.dataset.sw, {scope: holder.dataset.swScope}).catch(() => null);
+    }
+    const note = document.querySelector("[data-offline-note]");
+    if (note) {
+      const show = () => { note.hidden = navigator.onLine; };
+      window.addEventListener("online", show);
+      window.addEventListener("offline", show);
+      show();
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    offline();
     const years = new Set([...document.querySelectorAll("[data-star]")].map(b => b.dataset.year));
     document.querySelectorAll("[data-my-programme]").forEach(el => years.add(el.dataset.myProgramme));
     years.forEach(year => {

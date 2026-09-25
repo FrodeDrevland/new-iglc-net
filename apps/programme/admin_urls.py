@@ -17,6 +17,8 @@ urlpatterns = [
     path("<int:number>/sessions/add/", views.session_edit, name="session_add"),
     path("<int:number>/sessions/<int:pk>/", views.session_edit, name="session"),
     path("<int:number>/papers/", views.papers, name="papers"),
+    path("<int:number>/plan/", views.plan, name="plan"),
+    path("<int:number>/programme.pdf", views.booklet, name="booklet"),
     path("<int:number>/registrations/", views.registrations, name="registrations"),
     path("<int:number>/backing/", views.backing_report, name="backing"),
 ]

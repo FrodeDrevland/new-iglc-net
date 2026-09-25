@@ -21,6 +21,7 @@
     <span class="publish-progress muted" id="send-progress" role="status"></span>
     <ul class="small" id="send-problems"></ul>
   </form>
+  <p class="small">Slides uploaded by the authors: {{ slides }}. {% if slides %}<form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="link_slides"><button class="linklike" type="submit">Put them on the published papers’ pages</button></form> (done by itself when the paper is already published).{% endif %}</p>
   <details><summary>Deadline and email texts</summary>
     <form method="post" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="emails">
       {% for field in emails %}<label>{{ field.label }} {{ field }}{% if field.help_text %}<span class="muted small">{{ field.help_text }}</span>{% endif %}{% for e in field.errors %}<span class="fail small">{{ e }}</span>{% endfor %}</label>{% endfor %}
@@ -43,7 +44,7 @@
       {% if row.status == "over_limit" %}<br><span class="small muted">{% for r in row.candidates %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %} already back{{ row.candidates|length|pluralize:"s," }} two papers</span>{% endif %}
       {% if row.status == "unpaid" %}<br><span class="small muted">{% for r in row.unpaid %}{{ r.name }} ({% if not r.paid %}not paid{% elif not r.active %}not in the latest export{% else %}{{ r.type.name }}{% endif %}){% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}</td>
     <td>{% if p.answer %}{{ p.get_answer_display }}{% if p.presenter %}<br><span class="small">by {{ p.presenter }}{% if row.presenter_registered is False %} <span class="fail">(not registered)</span>{% endif %}</span>{% endif %}{% if p.backer %}<br><span class="small muted">backer: {{ p.backer }}{% if p.backer_email %} ({{ p.backer_email }}){% endif %}</span>{% endif %}{% if p.comment %}<br><span class="small muted">“{{ p.comment|truncatechars:120 }}”</span>{% endif %}{% else %}<span class="muted">–</span>{% endif %}</td>
-    <td class="small">{% if p.requested %}asked {{ p.requested|date:"j M" }}{% endif %}{% if p.reminded %}<br>reminded {{ p.reminded|date:"j M" }}{% endif %}{% if p.warned %}<br><span class="fail">warned {{ p.warned|date:"j M" }}</span>{% endif %}{% if not p.requested and not p.warned %}–{% endif %}</td>
+    <td class="small">{% if p.requested %}asked {{ p.requested|date:"j M" }}{% endif %}{% if p.reminded %}<br>reminded {{ p.reminded|date:"j M" }}{% endif %}{% if p.warned %}<br><span class="fail">warned {{ p.warned|date:"j M" }}</span>{% endif %}{% if p.slides %}<br><a href="{{ p.slides.url }}">slides</a>{% endif %}{% if not p.requested and not p.warned and not p.slides %}–{% endif %}</td>
     <td class="small">{% for session in row.sessions %}<a href="{% url 'programme:session' programme.number session.pk %}">{{ session.code|default:session.display_title }}</a>{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>
   </tr>{% endwith %}
   {% empty %}<tr><td colspan="7">No papers.</td></tr>{% endfor %}</tbody>

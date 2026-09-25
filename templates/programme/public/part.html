@@ -4,7 +4,7 @@
 {% block canonical %}{% endblock %}
 {% block meta %}{% if private %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
 {% block content %}
-<article class="conf-page conf-programme">
+<article class="conf-page conf-programme" data-sw="{% programme_url 'service_worker' year %}" data-sw-scope="/{{ year }}/programme/">
   {% if not private %}<p class="conf-crumbs"><a href="{% pageurl programme_page %}">{{ programme_page.title }}</a></p>{% endif %}
   <h1>{{ part.name }}</h1>
   {% if part.description %}<p class="lead">{{ part.description }}</p>{% endif %}

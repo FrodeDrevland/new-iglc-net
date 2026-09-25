@@ -12,4 +12,6 @@ urlpatterns = [
     path("today/", views.today, name="venue_today"),
     path("my/", views.my, name="venue_my"),
     path("calendar.ics", views.calendar, name="venue_calendar"),
+    path("programme.pdf", views.booklet, name="venue_booklet"),
+    path("sw.js", views.service_worker, name="venue_service_worker"),
 ]

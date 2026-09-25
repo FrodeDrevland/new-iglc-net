@@ -6,10 +6,12 @@
   <h1>{{ programme }}</h1>
   <p class="lead">{{ programme.get_status_display }} · {{ programme.first_day|date:"j M" }} to {{ programme.last_day|date:"j M Y" }} · {{ programme.time_zone }}{% if frozen %} · <strong>frozen</strong>: the conference has taken place{% endif %}</p>
   <p>{% if can_add %}<a class="button" href="{% url 'programme:session_add' programme.number %}">Add a session</a>
-     <a class="button button-secondary" href="{% url 'programme:papers' programme.number %}">Papers{% if unplaced %} ({{ unplaced }} not placed){% endif %}</a>{% endif %}
+     <a class="button button-secondary" href="{% url 'programme:papers' programme.number %}">Papers{% if unplaced %} ({{ unplaced }} not placed){% endif %}</a>
+     <a class="button button-secondary" href="{% url 'programme:plan' programme.number %}">Plan by dragging</a>{% endif %}
      <a class="button button-secondary" href="{% url 'programme:locations' programme.number %}">Locations</a>
      {% if can_backing %}<a class="button button-secondary" href="{% url 'programme:backing' programme.number %}">Backing of the papers</a>{% endif %}
      {% if can_settings %}<a class="button button-secondary" href="{% url 'programme:settings' programme.number %}">Parts and settings</a>{% endif %}
+     <a class="button button-secondary" href="{% url 'programme:booklet' programme.number %}">Booklet (PDF)</a>
      <a class="button button-secondary" href="{% url 'site_help:doc' 'programme' %}">Guide</a></p>
 </div>
 

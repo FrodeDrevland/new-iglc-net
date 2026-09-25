@@ -3,7 +3,7 @@
 {% block title %}{{ location.name }}{% endblock %}
 {% block canonical %}{% endblock %}
 {% block content %}
-<article class="conf-page conf-programme">
+<article class="conf-page conf-programme" data-sw="{% programme_url 'service_worker' year %}" data-sw-scope="/{{ year }}/programme/">
   <p class="conf-crumbs"><a href="{% pageurl programme_page %}">{{ programme_page.title }}</a></p>
   <h1>{{ location.name }}</h1>
   <dl class="conf-facts">
