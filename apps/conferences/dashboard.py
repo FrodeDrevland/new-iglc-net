@@ -8,9 +8,11 @@ what the platform knows about a conference, and the actions on it.
     unpublish_website(home, user)         the home page and every page below it
     deletion(conference)                  what deleting would remove, and what stops it
     delete_conference(conference, user)   the website through Wagtail, then the record
-    invite_organiser(...)                 a new account in the organisers group, with a set-password e-mail
+    people(conference, user)              the roles (apps/conferences/roles.py) with their members
+    add_person(...)                       someone into a role: an existing account, or a new one with an
+                                          e-mail to choose a password
 
-The actions are for superusers; the views check that (apps/conferences/admin_views.py).
+Who may do what is in apps/conferences/roles.py; the views check it (apps/conferences/admin_views.py).
 """
 
 from __future__ import annotations
@@ -66,11 +68,9 @@ def organiser_group_name(conference) -> str:
     return f"IGLC {conference.number} organisers"
 
 
-def organisers(conference):
-    group = Group.objects.filter(name=organiser_group_name(conference)).first()
-    if group is None:
-        return None, []
-    return group, list(group.user_set.order_by("last_name", "first_name", "username"))
+def conference_groups(conference):
+    """Every group of this conference: organisers, conference chairs and the programme's parts."""
+    return Group.objects.filter(name__startswith=f"IGLC {conference.number} ")
 
 
 def _pages(home):
@@ -118,7 +118,6 @@ def overview(conference) -> dict:
         result["unpublished_pages"] = sum(1 for row in result["pages"] if row["state"] != "live") + (
             0 if home.live and not home.has_unpublished_changes else 1)
         result["home_url"] = home.get_url()
-    result["organiser_group"], result["organisers"] = organisers(conference)
 
     programme = getattr(conference, "programme", None) if _has(conference, "programme") else None
     result["programme"] = programme
@@ -126,9 +125,7 @@ def overview(conference) -> dict:
         parts = list(programme.parts.select_related("editors"))
         result["programme_sessions"] = programme.sessions.count()
         result["programme_registrations"] = programme.registrations.count()
-        result["programme_people"] = (
-            [("Conference chairs", programme.chairs, _people_of_group(programme.chairs))] if programme.chairs else []
-        ) + [(part.name, part.editors, _people_of_group(part.editors)) for part in parts if part.editors]
+        result["programme_parts"] = parts
 
     production = getattr(conference, "production", None) if _has(conference, "production") else None
     result["production"] = production
@@ -284,8 +281,7 @@ def deletion(conference) -> Deletion:
         n = related.count()
         if n:
             d.removes.append(f"{n} {label}{'s' if n != 1 else ''} of the conference record.")
-    group = Group.objects.filter(name=organiser_group_name(conference)).first()
-    if group:
+    for group in conference_groups(conference):
         members = group.user_set.count()
         d.removes.append(f"The group {group.name} ({members} member{'s' if members != 1 else ''}; "
                          f"their accounts stay).")
@@ -332,48 +328,91 @@ def delete_conference(conference, user):
         programme.delete()
     if _has(conference, "production"):
         conference.production.delete()
-    Group.objects.filter(name=organiser_group_name(conference)).delete()
+    conference_groups(conference).delete()
     collection = _collection(conference)
     if collection and _collection_is_empty(collection):
         collection.delete()
     conference.delete()
 
 
-# ---------------------------------------------------------------- organisers
+# ---------------------------------------------------------------- people
+
+def people(conference, user) -> list[dict]:
+    """The roles of the conference, each {key, label, description, group, members, can_manage}. The
+    part chairs appear once the programme is started."""
+    from . import roles
+
+    rows = []
+    for key in (roles.CHAIRS, roles.ORGANISERS):
+        group = roles.group(conference, key)
+        rows.append({"key": key, "label": roles.LABELS[key], "description": roles.DESCRIPTIONS[key],
+                     "group": group, "members": _people_of_group(group),
+                     "can_manage": roles.can_manage(user, conference, key)})
+    for part, group in roles.part_groups(conference):
+        name = group.name.removeprefix(f"IGLC {conference.number} ")
+        rows.append({"key": f"part-{part.pk}", "label": name[:1].upper() + name[1:],
+                     "description": f"Their part of the programme: {part.name}.",
+                     "group": group, "members": _people_of_group(group),
+                     "can_manage": roles.can_manage(user, conference, group.name)})
+    return rows
+
+
+def role_group(conference, key: str) -> Group | None:
+    """The group for a role key from people(): made (with the website's permissions) if needed."""
+    from . import roles
+
+    if key in (roles.CHAIRS, roles.ORGANISERS):
+        group = roles.group(conference, key, create=True)
+        home = home_of(conference)
+        if home:
+            roles.grant_website(group, home)
+        return group
+    if key.startswith("part-") and key[5:].isdigit():
+        for part, group in roles.part_groups(conference):
+            if part.pk == int(key[5:]):
+                return group
+    return None
+
 
 def add_organiser(conference, user):
-    from .setup import organiser_group
-
-    home = home_of(conference)
-    group = organiser_group(home) if home else Group.objects.get_or_create(name=organiser_group_name(conference))[0]
+    """Kept for the command line and tests: the organisers role."""
+    group = role_group(conference, "organisers")
     user.groups.add(group)
     return group
 
 
-def remove_organiser(conference, user):
-    group = Group.objects.filter(name=organiser_group_name(conference)).first()
+def remove_person(conference, key: str, user):
+    group = role_group(conference, key)
     if group:
         user.groups.remove(group)
 
 
-def invite_organiser(request, conference, first_name: str, last_name: str, email: str):
-    """A new account (user name = e-mail address) in the organisers group, and an e-mail with a
-    link to set a password. Returns the user. Raises ValueError if the address is taken."""
+def add_person(request, conference, key: str, email: str, first_name: str = "", last_name: str = ""):
+    """Someone into a role, by e-mail address. An existing account (same address or user name) is added
+    as it is; otherwise a new account is made (user name = the address) and sent a link to choose a
+    password. Returns (user, created). Raises ValueError for an unknown role."""
     import secrets
 
     from django.contrib.auth.forms import PasswordResetForm
 
+    group = role_group(conference, key)
+    if group is None:
+        raise ValueError("Unknown role.")
     User = get_user_model()
     email = email.strip().lower()
-    if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
-        raise ValueError(f"There is already an account for {email}: add it with 'Add an existing account'.")
-    user = User.objects.create_user(username=email, email=email, first_name=first_name.strip(),
-                                    last_name=last_name.strip(), password=secrets.token_urlsafe(32))
-    add_organiser(conference, user)
-    form = PasswordResetForm({"email": email})
-    form.is_valid()
-    form.save(request=request, use_https=request.is_secure(),
-              subject_template_name="conferences/admin/invite_subject.txt",
-              email_template_name="conferences/admin/invite_email.txt",
-              extra_email_context={"conference": conference, "inviter": request.user})
-    return user
+    user = (User.objects.filter(email__iexact=email).order_by("-is_active", "pk").first()
+            or User.objects.filter(username__iexact=email).first())
+    created = user is None
+    if created:
+        user = User.objects.create_user(username=email, email=email, first_name=first_name.strip(),
+                                        last_name=last_name.strip(), password=secrets.token_urlsafe(32))
+    user.groups.add(group)
+    if created:
+        form = PasswordResetForm({"email": email})
+        form.is_valid()
+        form.save(request=request, use_https=request.is_secure(),
+                  subject_template_name="conferences/admin/invite_subject.txt",
+                  email_template_name="conferences/admin/invite_email.txt",
+                  extra_email_context={"conference": conference, "inviter": request.user,
+                                       "role": group.name.removeprefix(f"IGLC {conference.number} ")})
+    return user, created

@@ -135,26 +135,105 @@ class DashboardTests(TestCase):
         self.client.post(self.url("start-programme"), {"time_zone": "Europe/Oslo"})
         self.assertEqual(self.conference.programme.time_zone, "Europe/Oslo")
 
-    # --- organisers
+    # --- people and roles
 
-    def test_add_invite_and_remove_organisers(self):
+    def test_add_and_remove_people_by_email(self):
         seed(self.conference)
         someone = User.objects.create_user("someone", "someone@example.com", "pw")
-        self.client.post(self.url("add-organiser"), {"user": someone.pk})
+        self.client.post(self.url("add-person"), {"role": "organisers", "email": "SOMEONE@example.com"})
         self.assertTrue(someone.groups.filter(name="IGLC 99 organisers").exists())
-        self.client.post(self.url("invite-organiser"),
-                         {"first_name": "Ada", "last_name": "Lovelace", "email": "Ada@Example.com"})
+        self.assertEqual(len(mail.outbox), 0)  # an existing account gets no e-mail
+        self.client.post(self.url("add-person"), {"role": "chairs", "email": "Ada@Example.com",
+                                                  "first_name": "Ada", "last_name": "Lovelace"})
         ada = User.objects.get(username="ada@example.com")
-        self.assertTrue(ada.groups.filter(name="IGLC 99 organisers").exists())
+        self.assertTrue(ada.groups.filter(name="IGLC 99 conference chairs").exists())
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("IGLC 99", mail.outbox[0].subject)
+        self.assertIn("conference chairs", mail.outbox[0].body)
         self.assertIn("/manage/password_reset/confirm/", mail.outbox[0].body)
-        # the same address again is refused
-        self.client.post(self.url("invite-organiser"),
-                         {"first_name": "Ada", "last_name": "L", "email": "ada@example.com"})
-        self.assertEqual(User.objects.filter(email__iexact="ada@example.com").count(), 1)
-        self.client.post(self.url("remove-organiser"), {"user": someone.pk})
+        self.client.post(self.url("remove-person"), {"role": "organisers", "user": someone.pk})
         self.assertFalse(someone.groups.filter(name="IGLC 99 organisers").exists())
+
+    def _person(self, name, role):
+        user = User.objects.create_user(name, f"{name}@example.com", "pw")
+        user.groups.add(Group.objects.get(name=f"IGLC 99 {role}"))
+        return user
+
+    def test_chairs_and_organisers_edit_the_website_and_see_the_dashboard(self):
+        home = seed(self.conference)
+        from apps.programme import setup as programme_setup
+
+        programme_setup.start(self.conference, "Europe/Oslo")
+        chair, organiser = self._person("chair", "conference chairs"), self._person("org", "organisers")
+        scientific = self._person("sci", "scientific chairs")
+        cfp = home.get_children().get(slug="call-for-papers")
+        for user in (chair, organiser):
+            self.assertTrue(cfp.permissions_for_user(user).can_publish(), user)
+        self.assertFalse(cfp.permissions_for_user(scientific).can_edit())
+
+        for user in (chair, organiser, scientific):
+            self.client.force_login(user)
+            page = self.client.get(self.url())
+            self.assertEqual(page.status_code, 200, user)
+            self.assertNotContains(page, "Delete IGLC 99")
+            self.assertNotContains(page, "Mark as current")
+            # the front page and the menu lead to the conference
+            self.assertContains(self.client.get("/manage/"), "Open the conference")
+            self.assertRedirects(self.client.get("/manage/conferences/mine/"), self.url())
+            # never the IGLC's own actions
+            self.client.post(self.url("freeze"))
+            self.assertFalse(ConferenceHomePage.objects.get(pk=home.pk).frozen)
+
+        self.client.force_login(organiser)
+        self.assertContains(self.client.get(self.url()), "Editing the website")
+        self.client.post(self.url("add-person"), {"role": "organisers", "email": "x@example.com"})
+        self.assertFalse(User.objects.filter(email="x@example.com").exists())  # organisers do not add people
+        self.client.post(self.url("publish-website"), {"page": [cfp.pk]})
+        cfp.refresh_from_db()
+        self.assertTrue(cfp.live)
+
+        self.client.force_login(chair)
+        self.client.post(self.url("add-person"), {"role": "organisers", "email": "new@example.com"})
+        self.assertTrue(User.objects.get(email="new@example.com").groups.filter(name="IGLC 99 organisers").exists())
+        self.client.post(self.url("add-person"), {"role": "chairs", "email": "chair2@example.com"})
+        self.assertFalse(User.objects.filter(email="chair2@example.com").exists())  # only the IGLC adds chairs
+        part = self.conference.programme.parts.get(kind="industry")
+        self.client.post(self.url("add-person"), {"role": f"part-{part.pk}", "email": "ind@example.com"})
+        self.assertTrue(User.objects.get(email="ind@example.com").groups.filter(
+            name="IGLC 99 industry day chairs").exists())
+
+        self.client.force_login(scientific)
+        self.client.post(self.url("publish-website"), {"page": [home.get_children().get(slug="sponsors").pk]})
+        self.assertFalse(home.get_children().get(slug="sponsors").live)
+
+    def test_other_conferences_stay_closed(self):
+        seed(self.conference)
+        other = Conference.objects.create(number=98, start_date=date(2098, 6, 1))
+        seed(other)
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        self.assertNotEqual(self.client.get(f"/manage/conferences/{other.pk}/").status_code, 200)
+        self.assertNotEqual(self.client.get("/manage/conferences/").status_code, 200)
+
+    def test_empty_subpage_list_leads_to_the_editor(self):
+        home = seed(self.conference)
+        cfp = home.get_children().get(slug="call-for-papers")
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        self.assertRedirects(self.client.get(f"/manage/pages/{cfp.pk}/"), f"/manage/pages/{cfp.pk}/edit/")
+        self.assertEqual(self.client.get(f"/manage/pages/{home.pk}/").status_code, 200)  # it has subpages
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(f"/manage/pages/{cfp.pk}/").status_code, 200)  # superusers: the list
+
+    def test_existing_sites_get_chairs_with_website_rights(self):
+        """What migration 0007 does, through the setup code: both groups edit the website."""
+        home = seed(self.conference)
+        chairs = Group.objects.get(name="IGLC 99 conference chairs")
+        from wagtail.models import GroupPagePermission
+
+        self.assertEqual(set(GroupPagePermission.objects.filter(group=chairs, page=home)
+                             .values_list("permission__codename", flat=True)),
+                         {"add_page", "change_page", "publish_page"})
 
     # --- deleting
 
@@ -173,7 +252,7 @@ class DashboardTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Conference.objects.filter(number=99).exists())
         self.assertFalse(ConferenceHomePage.objects.filter(slug="2099").exists())
-        self.assertFalse(Group.objects.filter(name="IGLC 99 organisers").exists())
+        self.assertFalse(Group.objects.filter(name__startswith="IGLC 99 ").exists())
         from wagtail.models import Page
 
         self.assertFalse(any(Page.find_problems()))  # the page tree is consistent

@@ -1,0 +1,13 @@
+{% load wagtailadmin_tags %}
+{% comment %}The back office's front page: "Your conference" (apps/conferences/panels.py).{% endcomment %}
+{% panel id="your-conferences" heading="Your conference" classname="w-panel--dashboard" %}
+  {% for row in rows %}
+    <p style="margin: .25rem 0"><strong>IGLC {{ row.conference.number }}{% if row.conference.location %}: {{ row.conference.location }}{% endif %}</strong></p>
+    <p style="display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0 1.25rem">
+      <a class="button" href="{% url 'conferences:dashboard' row.conference.pk %}">Open the conference</a>
+      {% if row.home and row.can_publish %}<a class="button button-secondary" href="{% url 'conferences:dashboard' row.conference.pk %}#website">Edit the website</a>{% endif %}
+      {% if row.has_programme %}<a class="button button-secondary" href="{% url 'programme:overview' row.conference.number %}">The programme</a>{% endif %}
+      <a class="button button-secondary" href="{% url 'site_help:doc' 'conference-organisers' %}">Guide</a>
+    </p>
+  {% endfor %}
+{% endpanel %}

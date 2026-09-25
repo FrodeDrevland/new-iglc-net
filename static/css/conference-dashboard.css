@@ -23,3 +23,14 @@
 .iglc-prod .badge.state-frozen { background: var(--w-color-info-50, #e2f5fc); }
 .iglc-prod .panel.danger { border-color: var(--w-color-critical-200, #cd4444); }
 .iglc-prod .conf-activity li { padding: .15rem 0; }
+.iglc-prod .conf-grid .panel.wide { grid-column: 1 / -1; }
+.iglc-prod .conf-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: .5rem 1.5rem; }
+.iglc-prod .conf-role h3 { margin: .25rem 0 .2rem; }
+.iglc-prod .conf-role p.small { margin: 0 0 .4rem; }
+.iglc-prod .conf-role li { padding: .15rem 0; }
+.iglc-prod form.inline { display: inline; }
+.iglc-prod .conf-row-actions { white-space: nowrap; text-align: right; }
+.iglc-prod .conf-howto { margin: 0 0 1rem; padding: .9rem 1.1rem; border-left: 4px solid var(--w-color-info-100, #1f7e9a);
+  background: var(--w-color-info-50, #e2f5fc); color: var(--w-color-text-context, #262626); border-radius: 0 5px 5px 0; }
+.iglc-prod .conf-howto h2 { margin: 0 0 .4rem; font-size: 1.1rem; }
+.iglc-prod .conf-howto ol { margin: 0 0 .4rem 1.2rem; }

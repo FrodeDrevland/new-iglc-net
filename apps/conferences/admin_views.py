@@ -19,7 +19,7 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 from wagtail.admin.filters import WagtailFilterSet
-from wagtail.admin.menu import Menu, SubmenuMenuItem
+from wagtail.admin.menu import Menu, MenuItem, SubmenuMenuItem
 from wagtail.admin.panels import FieldPanel, FieldRowPanel, HelpPanel, InlinePanel, MultiFieldPanel
 from wagtail.admin.ui.tables import Column, StatusTagColumn, TitleColumn
 from wagtail.admin.views.generic.models import DeleteView, IndexView
@@ -28,7 +28,7 @@ from wagtail.admin.viewsets.model import ModelViewSet
 from apps.archive.admin_views import TrackedCreateView, TrackedEditView
 from apps.archive.models import Conference
 
-from . import dashboard
+from . import dashboard, roles
 from .models import ConferenceHomePage
 
 MENU_HOOK = "register_conferences_menu_item"
@@ -38,6 +38,18 @@ conferences_menu = Menu(register_hook_name=MENU_HOOK, construct_hook_name="const
 
 def conferences_menu_item():
     return SubmenuMenuItem("Conferences", conferences_menu, name="conferences", icon_name="date", order=190)
+
+
+class YourConferenceMenuItem(MenuItem):
+    """For people with a role in a conference (roles.py): straight to its dashboard."""
+
+    def is_shown(self, request):
+        return roles.conferences_for(request.user).exists()
+
+
+def your_conference_menu_item():
+    return YourConferenceMenuItem("Your conference", reverse("conferences:mine"), name="your-conference",
+                                  icon_name="home", order=0)
 
 
 # ---------------------------------------------------------------- the list
@@ -223,6 +235,7 @@ class ConferenceViewSet(ModelViewSet):
         return super().get_urlpatterns() + [
             path("<int:pk>/", dashboard_view, name="dashboard"),
             path("<int:pk>/do/<slug:action>/", action_view, name="action"),
+            path("mine/", mine_view, name="mine"),
         ]
 
 
@@ -231,46 +244,47 @@ ConferenceIndexView.dashboard_url_name = "conferences:dashboard"
 
 # ---------------------------------------------------------------- the dashboard
 
-def _may_view(user):
-    return user.is_superuser or user.has_perm("archive.change_conference") or user.has_perm("archive.view_conference")
-
-
 def dashboard_view(request, pk):
-    if not _may_view(request.user):
-        raise PermissionDenied
     conference = get_object_or_404(Conference, pk=pk)
+    if not roles.can_view(request.user, conference):
+        raise PermissionDenied
+    mine = roles.roles_of(request.user, conference)
     context = dashboard.overview(conference)
+    from apps.production.access import productions_for
+    from apps.programme.access import programmes_for
+
     context.update({
-        "can_act": request.user.is_superuser,
+        "roles": mine,
+        "is_iglc": "iglc" in mine,
         "can_edit": request.user.is_superuser or request.user.has_perm("archive.change_conference"),
+        "can_publish": roles.can_publish(request.user, conference),
+        "can_start_programme": bool(mine & {"iglc", "chair"}),
+        "can_programme": context["programme"] is not None and programmes_for(request.user)
+                         .filter(pk=context["programme"].pk).exists(),
+        "can_production": context["production"] is not None and productions_for(request.user)
+                          .filter(pk=context["production"].pk).exists(),
+        "people": dashboard.people(conference, request.user),
+        "person_form": PersonForm(),
         "activity": dashboard.recent_activity(conference, context["home"]),
-        "add_form": AddOrganiserForm(conference=conference),
-        "invite_form": InviteForm(),
         "today": date.today(),
     })
     return render(request, "conferences/admin/dashboard.html", context)
 
 
+def mine_view(request):
+    """Conferences → Your conference: straight to the dashboard when there is one."""
+    conferences = list(roles.conferences_for(request.user))
+    if len(conferences) == 1:
+        return redirect("conferences:dashboard", conferences[0].pk)
+    return render(request, "conferences/admin/mine.html", {"conferences": conferences})
+
+
 # ---------------------------------------------------------------- actions
 
-class AddOrganiserForm(forms.Form):
-    user = forms.ModelChoiceField(queryset=None, label="Account",
-                                  help_text="An account that already exists on the site.")
-
-    def __init__(self, *args, conference=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        users = get_user_model().objects.filter(is_active=True).order_by("last_name", "first_name", "username")
-        if conference is not None:
-            users = users.exclude(groups__name=dashboard.organiser_group_name(conference))
-        self.fields["user"].queryset = users
-        self.fields["user"].label_from_instance = lambda u: (f"{u.get_full_name()} ({u.email or u.username})"
-                                                            if u.get_full_name() else (u.email or u.username))
-
-
-class InviteForm(forms.Form):
-    first_name = forms.CharField(max_length=150)
-    last_name = forms.CharField(max_length=150)
+class PersonForm(forms.Form):
     email = forms.EmailField(label="E-mail address")
+    first_name = forms.CharField(max_length=150, required=False)
+    last_name = forms.CharField(max_length=150, required=False)
 
 
 class TimeZoneForm(forms.Form):
@@ -285,14 +299,32 @@ class TimeZoneForm(forms.Form):
         return value
 
 
+IGLC_ONLY = {"create-website", "make-current", "unmake-current", "freeze", "unfreeze", "show-in-archive",
+             "hide-in-archive"}
+
+
+def _allowed(user, conference, action) -> bool:
+    mine = roles.roles_of(user, conference)
+    if "iglc" in mine:
+        return True
+    if action in IGLC_ONLY:
+        return False
+    if action == "start-programme":
+        return "chair" in mine
+    if action in ("publish-website", "unpublish-website"):
+        return roles.can_publish(user, conference)
+    return False
+
+
 # Each action: (title of the confirmation page, explanation, button label). Actions not listed here
 # (the organiser forms) are posted straight from the dashboard.
 CONFIRM = {
     "create-website": (
         "Create the website",
         "Creates the home page at /{year}/ with the standard pages (Conferences → Website standard pages) below it, "
-        "all as drafts, the conference days as the first important date, the group {group} and the "
-        "collection IGLC {number} for its pictures and documents. Nothing is public until it is published.",
+        "all as drafts, the conference days as the first important date, the roles conference chairs and "
+        "website organisers (who edit and publish the website) and the collection IGLC {number} for its pictures "
+        "and documents. Nothing is public until it is published.",
         "Create the website"),
     "publish-website": (
         "Publish the website",
@@ -341,17 +373,18 @@ CONFIRM = {
 
 
 def action_view(request, pk, action):
-    if not request.user.is_superuser:
-        raise PermissionDenied
     conference = get_object_or_404(Conference, pk=pk)
     home = dashboard.home_of(conference)
     back = redirect("conferences:dashboard", conference.pk)
 
-    if action in ("add-organiser", "remove-organiser", "invite-organiser"):
+    if action in ("add-person", "remove-person"):
         if request.method != "POST":
             return back
-        return _organiser_action(request, conference, action) or back
+        _person_action(request, conference, action)
+        return back
     if action not in CONFIRM:
+        raise PermissionDenied
+    if not _allowed(request.user, conference, action):
         raise PermissionDenied
 
     problem = _precondition(conference, home, action)
@@ -451,30 +484,28 @@ def _do(request, conference, home, action, pages, form) -> str:
     return ""
 
 
-def _organiser_action(request, conference, action):
+def _person_action(request, conference, action):
+    key = request.POST.get("role", "")
+    group = dashboard.role_group(conference, key) if key else None
+    if group is None or not roles.can_manage(request.user, conference, key if key in (roles.CHAIRS, roles.ORGANISERS)
+                                             else group.name):
+        raise PermissionDenied
     User = get_user_model()
-    if action == "add-organiser":
-        form = AddOrganiserForm(request.POST, conference=conference)
-        if form.is_valid():
-            dashboard.add_organiser(conference, form.cleaned_data["user"])
-            messages.success(request, f"{form.cleaned_data['user']} is now an organiser.")
-        else:
-            messages.error(request, "Choose an account.")
-    elif action == "remove-organiser":
+    if action == "remove-person":
         user = User.objects.filter(pk=request.POST.get("user")).first()
         if user:
-            dashboard.remove_organiser(conference, user)
-            messages.success(request, f"{user} is no longer an organiser.")
-    elif action == "invite-organiser":
-        form = InviteForm(request.POST)
-        if not form.is_valid():
-            messages.error(request, "Give the first name, the last name and a valid e-mail address.")
-        else:
-            try:
-                user = dashboard.invite_organiser(request, conference, **form.cleaned_data)
-            except ValueError as error:
-                messages.error(request, str(error))
-            else:
-                messages.success(request, f"An account for {user.email} was made, and an e-mail was sent with a "
-                                          f"link to choose a password.")
-    return None
+            dashboard.remove_person(conference, key, user)
+            messages.success(request, f"{user.get_full_name() or user.get_username()} no longer has the role "
+                                      f"{group.name}.")
+        return
+    form = PersonForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Give a valid e-mail address.")
+        return
+    user, created = dashboard.add_person(request, conference, key, **form.cleaned_data)
+    who = user.get_full_name() or user.email
+    if created:
+        messages.success(request, f"{who} was given an account and the role {group.name}, and an e-mail was sent "
+                                  f"with a link to choose a password.")
+    else:
+        messages.success(request, f"{who} (an existing account) now has the role {group.name}.")

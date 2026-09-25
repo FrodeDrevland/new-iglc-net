@@ -1,12 +1,14 @@
 {% extends "production/editor/_base.html" %}
 {% load static %}
 {% comment %}A conference's dashboard (apps/conferences/admin_views.py, dashboard_view; data from
-apps/conferences/dashboard.py). Actions go through conferences:action, with a confirmation page.{% endcomment %}
+apps/conferences/dashboard.py, roles from apps/conferences/roles.py). Everyone with a role in the
+conference sees it; the buttons depend on the role. Actions go through conferences:action, with a
+confirmation page.{% endcomment %}
 {% block titletag %}IGLC {{ conference.number }}{% endblock %}
 {% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/conference-dashboard.css' %}">{% endblock %}
 {% block main %}
 <div class="page-head">
-  <p class="kicker"><a href="{% url 'conferences:index' %}">Conferences</a></p>
+  <p class="kicker">{% if is_iglc or can_edit %}<a href="{% url 'conferences:index' %}">Conferences</a>{% else %}Your conference{% endif %}</p>
   <h1>IGLC {{ conference.number }}{% if conference.location %}: {{ conference.location }}{% endif %}</h1>
   <p class="lead">
     {% if conference.start_date %}{{ conference.start_date|date:"j F Y" }}{% if conference.end_date and conference.end_date != conference.start_date %} to {{ conference.end_date|date:"j F Y" }}{% endif %}{% else %}No dates yet{% endif %}
@@ -18,7 +20,105 @@ apps/conferences/dashboard.py). Actions go through conferences:action, with a co
     <a class="button button-secondary" href="{% url 'conferences:history' conference.pk %}">History</a></p>{% endif %}
 </div>
 
+{% if not is_iglc and home and can_publish %}
+<div class="conf-howto">
+  <h2>Editing the website</h2>
+  <ol>
+    <li>Click <strong>Edit</strong> next to a page below.</li>
+    <li>Change the text, pictures and links. <strong>Save draft</strong> keeps your changes without showing them.</li>
+    <li>When it is ready: the arrow next to Save draft, then <strong>Publish</strong>. It is public at once.</li>
+  </ol>
+  <p class="small">Important dates, the logo, colours and the photo are on the home page (its Content and Branding tabs). More in the <a href="{% url 'site_help:doc' 'conference-organisers' %}">guide for conference organisers</a>.</p>
+</div>
+{% endif %}
+
 <div class="conf-grid">
+
+{# ------------------------------------------------------------ the website #}
+<section class="panel wide" id="website">
+  <h2>Website</h2>
+  {% if not home %}
+    <p>No website yet.{% if conference.start_date %} It would be at <strong>/{{ conference.year }}/</strong>.{% endif %}</p>
+    {% if is_iglc %}<p><a class="button" href="{% url 'conferences:action' conference.pk 'create-website' %}">Create the website</a></p>
+    <p class="muted small">The website starts with the <a href="{% url 'conference_standard_pages:index' %}">website standard pages</a>, as drafts.</p>
+    {% else %}<p class="muted small">The IGLC creates it; ask the webmaster.</p>{% endif %}
+  {% else %}
+    <p><span class="badge state-{{ website }}">{{ website_label }}</span>
+      {% if home.live %}<a href="{{ home.full_url }}" target="_blank" rel="noopener">{{ home.full_url }}</a>{% else %}<span class="muted">Not public yet: nothing is shown until the home page is published.</span>{% endif %}</p>
+    {% if home.frozen %}<p class="small">The conference has taken place, so the website is frozen: only the IGLC can change it.</p>{% endif %}
+    <p class="conf-actions">
+      {% if can_publish and not home.frozen %}
+        {% if unpublished_pages %}<a class="button button-small" href="{% url 'conferences:action' conference.pk 'publish-website' %}">Publish changes…</a>{% endif %}
+        <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:add_subpage' home.pk %}">Add a page</a>
+        {% if home.live %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'unpublish-website' %}">Unpublish…</a>{% endif %}
+      {% endif %}
+      {% if is_iglc %}
+        {% if home.is_current %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'unmake-current' %}">Unmark as current…</a>
+        {% else %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'make-current' %}">Mark as current…</a>{% endif %}
+        {% if home.frozen %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'unfreeze' %}">Unfreeze…</a>
+        {% else %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'freeze' %}">Freeze…</a>{% endif %}
+        <a class="button button-small button-secondary" href="{% url 'wagtailadmin_explore' home.pk %}">Page tree</a>
+      {% endif %}
+    </p>
+    {% if is_iglc and home.is_current and not home.live %}<p class="small muted">Marked as current, but it shows at the main address only once the website is published.</p>{% endif %}
+    <table class="listing prod-table conf-pages">
+      <thead><tr><th>Page</th><th>State</th><th>In the menu</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><strong>{{ home.title }}</strong> <span class="muted small">(home page: important dates, logo, colours)</span></td>
+          <td>{% include "conferences/admin/_page_state.html" with page=home %}</td><td>–</td>
+          <td class="conf-row-actions">{% if can_publish and not home.frozen or is_iglc %}<a class="button button-small" href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit</a>{% endif %}
+            {% if home.live %}<a class="button button-small button-secondary" href="{{ home.full_url }}" target="_blank" rel="noopener">View</a>{% endif %}</td></tr>
+        {% for row in pages %}
+        <tr><td class="depth-{{ row.depth }}">{{ row.page.title }}</td>
+          <td>{% include "conferences/admin/_page_state.html" with page=row.page %}</td>
+          <td>{% if row.page.show_in_menus %}Yes{% else %}No{% endif %}</td>
+          <td class="conf-row-actions">{% if can_publish and not home.frozen or is_iglc %}<a class="button button-small" href="{% url 'wagtailadmin_pages:edit' row.page.pk %}">Edit</a>{% endif %}
+            {% if row.page.live %}<a class="button button-small button-secondary" href="{{ row.page.full_url }}" target="_blank" rel="noopener">View</a>{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if can_publish and not home.frozen %}<p class="small muted">A page that is not needed: Edit, then Unpublish it (it stays as a draft), or ask the IGLC to delete it.</p>{% endif %}
+  {% endif %}
+</section>
+
+{# ------------------------------------------------------------ people #}
+<section class="panel wide" id="people">
+  <h2>People</h2>
+  <div class="conf-roles">
+  {% for role in people %}
+    <div class="conf-role">
+      <h3>{{ role.label }}</h3>
+      <p class="small muted">{{ role.description }}</p>
+      {% if role.members %}
+      <ul class="plain-list">{% for u in role.members %}
+        <li>{% if is_iglc %}<a href="{% url 'wagtailusers_users:edit' u.pk %}">{{ u.get_full_name|default:u.get_username }}</a>{% else %}{{ u.get_full_name|default:u.get_username }}{% endif %}
+          <span class="small muted">{{ u.email }}{% if not u.last_login %}, not logged in yet{% endif %}</span>
+          {% if role.can_manage %}<form class="inline" method="post" action="{% url 'conferences:action' conference.pk 'remove-person' %}">{% csrf_token %}<input type="hidden" name="role" value="{{ role.key }}"><input type="hidden" name="user" value="{{ u.pk }}"><button class="linklike small" type="submit">remove</button></form>{% endif %}</li>
+      {% endfor %}</ul>
+      {% else %}<p class="muted small">Nobody yet.</p>{% endif %}
+      {% if role.can_manage %}
+      <details class="conf-form"><summary>Add someone</summary>
+        <form method="post" action="{% url 'conferences:action' conference.pk 'add-person' %}">{% csrf_token %}
+          <input type="hidden" name="role" value="{{ role.key }}">
+          <p><label>E-mail address<br><input type="email" name="email" required></label></p>
+          <p><label>First name<br><input type="text" name="first_name"></label> <label>Last name<br><input type="text" name="last_name"></label></p>
+          <p class="small muted">Someone who already has an account (by this address) gets the role at once. Someone new gets an account and an e-mail with a link to choose a password.</p>
+          <p><button class="button button-small" type="submit">Add</button></p>
+        </form>
+      </details>
+      {% endif %}
+    </div>
+  {% endfor %}
+  {% if not programme %}
+    <div class="conf-role"><h3>Part chairs</h3><p class="small muted">Scientific, industry day and workshop day chairs and the PhD summer school deans come with the programme{% if can_start_programme %}: start it below{% endif %}.</p></div>
+  {% endif %}
+  {% if production_editors %}
+    <div class="conf-role"><h3>Proceedings editors</h3>
+      <ul class="plain-list">{% for e in production_editors %}<li>{{ e.user.get_full_name|default:e.user.get_username }} <span class="muted small">({{ e.get_role_display|lower }})</span></li>{% endfor %}</ul>
+      <p class="small muted">Set in the proceedings production.</p></div>
+  {% endif %}
+  </div>
+</section>
 
 {# ------------------------------------------------------------ the conference #}
 <section class="panel">
@@ -32,54 +132,8 @@ apps/conferences/dashboard.py). Actions go through conferences:action, with a co
   </dl>
   <h3>Tracks ({{ tracks|length }})</h3>
   {% if tracks %}<ol class="plain-list">{% for t in tracks %}<li>{{ t.title }}</li>{% endfor %}</ol>
-  {% else %}<p class="muted small">No tracks yet. They are set under Edit details and shown on the website with the "tracks" block.</p>{% endif %}
-</section>
-
-{# ------------------------------------------------------------ the website #}
-<section class="panel">
-  <h2>Website</h2>
-  {% if not home %}
-    <p>No website yet.{% if conference.start_date %} It would be at <strong>/{{ conference.year }}/</strong>.{% endif %}</p>
-    {% if can_act %}<p><a class="button" href="{% url 'conferences:action' conference.pk 'create-website' %}">Create the website</a></p>{% endif %}
-    <p class="muted small">The website starts with the <a href="{% url 'conference_standard_pages:index' %}">website standard pages</a>, as drafts.</p>
-  {% else %}
-    <p><span class="badge state-{{ website }}">{{ website_label }}</span>
-      {% if home.live %}<a href="{{ home.full_url }}" target="_blank" rel="noopener">{{ home.full_url }}</a>{% else %}<span class="muted">Not public: {{ unpublished_pages }} page{{ unpublished_pages|pluralize }} not published.</span>{% endif %}</p>
-    {% if home.live and unpublished_pages %}<p class="small muted">{{ unpublished_pages }} page{{ unpublished_pages|pluralize }} with changes not yet published.</p>{% endif %}
-    <p>
-      <a class="button button-small" href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit the home page</a>
-      <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:edit' home.pk %}#tab-branding">Branding</a>
-      <a class="button button-small button-secondary" href="{% url 'wagtailadmin_explore' home.pk %}">All pages</a>
-      <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:add_subpage' home.pk %}">Add a page</a>
-    </p>
-    {% if can_act %}
-    <p class="conf-actions">
-      {% if not home.frozen %}
-        {% if unpublished_pages %}<a class="button button-small" href="{% url 'conferences:action' conference.pk 'publish-website' %}">Publish…</a>{% endif %}
-        {% if home.live %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'unpublish-website' %}">Unpublish…</a>{% endif %}
-      {% endif %}
-      {% if home.is_current %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'unmake-current' %}">Unmark as current…</a>
-      {% else %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'make-current' %}">Mark as current…</a>{% endif %}
-      {% if home.frozen %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'unfreeze' %}">Unfreeze…</a>
-      {% else %}<a class="button button-small button-secondary" href="{% url 'conferences:action' conference.pk 'freeze' %}">Freeze…</a>{% endif %}
-    </p>
-    {% if home.is_current and not home.live %}<p class="small muted">Marked as current, but it shows at the main address only once the website is published.</p>{% endif %}
-    {% endif %}
-    <table class="listing prod-table conf-pages">
-      <thead><tr><th>Page</th><th>State</th><th>In the menu</th><th></th></tr></thead>
-      <tbody>
-        <tr><td><a href="{% url 'wagtailadmin_pages:edit' home.pk %}">{{ home.title }}</a> <span class="muted small">(home page)</span></td>
-          <td>{% include "conferences/admin/_page_state.html" with page=home %}</td><td>–</td>
-          <td>{% if home.live %}<a href="{{ home.full_url }}" target="_blank" rel="noopener">View</a>{% endif %}</td></tr>
-        {% for row in pages %}
-        <tr><td class="depth-{{ row.depth }}"><a href="{% url 'wagtailadmin_pages:edit' row.page.pk %}">{{ row.page.title }}</a></td>
-          <td>{% include "conferences/admin/_page_state.html" with page=row.page %}</td>
-          <td>{% if row.page.show_in_menus %}Yes{% else %}No{% endif %}</td>
-          <td>{% if row.page.live %}<a href="{{ row.page.full_url }}" target="_blank" rel="noopener">View</a>{% endif %}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+  {% else %}<p class="muted small">No tracks yet.{% if can_edit %} They are set under Edit details and shown on the website with the "tracks" block.{% endif %}</p>{% endif %}
+  {% if not can_edit %}<p class="small muted">The number, dates, place and tracks are kept by the IGLC: ask the webmaster to change them.</p>{% endif %}
 </section>
 
 {# ------------------------------------------------------------ important dates #}
@@ -92,56 +146,9 @@ apps/conferences/dashboard.py). Actions go through conferences:action, with a co
       {{ d.label }}{% if d.note %} <span class="muted small">({{ d.note }})</span>{% endif %}</li>{% endfor %}
   </ul>
   {% else %}<p class="muted">None yet.</p>{% endif %}
-  <p class="small"><a href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit them on the home page</a> (from the latest draft; shown on the website once published).</p>
+  {% if can_publish and not home.frozen or is_iglc %}<p class="small"><a href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit them on the home page</a>, then publish the home page to show them.</p>{% endif %}
 </section>
 {% endif %}
-
-{# ------------------------------------------------------------ people #}
-<section class="panel">
-  <h2>People</h2>
-  <h3>Website organisers</h3>
-  {% if organisers %}
-  <table class="listing prod-table">
-    <tbody>{% for u in organisers %}
-      <tr><td>{% if can_act %}<a href="{% url 'wagtailusers_users:edit' u.pk %}">{{ u.get_full_name|default:u.get_username }}</a>{% else %}{{ u.get_full_name|default:u.get_username }}{% endif %}</td>
-        <td class="small">{{ u.email }}</td>
-        <td class="small muted">{% if u.last_login %}last login {{ u.last_login|date:"j M Y" }}{% else %}never logged in{% endif %}</td>
-        <td>{% if can_act %}<form method="post" action="{% url 'conferences:action' conference.pk 'remove-organiser' %}">{% csrf_token %}<input type="hidden" name="user" value="{{ u.pk }}"><button class="button button-small button-secondary" type="submit">Remove</button></form>{% endif %}</td></tr>
-    {% endfor %}</tbody>
-  </table>
-  {% else %}<p class="muted">No organisers yet.</p>{% endif %}
-  <p class="small muted">Organisers edit and publish the website's pages and upload its pictures and documents{% if programme %}, and keep the programme's locations{% endif %}. They log in at /manage/.</p>
-  {% if can_act %}
-  <details class="conf-form"><summary>Add an existing account</summary>
-    <form method="post" action="{% url 'conferences:action' conference.pk 'add-organiser' %}">{% csrf_token %}
-      <p>{{ add_form.user }}</p>
-      <p><button class="button button-small" type="submit">Add as organiser</button></p>
-    </form>
-  </details>
-  <details class="conf-form"><summary>Invite someone new</summary>
-    <form method="post" action="{% url 'conferences:action' conference.pk 'invite-organiser' %}">{% csrf_token %}
-      <p><label>First name<br>{{ invite_form.first_name }}</label></p>
-      <p><label>Last name<br>{{ invite_form.last_name }}</label></p>
-      <p><label>E-mail address<br>{{ invite_form.email }}</label></p>
-      <p class="small muted">Makes an account with the e-mail address as user name, adds it to the organisers and sends a link to choose a password (valid for three days). No password is sent or shown.</p>
-      <p><button class="button button-small" type="submit">Invite</button></p>
-    </form>
-  </details>
-  {% endif %}
-
-  {% if programme_people %}
-  <h3>Programme</h3>
-  <ul class="plain-list">{% for label, group, people in programme_people %}
-    <li><strong>{{ label }}</strong>: {% for u in people %}{{ u.get_full_name|default:u.get_username }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="muted">nobody yet</span>{% endfor %}
-      {% if can_act %}<a class="small" href="{% url 'wagtailusers_groups:edit' group.pk %}">group</a>{% endif %}</li>{% endfor %}
-  </ul>
-  {% endif %}
-
-  {% if production_editors %}
-  <h3>Proceedings</h3>
-  <ul class="plain-list">{% for e in production_editors %}<li>{{ e.user.get_full_name|default:e.user.get_username }} <span class="muted small">({{ e.get_role_display|lower }})</span></li>{% endfor %}</ul>
-  {% endif %}
-</section>
 
 {# ------------------------------------------------------------ programme #}
 <section class="panel">
@@ -149,11 +156,11 @@ apps/conferences/dashboard.py). Actions go through conferences:action, with a co
   {% if programme %}
     <p><span class="badge">{{ programme.get_status_display }}</span>
       {{ programme_sessions }} session{{ programme_sessions|pluralize }}, {{ programme_registrations }} registration{{ programme_registrations|pluralize }}</p>
-    <p><a class="button button-small" href="{% url 'programme:overview' conference.number %}">Open the programme</a>
-      {% if can_act %}<a class="button button-small button-secondary" href="{% url 'programme:settings' conference.number %}">Parts and settings</a>{% endif %}</p>
+    {% if can_programme %}<p><a class="button button-small" href="{% url 'programme:overview' conference.number %}">Open the programme</a>
+      {% if is_iglc or 'chair' in roles %}<a class="button button-small button-secondary" href="{% url 'programme:settings' conference.number %}">Parts and settings</a>{% endif %}</p>{% endif %}
   {% else %}
     <p class="muted">No programme yet.</p>
-    {% if can_act %}<p><a class="button button-small" href="{% url 'conferences:action' conference.pk 'start-programme' %}">Start the programme…</a></p>{% endif %}
+    {% if can_start_programme %}<p><a class="button button-small" href="{% url 'conferences:action' conference.pk 'start-programme' %}">Start the programme…</a></p>{% endif %}
   {% endif %}
 </section>
 
@@ -163,12 +170,12 @@ apps/conferences/dashboard.py). Actions go through conferences:action, with a co
   <dl class="conf-facts">
     <dt>Production</dt>
     <dd>{% if production %}{{ production.get_status_display }}: {{ submissions }} paper{{ submissions|pluralize }}, {{ submissions_approved }} approved{% if submissions_withdrawn %}, {{ submissions_withdrawn }} withdrawn{% endif %}
-        <br><a href="{% url 'proceedings:production' conference.number %}">Open the production</a>
-      {% else %}None. <a href="{% url 'proceedings:productions' %}">Start one</a> from ConfTool's export.{% endif %}</dd>
+        {% if can_production %}<br><a href="{% url 'proceedings:production' conference.number %}">Open the production</a>{% endif %}
+      {% else %}None{% if is_iglc %}. <a href="{% url 'proceedings:productions' %}">Start one</a> from ConfTool's export{% endif %}.{% endif %}</dd>
     <dt>In the archive</dt>
     <dd>{% if conference.is_published %}Yes: <a href="{{ conference.get_absolute_url }}" target="_blank" rel="noopener">the conference page</a>{% else %}No{% endif %},
-      {% if papers %}<a href="{% url 'archive_paper:index' %}?conference={{ conference.pk }}">{{ papers }} paper{{ papers|pluralize }}</a>{% else %}no papers{% endif %}
-      {% if can_act %}<br>{% if conference.is_published %}<a class="small" href="{% url 'conferences:action' conference.pk 'hide-in-archive' %}">Hide from the archive…</a>{% else %}<a class="small" href="{% url 'conferences:action' conference.pk 'show-in-archive' %}">Show in the archive…</a>{% endif %}{% endif %}</dd>
+      {% if papers %}{% if is_iglc %}<a href="{% url 'archive_paper:index' %}?conference={{ conference.pk }}">{{ papers }} paper{{ papers|pluralize }}</a>{% else %}{{ papers }} paper{{ papers|pluralize }}{% endif %}{% else %}no papers{% endif %}
+      {% if is_iglc %}<br>{% if conference.is_published %}<a class="small" href="{% url 'conferences:action' conference.pk 'hide-in-archive' %}">Hide from the archive…</a>{% else %}<a class="small" href="{% url 'conferences:action' conference.pk 'show-in-archive' %}">Show in the archive…</a>{% endif %}{% endif %}</dd>
     <dt>DOIs</dt>
     <dd>{% if deposits %}{{ deposits }} deposit{{ deposits|pluralize }}, the last on {{ last_deposit.created|date:"j M Y" }} ({{ last_deposit.get_status_display|lower }}){% else %}None deposited{% endif %}</dd>
   </dl>
@@ -185,7 +192,7 @@ apps/conferences/dashboard.py). Actions go through conferences:action, with a co
 </section>
 
 {# ------------------------------------------------------------ danger #}
-{% if can_act %}
+{% if is_iglc %}
 <section class="panel danger">
   <h2>Delete</h2>
   <p class="small">Deleting the conference also deletes its website, programme and an empty production, after showing what goes. A conference with papers, DOIs or a published or frozen website cannot be deleted here.</p>

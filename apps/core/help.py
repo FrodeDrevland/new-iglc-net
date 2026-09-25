@@ -28,6 +28,8 @@ class Doc:
 
 
 DOCS = [
+    Doc("conference-organisers", "docs/conference-organisers.md", EVERYONE, "Conferences",
+        "For conference chairs and organisers: logging in, editing and publishing the website, roles."),
     Doc("conference-sites", "docs/conference-sites.md", EVERYONE, "Conferences",
         "Setting up a conference's website, and what the organisers can do."),
     Doc("programme", "docs/programme.md", EVERYONE, "Conferences",

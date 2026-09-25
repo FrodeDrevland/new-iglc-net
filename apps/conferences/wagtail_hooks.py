@@ -3,7 +3,7 @@ from django.shortcuts import redirect
 from django.urls import path, reverse
 from wagtail import hooks
 
-from .admin_views import MENU_HOOK, ConferenceViewSet, conferences_menu_item
+from .admin_views import MENU_HOOK, ConferenceViewSet, conferences_menu_item, your_conference_menu_item
 from .models import ConferenceHomePage
 from .setup import add_standard_pages, organiser_group
 
@@ -13,6 +13,21 @@ from .setup import add_standard_pages, organiser_group
 @hooks.register("register_admin_menu_item")
 def conferences_menu():
     return conferences_menu_item()
+
+
+@hooks.register(MENU_HOOK)
+def your_conference():
+    return your_conference_menu_item()
+
+
+@hooks.register("construct_homepage_panels")
+def your_conferences_panel(request, panels):
+    """On the back office's front page: the conferences this person has a role in, with what to do."""
+    from .panels import YourConferencesPanel
+
+    panel = YourConferencesPanel(request)
+    if panel.conferences:
+        panels.insert(0, panel)
 
 
 @hooks.register("register_admin_viewset")

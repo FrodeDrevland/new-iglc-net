@@ -34,7 +34,7 @@ superusers, each with a confirmation page:
 | Unpublish… | Takes the home page and all pages below it off the public site; the drafts stay. |
 | Mark as current… | Served at the site's main address (only while published); unmarks the others. |
 | Freeze… / Unfreeze… | After the conference: the organisers can no longer change anything. |
-| Add an existing account / Invite someone new / Remove | The website organisers. An invitation makes an account (user name = e-mail address) and sends a link to choose a password; no password is sent or shown. |
+| Add someone / remove | People in each role (see Roles). A new person gets an account (user name = e-mail address) and a link to choose a password; no password is sent or shown. Conference chairs may do this too, except for the chairs themselves. |
 | Start the programme… | The programme with its usual parts and a group of editors for each. |
 | Show in / Hide from the archive… | The proceedings in the public archive (publishing through the production does this by itself). |
 | Delete… | See below. |
@@ -44,6 +44,24 @@ empty production, the organisers group, an empty collection) and deletes it in o
 through Wagtail so that the page tree stays consistent. It is refused while the conference has
 papers or Crossref deposits (DOIs must keep working), a production with papers, or a published or
 frozen website (unpublish or unfreeze it first).
+
+## Roles
+
+Each conference has its people, managed under People on its dashboard (code: `apps/conferences/roles.py`):
+
+| Role | Group | May |
+| --- | --- | --- |
+| Conference chairs | IGLC nn conference chairs | Edit and publish the website, the whole programme, add and remove organisers and part chairs |
+| Website organisers | IGLC nn organisers | Edit and publish the website, upload pictures and documents, the programme's locations |
+| Part chairs | IGLC nn scientific chairs, industry day chairs, workshop day chairs, PhD summer school deans | Their part of the programme (made when the programme is started) |
+| Proceedings editors | the production's editor list | The proceedings |
+
+Everyone with a role sees the conference's dashboard, gets a "Your conference" panel on the back
+office's front page and a "Your conference" menu item, and is sent from the empty subpage list of a
+conference page to its editor. Adding someone is by e-mail address: an existing account gets the role,
+someone new gets an account and a link to choose a password. Superusers can do everything; only they
+create and delete the website, mark it as current, freeze it, or change the archive. The guide for
+the people themselves is docs/conference-organisers.md (Help → Site documentation).
 
 ## Setting up a conference's website (IGLC)
 
@@ -56,8 +74,8 @@ frozen website (unpublish or unfreeze it first).
    From the command line instead: `python manage.py seed_conference_site 35 --current`.
    Creating the home page under Pages → IGLC conferences → Add child page also works, but does not
    add the conference days to the important dates.
-3. People → **Invite someone new** for each organiser (or add an existing account). They log in at
-   `/manage/`.
+3. People → **Add someone** under Conference chairs and Website organisers. They log in at `/manage/`;
+   point them to the guide for conference organisers.
 4. When the organisers and chairs are ready: **Publish…**, and **Mark as current…** when it should be
    the conference at the site's main address.
 

@@ -1,7 +1,8 @@
 """Setting up the conference sites: the Wagtail Site, and a group per conference for its organisers.
 
     sync_site()                  run after every migrate: the Site's host name follows CONFERENCE_HOST
-    organiser_group(home)        the group "IGLC 35 organisers" and the image collection "IGLC 35"
+    organiser_group(home)        the groups "IGLC 35 organisers" and "IGLC 35 conference chairs", and the
+                                 collection "IGLC 35" (apps/conferences/roles.py)
     seed(conference, current)    a home page with the standard pages, as drafts to fill in
 """
 
@@ -10,7 +11,7 @@ from __future__ import annotations
 from urllib.parse import urlsplit
 
 from django.conf import settings
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Group
 from django.db import transaction
 
 
@@ -51,33 +52,16 @@ def sync_site(**kwargs):
         site.save()
 
 
-# ---------------------------------------------------------------- organisers
-
-PAGE_PERMISSIONS = ("add_page", "change_page", "publish_page")  # organisers publish their own pages
-IMAGE_PERMISSIONS = ("add_image", "change_image", "choose_image")
-DOCUMENT_PERMISSIONS = ("add_document", "change_document", "choose_document")
-
+# ---------------------------------------------------------------- organisers and chairs
 
 def organiser_group(home) -> Group:
-    """The group whose members edit and publish this conference's pages,
-    and upload its pictures and documents. Repeatable."""
-    from wagtail.models import Collection, GroupCollectionPermission, GroupPagePermission
+    """The groups whose members edit and publish this conference's pages and upload its pictures and
+    documents: the organisers and the conference chairs (apps/conferences/roles.py). Repeatable.
+    Returns the organisers group."""
+    from . import roles
 
-    name = f"IGLC {home.conference.number}"
-    group, _ = Group.objects.get_or_create(name=f"{name} organisers")
-    group.permissions.add(Permission.objects.get(content_type__app_label="wagtailadmin", codename="access_admin"))
-    for codename in PAGE_PERMISSIONS:
-        GroupPagePermission.objects.get_or_create(
-            group=group, page=home, permission=Permission.objects.get(content_type__app_label="wagtailcore",
-                                                                      codename=codename))
-    root = Collection.get_first_root_node()
-    collection = root.get_children().filter(name=name).first() or root.add_child(name=name)
-    for app, codenames in (("wagtailimages", IMAGE_PERMISSIONS), ("wagtaildocs", DOCUMENT_PERMISSIONS)):
-        for codename in codenames:
-            GroupCollectionPermission.objects.get_or_create(
-                group=group, collection=collection,
-                permission=Permission.objects.get(content_type__app_label=app, codename=codename))
-    return group
+    roles.setup_website_roles(home)
+    return roles.group(home.conference, roles.ORGANISERS)
 
 
 # ---------------------------------------------------------------- a new site
