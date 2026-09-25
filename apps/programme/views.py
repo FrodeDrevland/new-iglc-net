@@ -61,8 +61,14 @@ def overview(request, number):
     for session in sessions:
         days.setdefault(session.date, []).append(session)
     editable = access.editable_parts(request.user, programme)
+    parts = list(programme.parts.select_related("editors"))
+    home = getattr(programme.conference, "site_home", None)
+    for part in parts:
+        part.private_url = (f"{home.full_url}programme/private/{part.token}/"
+                            if home and not part.public and (part in editable or access.is_chair(request.user, programme))
+                            else "")
     return render(request, "programme/overview.html", {
-        "programme": programme, "days": days.items(), "parts": programme.parts.select_related("editors"),
+        "programme": programme, "days": days.items(), "parts": parts,
         "editable_ids": {p.pk for p in editable}, "can_add": bool(editable),
         "can_locations": access.can_edit_locations(request.user, programme),
         "can_settings": access.can_edit_settings(request.user, programme),

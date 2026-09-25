@@ -1,0 +1,18 @@
+{% extends "conferences/base.html" %}
+{% load programme_tags wagtailcore_tags %}
+{% block title %}{{ part.name }}{% endblock %}
+{% block canonical %}{% endblock %}
+{% block meta %}{% if private %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
+{% block content %}
+<article class="conf-page conf-programme">
+  {% if not private %}<p class="conf-crumbs"><a href="{% pageurl programme_page %}">{{ programme_page.title }}</a></p>{% endif %}
+  <h1>{{ part.name }}</h1>
+  {% if part.description %}<p class="lead">{{ part.description }}</p>{% endif %}
+  {% if private %}<p class="conf-notice">This programme is for the participants: please do not share its address.</p>{% endif %}
+  {% include "programme/public/_status.html" %}
+  {% if days|length > 1 %}<nav class="conf-days" aria-label="Days">{% for day in days %}<a href="#day-{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"D j M" }}</a>{% endfor %}</nav>{% endif %}
+  {% for day in days %}<h2 id="day-{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"l j F" }}</h2>
+  {% include "programme/public/_day.html" with several_parts=False %}
+  {% empty %}<p>The programme will be published here.</p>{% endfor %}
+</article>
+{% endblock %}

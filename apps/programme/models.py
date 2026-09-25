@@ -122,6 +122,8 @@ class Part(models.Model):
     editors = models.ForeignKey("auth.Group", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
                                 help_text="The people who edit this part (besides the conference chairs).")
     sort_order = models.PositiveIntegerField(default=0)
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False,
+                             help_text="The private link of a part that is not public.")
 
     class Meta:
         ordering = ["programme", "sort_order", "pk"]

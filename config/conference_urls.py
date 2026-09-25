@@ -19,6 +19,8 @@ urlpatterns = [
     re_path(r"^(?:manage|cms|django-admin)(?:/(?P<rest>.*))?$",
             RedirectView.as_view(url=settings.SITE_URL + "/manage/%(rest)s", query_string=True)),
     path("documents/", include(wagtaildocs_urls)),
+    # The programme's own pages, below the conference's programme page (apps/programme/public.py)
+    path("<int:year>/programme/", include("apps.programme.conference_urls")),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,35 @@
+{% extends "conferences/base.html" %}
+{% load programme_tags wagtailcore_tags wagtailimages_tags %}
+{% block title %}{% if session.code %}{{ session.code }} {% endif %}{{ session.display_title }}{% endblock %}
+{% block canonical %}{% endblock %}
+{% block meta %}{% if private %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
+{% block content %}
+<article class="conf-page conf-programme conf-session-page" style="--part: {{ session.part.colour }}">
+  <p class="conf-crumbs">{% if private %}<a href="{% programme_url 'private' year key %}">{{ session.part.name }}</a>{% else %}<a href="{% pageurl programme_page %}">{{ programme_page.title }}</a> · <a href="{% programme_url 'day' year session.date|date:'Y-m-d' %}">{{ session.date|date:"l j F" }}</a>{% endif %}</p>
+  <h1>{% if session.code %}{{ session.code }} {% endif %}{{ session.display_title }}</h1>
+  {% include "programme/public/_status.html" %}
+  <dl class="conf-facts">
+    <dt>When</dt><dd>{{ session.date|date:"l j F Y" }}, <span class="nowrap"><time datetime="{{ session.date|date:'Y-m-d' }}T{{ session.start|time:'H:i' }}">{{ session.start|time:"H:i" }}</time>–{{ session.end|time:"H:i" }}</span></dd>
+    {% if session.location %}<dt>Where</dt><dd>{% if private %}{{ session.location.name }}{% else %}<a href="{% programme_url 'location' year session.location.pk %}">{{ session.location.name }}</a>{% endif %}{% if session.location.building %}, {{ session.location.building }}{% endif %}{% if session.location.map_url %} · <a href="{{ session.location.map_url }}" rel="noopener">map</a>{% endif %}</dd>{% endif %}
+    <dt>Part</dt><dd>{{ session.part.name }} · {{ session.get_kind_display }}{% if session.plenary %} (plenary){% endif %}</dd>
+    {% if session.track %}<dt>Track</dt><dd>{{ session.track.title }}</dd>{% endif %}
+    {% for p in session.people.all %}<dt>{{ p.get_role_display }}</dt><dd>{{ p.name }}{% if p.affiliation %}, {{ p.affiliation }}{% endif %}</dd>{% endfor %}
+  </dl>
+  {% if session.keynote %}<div class="conf-keynote">
+    {% if session.keynote.photo %}{% image session.keynote.photo fill-160x160 alt="" %}{% endif %}
+    <div><h2>{{ session.keynote.name }}</h2>{% if session.keynote.affiliation %}<p class="muted">{{ session.keynote.affiliation }}</p>{% endif %}
+    {% if session.keynote.talk_title %}<p><strong>{{ session.keynote.talk_title }}</strong></p>{% endif %}{{ session.keynote.biography|richtext }}</div></div>{% endif %}
+  {% if session.notes %}<p>{{ session.notes|linebreaksbr }}</p>{% endif %}
+  {% with items=session.items.all %}{% if items %}
+  <h2>{% if session.kind == "posters" %}Posters{% else %}Papers{% endif %}</h2>
+  <ol class="conf-papers">{% for i in items %}
+    <li>{% if i.board %}<span class="conf-board">Board {{ i.board }}</span><br>{% endif %}
+      <strong>{% if i.url %}<a href="{{ main_site_url }}{{ i.url }}">{{ i.display_title }}</a>{% else %}{{ i.display_title }}{% endif %}</strong>
+      <br>{% for n in i.author_names %}{% if n == i.presenter %}<span class="presenter" title="Presenter">{{ n }}</span>{% else %}{{ n }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% if i.speaker and not i.submission %}{{ i.speaker }}{% endif %}
+      {% if i.presenter %}<br><span class="muted small">Presented by {{ i.presenter }}{% if i.presentation == "poster" and session.kind != "posters" %}, as a poster{% endif %}{% if i.minutes %} · {{ i.minutes }} min{% endif %}</span>{% endif %}
+      {% if i.paper and i.paper.abstract %}<details><summary>Abstract</summary><p>{{ i.paper.abstract }}</p></details>{% endif %}
+    </li>{% endfor %}</ol>
+  {% endif %}{% endwith %}
+  {% if parallel %}<h2>At the same time</h2><ul>{% for p in parallel %}<li><a href="{% programme_url 'session' year p.pk key=key %}">{% if p.code %}{{ p.code }} {% endif %}{{ p.display_title }}</a>{% if p.location %} · {{ p.location.name }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+</article>
+{% endblock %}

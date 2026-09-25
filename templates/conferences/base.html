@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ page.seo_title|default:page.title }}{% endblock %}{% if home and page.pk != home.pk %} | {{ home.short_name }}{% endif %}</title>
   <meta name="description" content="{% block description %}{{ page.search_description|default:page.intro|default:page.title|striptags }}{% endblock %}">
-  {% if page.full_url %}<link rel="canonical" href="{{ page.full_url }}">{% endif %}
+  {% block canonical %}{% if page.full_url %}<link rel="canonical" href="{{ page.full_url }}">{% endif %}{% endblock %}
+  {% block meta %}{% endblock %}
   <link rel="icon" href="{% static 'img/iglc-logo-symbol.svg' %}" type="image/svg+xml">
   <link rel="preload" href="{% static 'fonts/source-sans-3-var.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/site.css' %}">

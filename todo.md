@@ -72,7 +72,7 @@
 - [ ] Start the IGLC 35 programme on the preview and production; add the chairs and deans to their groups; add the Programme block to the existing IGLC 35 programme page
 - [x] Step 2, registration backing: registration import, the two-paper rule, authors' confirmation links, warnings, withdrawal
 - [ ] Email on iglc.net (SMTP settings), needed before the authors can be asked
-- [ ] Step 3, public programme: day, session, location and part views, grid on large screens, private link for non-public parts
+- [x] Step 3, public programme: day, session, location and part views, grid on large screens, private link for non-public parts
 - [ ] Step 4, at the venue: program.iglc.net, now and next, my programme, calendar files and feeds, QR room signs, change marks
 - [ ] Step 5, later: PDF booklet, offline, drag-and-drop planning, slide uploads
 

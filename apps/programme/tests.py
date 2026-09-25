@@ -346,3 +346,99 @@ class PublicTests(ProgrammeTestCase):
 
         template = StandardPageTemplate.objects.get(slug="programme")
         self.assertEqual([b.block_type for b in template.body], ["programme"])
+
+
+class PublicPageTests(ProgrammeTestCase):
+    def setUp(self):
+        super().setUp()
+        Programme.objects.update(status=Programme.Status.FINAL)
+        self.page = ConferencePage.objects.child_of(self.home).get(slug="programme")
+        self.page.body = [("programme", {"part": ""})]
+        self.page.save_revision().publish()
+        self.opening = self.session(start_at=time(9), end_at=time(10), title="Opening", kind=Session.Kind.KEYNOTE,
+                                    plenary=True)
+        self.a = self.session(code="1A", title="Takt", start_at=time(10, 30), end_at=time(12))
+        self.b = self.session(code="1B", title="Last Planner", location="b", start_at=time(10, 30), end_at=time(12))
+        SessionItem.objects.create(session=self.a, submission=self.p1, presenter="Ann Smith")
+        SessionPerson.objects.create(session=self.a, name="Cy Lee", affiliation="NTNU")
+        self.phd_session = self.session(part=self.phd, title="Doctoral colloquium", start_at=time(14), end_at=time(15))
+
+    def get(self, path):
+        return self.client.get(path, **HOST)
+
+    def test_block_links_to_the_pages(self):
+        response = self.get("/2027/programme/")
+        self.assertContains(response, f'href="/2027/programme/session/{self.a.pk}/"')
+        self.assertContains(response, 'href="/2027/programme/day/2027-07-20/"')
+        self.assertContains(response, "conf-grid")
+        self.assertNotContains(response, "Doctoral colloquium")
+
+    def test_day(self):
+        response = self.get("/2027/programme/day/2027-07-20/")
+        self.assertContains(response, "Tuesday 20 July 2027")
+        self.assertContains(response, "Last Planner")
+        self.assertNotContains(response, "Doctoral colloquium")
+        self.assertEqual(self.get("/2027/programme/day/2027-07-21/").status_code, 404)
+        self.assertEqual(self.get("/2027/programme/day/nonsense/").status_code, 404)
+
+    def test_session(self):
+        response = self.get(f"/2027/programme/session/{self.a.pk}/")
+        self.assertContains(response, "Takt in hospitals")
+        self.assertContains(response, "Cy Lee, NTNU")
+        self.assertContains(response, "https://use.mazemap.com/x")
+        self.assertContains(response, "At the same time")
+        self.assertContains(response, f'href="/2027/programme/session/{self.b.pk}/"')
+        self.assertContains(response, "<title>1A Takt | IGLC 35</title>", html=False)
+
+    def test_location(self):
+        response = self.get(f"/2027/programme/location/{self.room_a.pk}/")
+        self.assertContains(response, "Room A")
+        self.assertContains(response, "Takt")
+        self.assertContains(response, "Find it on the map")
+
+    def test_private_part(self):
+        self.assertEqual(self.get(f"/2027/programme/session/{self.phd_session.pk}/").status_code, 404)
+        self.assertEqual(self.get(f"/2027/programme/part/{self.phd.pk}/").status_code, 404)
+        response = self.get(f"/2027/programme/private/{self.phd.token}/")
+        self.assertContains(response, "Doctoral colloquium")
+        self.assertContains(response, '<meta name="robots" content="noindex">')
+        self.assertNotContains(response, "Last Planner")
+        link = f"/2027/programme/session/{self.phd_session.pk}/?k={self.phd.token}"
+        self.assertContains(response, link)
+        self.assertContains(self.get(link), "Doctoral colloquium")
+        other = self.industry.token
+        self.assertEqual(self.get(f"/2027/programme/session/{self.phd_session.pk}/?k={other}").status_code, 404)
+        self.assertEqual(self.get(f"/2027/programme/session/{self.phd_session.pk}/?k=nonsense").status_code, 404)
+
+    def test_public_part(self):
+        industry = self.session(part=self.industry, title="Site visit", start_at=time(16), end_at=time(17))
+        response = self.get(f"/2027/programme/part/{self.industry.pk}/")
+        self.assertContains(response, "Site visit")
+        self.assertNotContains(response, "Takt")
+        self.assertContains(self.get(f"/2027/programme/session/{industry.pk}/"), "Site visit")
+
+    def test_hidden_programme(self):
+        Programme.objects.update(status=Programme.Status.HIDDEN)
+        self.assertEqual(self.get(f"/2027/programme/session/{self.a.pk}/").status_code, 404)
+        self.assertEqual(self.get("/2027/programme/day/2027-07-20/").status_code, 404)
+
+    def test_grid(self):
+        from .public import by_day
+
+        day = by_day([self.opening, self.a, self.b])[0]
+        grid = day.grid()
+        self.assertEqual([loc.name for loc in grid["columns"]], ["Room A", "Room B"])
+        placed = {p.session.pk: p for p in grid["placed"]}
+        self.assertEqual(placed[self.opening.pk].column, "2 / -1")  # plenary, nothing beside it
+        self.assertEqual(placed[self.a.pk].column, "2")
+        self.assertEqual(placed[self.b.pk].column, "3")
+        self.assertEqual(placed[self.a.pk].row, "4 / 5")  # rows: 09:00, 10:00, 10:30, 12:00
+
+    def test_private_link_in_the_back_office(self):
+        dean = self.user("dean", "IGLC 35 PhD summer school deans")
+        self.client.force_login(dean)
+        response = self.client.get(reverse("programme:overview", args=[35]))
+        self.assertContains(response, f"/2027/programme/private/{self.phd.token}/")
+        scientific = self.user("sci", "IGLC 35 scientific chairs")
+        self.client.force_login(scientific)
+        self.assertNotContains(self.client.get(reverse("programme:overview", args=[35])), str(self.phd.token))

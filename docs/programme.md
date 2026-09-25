@@ -2,8 +2,8 @@
 
 The plan for the programme of each IGLC conference: sessions, rooms, chairs and papers, and the
 check that every presented paper is backed by a registration. This is phase 3, second step. Agreed
-with the General Secretary, September 2026. Development steps 1 (the back office, with a first version
-of the public programme) and 2 (registration backing) are built; the other steps are to come.
+with the General Secretary, September 2026. Development steps 1 (the back office), 2 (registration backing)
+and 3 (the public programme) are built; steps 4 and 5 are to come.
 
 Code: `apps/programme`. Back office: Manage → Conference programme (`/manage/programme/`).
 
@@ -36,7 +36,12 @@ Code: `apps/programme`. Back office: Manage → Conference programme (`/manage/p
    The authors answer on the main site, under /for-authors/confirm-presentation/ and their secret link.
 8. **On the website**: a "Programme" block on a conference page shows the programme once it is not
    hidden (all public parts, or one part, e.g. for an industry day page). New conference sites get it
-   on their programme page; on an existing site, add the block to the programme page.
+   on their programme page; on an existing site, add the block to the programme page. Each day is a
+   grid of locations by time on large screens and a list on phones and in print. Below the
+   programme page there are pages for each day (/2027/programme/day/2027-07-20/), session, location
+   (with its map link and floor plan) and public part. A part that is not public has a private link
+   (/2027/programme/private/...), shown on the programme's overview in the back office to its editors
+   and the conference chairs; its pages are not indexed by search engines.
 
 
 ## What the programme holds
@@ -151,8 +156,8 @@ After the conference the frozen programme stays as the record of what was presen
    above, and a programme block for the conference pages.
 2. **Registration backing** (built): registration import, the backing check, the authors'
    confirmation links, warnings and withdrawal. Sending needs email on iglc.net.
-3. **Public programme**: the pages on the conference site, with a "provisional" banner until the
-   programme is final.
+3. **Public programme** (built): the pages on the conference site, with a "provisional" banner
+   until the programme is final.
 4. **At the venue**: program.iglc.net, now and next, my programme (kept in the visitor's browser,
    no login), calendar files and subscribable feeds, QR codes for room signs, marks for changed and
    cancelled sessions, and a notice banner.

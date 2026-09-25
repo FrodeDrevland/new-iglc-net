@@ -1,0 +1,21 @@
+{% extends "conferences/base.html" %}
+{% load programme_tags wagtailcore_tags wagtailimages_tags %}
+{% block title %}{{ location.name }}{% endblock %}
+{% block canonical %}{% endblock %}
+{% block content %}
+<article class="conf-page conf-programme">
+  <p class="conf-crumbs"><a href="{% pageurl programme_page %}">{{ programme_page.title }}</a></p>
+  <h1>{{ location.name }}</h1>
+  <dl class="conf-facts">
+    {% if location.building %}<dt>Building</dt><dd>{{ location.building }}</dd>{% endif %}
+    {% if location.address %}<dt>Address</dt><dd>{{ location.address }}</dd>{% endif %}
+    {% if location.capacity %}<dt>Seats</dt><dd>{{ location.capacity }}</dd>{% endif %}
+    {% if location.accessibility %}<dt>Access</dt><dd>{{ location.accessibility }}</dd>{% endif %}
+    {% if location.map_url %}<dt>Map</dt><dd><a href="{{ location.map_url }}" rel="noopener">Find it on the map</a></dd>{% endif %}
+  </dl>
+  {% if location.floor_plan %}<figure class="conf-floor-plan">{% image location.floor_plan width-1000 alt="Floor plan" %}</figure>{% endif %}
+  {% for day in days %}<h2>{{ day.date|date:"l j F" }}</h2>
+  <ol class="conf-sessions">{% for s in day.sessions %}<li>{% include "programme/public/_card.html" with compact=False key="" %}</li>{% endfor %}</ol>
+  {% empty %}<p>No sessions here.</p>{% endfor %}
+</article>
+{% endblock %}

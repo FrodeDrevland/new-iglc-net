@@ -1,28 +1,11 @@
 {% load programme_tags %}{% programme_days conference value.part as data %}
 {% if data and data.days %}
 <div class="conf-programme">
-  {% if data.programme.status == "provisional" %}<p class="conf-notice">This programme is provisional and may still change.</p>{% elif data.programme.status == "hidden" %}<p class="conf-notice">Preview: this programme is hidden from visitors.</p>{% endif %}
-  {% for day, sessions in data.days %}
-  <h2 id="day-{{ day|date:'Y-m-d' }}">{{ day|date:"l j F" }}</h2>
-  <ol class="conf-sessions">
-    {% for s in sessions %}
-    <li class="conf-session kind-{{ s.kind }}{% if s.plenary %} plenary{% endif %}" style="--part: {{ s.part.colour }}">
-      <p class="conf-session-time"><time datetime="{{ s.date|date:'Y-m-d' }}T{{ s.start|time:'H:i' }}">{{ s.start|time:"H:i" }}</time>–<time>{{ s.end|time:"H:i" }}</time></p>
-      <div>
-        <h3>{% if s.code %}<span class="conf-session-code">{{ s.code }}</span> {% endif %}{{ s.display_title }}</h3>
-        <p class="conf-session-meta">{% if s.location %}{% if s.location.map_url %}<a href="{{ s.location.map_url }}" rel="noopener">{{ s.location.name }}</a>{% else %}{{ s.location.name }}{% endif %}{% endif %}{% if data.several_parts %}{% if s.location %} · {% endif %}{{ s.part.name }}{% endif %}</p>
-        {% with people=s.people.all %}{% if people %}<p class="conf-session-people">{% for p in people %}{{ p.get_role_display }}: {{ p.name }}{% if p.affiliation %} ({{ p.affiliation }}){% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</p>{% endif %}{% endwith %}
-        {% if s.notes %}<p class="conf-session-notes">{{ s.notes|linebreaksbr }}</p>{% endif %}
-        {% with items=s.items.all %}{% if items %}
-        <ol class="conf-items">{% for i in items %}
-          <li>{% if i.board %}<span class="conf-board">{{ i.board }}</span> {% endif %}{% if i.url %}<a href="{{ main_site_url }}{{ i.url }}">{{ i.display_title }}</a>{% else %}{{ i.display_title }}{% endif %}
-            <br><span class="muted">{% for n in i.author_names %}{% if n == i.presenter %}<span class="presenter" title="Presenter">{{ n }}</span>{% else %}{{ n }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% if i.presentation == "poster" and s.kind != "posters" %} · poster{% endif %}</span></li>
-        {% endfor %}</ol>
-        {% endif %}{% endwith %}
-      </div>
-    </li>
-    {% endfor %}
-  </ol>
+  {% with programme=data.programme %}{% include "programme/public/_status.html" %}{% endwith %}
+  {% if data.days|length > 1 %}<nav class="conf-days" aria-label="Days">{% for day in data.days %}<a href="#day-{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"D j M" }}</a>{% endfor %}</nav>{% endif %}
+  {% for day in data.days %}
+  <h2 id="day-{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"l j F" }} <a class="conf-day-link" href="{% programme_url 'day' data.year day.date|date:'Y-m-d' %}">this day on its own</a></h2>
+  {% include "programme/public/_day.html" with year=data.year key="" several_parts=data.several_parts %}
   {% endfor %}
 </div>
 {% else %}

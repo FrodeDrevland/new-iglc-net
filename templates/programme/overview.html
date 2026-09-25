@@ -18,7 +18,7 @@
   <thead><tr><th>Part</th><th>Shown</th><th>Edited by</th><th></th></tr></thead>
   <tbody>{% for part in parts %}
   <tr><td><span class="part-swatch" style="background: {{ part.colour }}"></span> {{ part.name }}</td>
-    <td>{% if part.public %}public{% else %}private link only{% endif %}</td>
+    <td>{% if part.public %}public{% else %}private link only{% if part.private_url %}<br><a class="small" href="{{ part.private_url }}">{{ part.private_url }}</a>{% endif %}{% endif %}</td>
     <td>{{ programme.chairs.name|default:"–" }}{% if part.editors %}, {{ part.editors.name }}{% endif %}</td>
     <td>{% if part.pk in editable_ids %}<a href="{% url 'programme:session_add' programme.number %}?part={{ part.pk }}">Add a session</a>{% endif %}</td></tr>
   {% endfor %}</tbody>

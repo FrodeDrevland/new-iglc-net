@@ -66,19 +66,59 @@
 .conf-footer { background: var(--soft); border-top: 1px solid var(--line); padding: 2rem 0; font-size: 1rem; margin-top: 2rem; }
 .conf-footer p { max-width: 44rem; }
 .conf-footer-links { color: var(--muted); }
-/* The programme (apps/programme, block "programme") */
-.conf-programme .conf-notice { padding: .6rem .9rem; border-left: 3px solid var(--conf-accent); background: #f6f6f8; }
+/* The programme (apps/programme): the block on the programme page and the pages below it */
+.conf-programme .conf-notice, .conf-notice { padding: .6rem .9rem; border-left: 3px solid var(--conf-accent); background: #f6f6f8; }
+.conf-crumbs { font-size: .95rem; margin-bottom: .25rem; }
+.conf-days { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0 1.25rem; position: sticky; top: 0; z-index: 2; background: #fff; padding: .4rem 0; }
+.conf-days a { padding: .3rem .75rem; border: 1px solid #ccd; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: .95rem; }
+.conf-days a[aria-current="page"] { background: var(--conf-primary); color: #fff; border-color: var(--conf-primary); }
+.conf-day-link { font-family: var(--sans, system-ui); font-size: .85rem; font-weight: 400; margin-left: .6rem; }
 .conf-sessions { list-style: none; padding: 0; margin: 0 0 2rem; }
-.conf-session { display: grid; grid-template-columns: 6.5rem 1fr; gap: 1rem; padding: .9rem 0 .9rem .75rem; border-top: 1px solid #ddd; border-left: 4px solid var(--part, #ccc); }
-.conf-session h3 { margin: 0 0 .25rem; font-size: 1.05rem; }
-.conf-session p { margin: 0 0 .3rem; }
+.conf-sessions > li { border-top: 1px solid #ddd; }
+.conf-card { display: grid; grid-template-columns: 6.5rem 1fr; gap: 1rem; padding: .9rem 0 .9rem .75rem; border-left: 4px solid var(--part, #ccc); }
+.conf-card h3 { margin: 0 0 .25rem; font-size: 1.05rem; }
+.conf-card h3 a { text-decoration: none; }
+.conf-card h3 a:hover { text-decoration: underline; }
+.conf-card p { margin: 0 0 .3rem; }
 .conf-session-time { font-variant-numeric: tabular-nums; font-weight: 600; }
 .conf-session-code { font-weight: 700; }
 .conf-session-meta, .conf-session-people, .conf-session-notes { font-size: .92rem; color: #555; }
-.conf-session.kind-break, .conf-session.kind-meal { background: #f6f6f8; }
-.conf-session.kind-break h3, .conf-session.kind-meal h3 { font-weight: 400; }
+.conf-card.kind-break, .conf-card.kind-meal { background: #f6f6f8; }
+.conf-card.kind-break h3, .conf-card.kind-meal h3 { font-weight: 400; }
 .conf-items { margin: .4rem 0 0; padding-left: 1.25rem; }
 .conf-items li { margin-bottom: .45rem; }
-.conf-items .presenter { text-decoration: underline; }
+.presenter { font-weight: 600; }
+.conf-legend { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; list-style: none; padding: 0; margin: 0 0 .75rem; font-size: .92rem; }
+.conf-legend li::before { content: ""; display: inline-block; width: .8rem; height: .8rem; border-radius: 2px; background: var(--part); margin-right: .4rem; vertical-align: -.05rem; }
 .conf-board { font-variant-numeric: tabular-nums; font-weight: 600; }
-@media (max-width: 40rem) { .conf-session { grid-template-columns: 1fr; gap: .2rem; } }
+@media (max-width: 40rem) { .conf-card { grid-template-columns: 1fr; gap: .2rem; } }
+/* The grid: locations as columns, the day's start and end times as rows (large screens only) */
+.conf-grid, .conf-grid-legend { display: none; }
+@media (min-width: 64rem) {
+  /* wider than the text column of the page, up to the site's width */
+  .prose .conf-programme .conf-grid, .prose.conf-programme .conf-grid { width: min(calc(var(--wrap) - 2.5rem), calc(100vw - 2.5rem)); }
+  .conf-programme .conf-grid-legend { display: flex; }
+  .conf-programme .conf-grid { display: grid; grid-template-columns: 4rem repeat(var(--columns), minmax(0, 1fr));
+    grid-auto-rows: minmax(1.25rem, auto); gap: 4px; margin: 0 0 2.5rem; }
+  .conf-programme .conf-grid + .conf-sessions { display: none; }
+  .conf-grid-corner { grid-row: 1; grid-column: 1; }
+  .conf-grid-head { grid-row: 1; font-weight: 700; font-size: .9rem; padding: .3rem .4rem; border-bottom: 2px solid var(--conf-primary); }
+  .conf-grid-time { grid-column: 1; font-variant-numeric: tabular-nums; font-size: .85rem; color: #555; padding-top: .35rem; }
+  .conf-grid-cell { min-width: 0; }
+  .conf-grid-cell .conf-card { display: block; height: 100%; box-sizing: border-box; padding: .45rem .55rem; background: #f7f8fb; border-radius: 0 4px 4px 0; font-size: .9rem; }
+  .conf-grid-cell .conf-card h3 { font-size: .95rem; }
+  .conf-grid-cell .conf-items { padding-left: 1.1rem; font-size: .85rem; }
+  .conf-grid-cell .conf-card.kind-break, .conf-grid-cell .conf-card.kind-meal { text-align: center; background: #eef0f4; }
+}
+.conf-facts { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1.25rem; margin: 1rem 0 1.5rem; }
+.conf-facts dt { font-weight: 700; }
+.conf-facts dd { margin: 0; }
+.conf-session-page h1 { border-left: 6px solid var(--part, transparent); padding-left: .6rem; }
+.conf-papers { padding-left: 1.25rem; }
+.conf-papers li { margin-bottom: 1rem; }
+.conf-keynote { display: flex; gap: 1.25rem; align-items: flex-start; margin: 1.5rem 0; }
+.conf-keynote img { border-radius: 50%; flex: none; }
+.conf-keynote h2 { margin-top: 0; }
+.conf-floor-plan img { max-width: 100%; height: auto; }
+@media print { .conf-grid { display: none !important; } .conf-grid + .conf-sessions { display: block !important; } .conf-days { display: none; } }
+.conf-facts .nowrap { white-space: nowrap; }

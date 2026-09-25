@@ -1,0 +1,13 @@
+{% extends "conferences/base.html" %}
+{% load programme_tags wagtailcore_tags %}
+{% block title %}Programme, {{ day.date|date:"l j F" }}{% endblock %}
+{% block canonical %}{% endblock %}
+{% block content %}
+<article class="conf-page conf-programme">
+  <p class="conf-crumbs"><a href="{% pageurl programme_page %}">{{ programme_page.title }}</a></p>
+  <h1>{{ day.date|date:"l j F Y" }}</h1>
+  {% include "programme/public/_status.html" %}
+  <nav class="conf-days" aria-label="Days">{% for d in all_days %}<a href="{% programme_url 'day' year d|date:'Y-m-d' %}"{% if d == day.date %} aria-current="page"{% endif %}>{{ d|date:"D j M" }}</a>{% endfor %}</nav>
+  {% include "programme/public/_day.html" with key="" %}
+</article>
+{% endblock %}
