@@ -23,7 +23,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--update", action="store_true", help="overwrite pages that already exist")
-        parser.add_argument("--only", nargs="+", metavar="SLUG", help="only update these pages, for example call-for-papers")
+        parser.add_argument("--only", nargs="+", metavar="SLUG",
+                            help="only create or update these pages, for example call-for-papers")
 
     @transaction.atomic
     def handle(self, *args, update, only=None, **options):
@@ -34,11 +35,15 @@ class Command(BaseCommand):
         pages_by_slug = {}
         created = updated = skipped = 0
         for entry in json.loads(CONTENT.read_text(encoding="utf-8")):
-            parent_id = pages_by_slug[entry["parent"]] if entry["parent"] else site.root_page_id
+            parent_id = pages_by_slug.get(entry["parent"]) if entry["parent"] else site.root_page_id
+            if parent_id is None:  # its parent was left out (--only)
+                continue
             parent = Page.objects.get(pk=parent_id)
             body = json.dumps([{"type": block["type"], "value": block["value"]} for block in entry["body"]])
             existing = parent.get_children().filter(slug=entry["slug"]).first()
 
+            if existing is None and only and entry["slug"] not in only:
+                continue  # with --only, pages removed from the site are not brought back
             if existing is None:
                 page = StandardPage(title=entry["title"], slug=entry["slug"], body=body)
                 parent.add_child(instance=page)
