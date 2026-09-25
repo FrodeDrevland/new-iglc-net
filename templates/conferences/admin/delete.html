@@ -1,0 +1,18 @@
+{% extends "wagtailadmin/generic/base.html" %}
+{% comment %}Deleting a conference (apps/conferences/admin_views.py, ConferenceDeleteView).{% endcomment %}
+{% block main_content %}
+{% if deletion.allowed %}
+  <p>Deleting <strong>{{ object }}</strong> also deletes:</p>
+  <ul>{% for item in deletion.removes %}<li>{{ item }}</li>{% empty %}<li>Nothing else: the record has nothing attached.</li>{% endfor %}</ul>
+  {% if deletion.keeps %}<p>It leaves:</p><ul>{% for item in deletion.keeps %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+  <p><strong>This cannot be undone.</strong></p>
+  <form action="{{ view.get_delete_url }}" method="POST">{% csrf_token %}
+    <button type="submit" class="button serious">Yes, delete {{ object }}</button>
+    <a href="{{ dashboard_url }}" class="button button-secondary">No, back to the dashboard</a>
+  </form>
+{% else %}
+  <p><strong>{{ object }}</strong> cannot be deleted:</p>
+  <ul>{% for item in deletion.blockers %}<li>{{ item }}</li>{% endfor %}</ul>
+  <p><a href="{{ dashboard_url }}" class="button button-secondary">Back to the dashboard</a></p>
+{% endif %}
+{% endblock %}

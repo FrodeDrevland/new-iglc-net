@@ -2,7 +2,7 @@
 {% block titletag %}{{ programme }}{% endblock %}
 {% block main %}
 <div class="page-head">
-  <p class="kicker"><a href="{% url 'programme:list' %}">Conference programme</a></p>
+  <p class="kicker"><a href="{% url 'programme:list' %}">Programmes</a></p>
   <h1>{{ programme }}</h1>
   <p class="lead">{{ programme.get_status_display }} · {{ programme.first_day|date:"j M" }} to {{ programme.last_day|date:"j M Y" }} · {{ programme.time_zone }}{% if frozen %} · <strong>frozen</strong>: the conference has taken place{% endif %}</p>
   <p>{% if can_add %}<a class="button" href="{% url 'programme:session_add' programme.number %}">Add a session</a>

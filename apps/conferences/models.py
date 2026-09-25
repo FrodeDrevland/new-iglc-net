@@ -89,7 +89,7 @@ class ImageBlock(blocks.StructBlock):
 
 
 class ProgrammeBlock(blocks.StructBlock):
-    """The programme, from Manage → Conference programme. Shown once it is not hidden."""
+    """The programme, from Conferences → Programmes. Shown once it is not hidden."""
 
     part = blocks.ChoiceBlock(
         required=False, choices=[("academic", "Academic conference"), ("industry", "Industry day"),
@@ -490,7 +490,7 @@ class AcceptedPapersPage(ConferencePageMixin, Page):
 
 class StandardPageTemplate(models.Model):
     """One of the pages every new conference website starts with (as a draft). Edited by the
-    IGLC in the back office (Settings → Conference standard pages); changes apply to sites
+    IGLC in the back office (Conferences → Website standard pages); changes apply to sites
     created afterwards, not to existing ones."""
 
     PAGE_TYPES = [

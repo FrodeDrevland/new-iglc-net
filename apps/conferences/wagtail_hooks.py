@@ -1,9 +1,33 @@
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.urls import path, reverse
 from wagtail import hooks
 
+from .admin_views import MENU_HOOK, ConferenceViewSet, conferences_menu_item
 from .models import ConferenceHomePage
 from .setup import add_standard_pages, organiser_group
+
+
+# ---------------------------------------------------------------- the Conferences menu and list
+
+@hooks.register("register_admin_menu_item")
+def conferences_menu():
+    return conferences_menu_item()
+
+
+@hooks.register("register_admin_viewset")
+def conference_viewset():
+    return ConferenceViewSet("conferences", url_prefix="conferences")
+
+
+@hooks.register("register_admin_urls")
+def old_conference_urls():
+    """The conference list used to be under Archive (/manage/archive/conference/...)."""
+    def old(request, rest=""):
+        query = request.META.get("QUERY_STRING")
+        return redirect(reverse("conferences:index") + rest + (f"?{query}" if query else ""), permanent=True)
+
+    return [path("archive/conference/", old), path("archive/conference/<path:rest>", old)]
 
 
 @hooks.register("after_create_page")
@@ -11,7 +35,7 @@ def conference_organisers(request, page):
     if isinstance(page.specific, ConferenceHomePage):
         organiser_group(page.specific)
         add_standard_pages(page.specific)
-        messages.info(request, "The standard pages (Settings → Conference standard pages) were added below it "
+        messages.info(request, "The standard pages (Conferences → Website standard pages) were added below it "
                                "as drafts. Delete the ones the conference does not need.")
 
 
@@ -64,9 +88,11 @@ from .models import StandardPageTemplate  # noqa: E402
 class StandardPageViewSet(ModelViewSet):
     model = StandardPageTemplate
     name = "conference_standard_pages"
-    menu_label = "Conference standard pages"
+    menu_label = "Website standard pages"
+    menu_name = "website-standard-pages"
     icon = "doc-empty-inverse"
-    add_to_settings_menu = True
+    menu_order = 4
+    menu_hook = MENU_HOOK  # under Conferences
     sort_order_field = "sort_order"
     list_display = ["title", "slug", Column("kind", label="Kind", accessor="get_page_type_display"),
                     BooleanColumn("show_in_menus", label="In the menu"), BooleanColumn("active", label="Active")]

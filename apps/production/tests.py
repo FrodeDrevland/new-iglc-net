@@ -707,7 +707,8 @@ class BackOfficeTests(EditorPagesTests):
         Author.objects.create(paper=paper, first_name="Ann", last_name="Smith", person=person, order=1)
         User.objects.create_superuser("root", "r@example.org", "pw")
         self.client.login(username="root", password="pw")
-        for url in ("/manage/", "/manage/archive/conference/", f"/manage/archive/conference/edit/{self.production.conference.pk}/",
+        for url in ("/manage/", "/manage/conferences/", f"/manage/conferences/edit/{self.production.conference.pk}/",
+                    f"/manage/conferences/{self.production.conference.pk}/",
                     "/manage/archive/paper/", f"/manage/archive/paper/edit/{paper.pk}/", "/manage/archive/paper/?q=paper",
                     "/manage/archive/person/", f"/manage/archive/person/edit/{person.pk}/", "/manage/archive/links/",
                     "/manage/committees/", "/manage/production/", "/manage/production/35/",
@@ -718,7 +719,7 @@ class BackOfficeTests(EditorPagesTests):
         page = self.client.get(f"/manage/archive/paper/edit/{paper.pk}/").content.decode()
         self.assertNotIn('name="full_text_url"', page)
         self.assertIn("cannot be changed here", page)
-        page = self.client.get(f"/manage/archive/conference/edit/{self.production.conference.pk}/").content.decode()
+        page = self.client.get(f"/manage/conferences/edit/{self.production.conference.pk}/").content.decode()
         self.assertNotIn('name="papers_zip_url"', page)
 
     def test_editors_get_in_with_their_role_only(self):

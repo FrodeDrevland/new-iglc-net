@@ -128,7 +128,7 @@ class AdminBarTests(ArchiveTestCase):
         response = self.client.get("/papers/details/2150")
         self.assertContains(response, "/manage/archive/paper/edit/2150/")
         self.assertContains(response, "/manage/")
-        self.assertContains(self.client.get("/papers/conference/25"), "/manage/archive/conference/edit/25/")
+        self.assertContains(self.client.get("/papers/conference/25"), "/manage/conferences/25/")
 
 
 @override_settings(SITE_NOINDEX=False)  # a preview has it on

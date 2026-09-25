@@ -1,7 +1,7 @@
-"""The archive in the back office (Wagtail admin): conferences, papers, authors (people), links.
+"""The archive in the back office (Wagtail admin): papers, authors (people), links.
 
 Replaces Django's admin for everyday editing. Child records are edited on their parent's page:
-editors, tracks, volumes and proceedings files on the conference; authors on the paper."""
+authors on the paper. The conference record is edited under Conferences (apps/conferences)."""
 
 from django import forms
 from django.db.models import Count, Q
@@ -14,7 +14,7 @@ from wagtail.admin.views.generic.models import CreateView, EditView, IndexView
 from wagtail.admin.viewsets.chooser import ChooserViewSet
 from wagtail.admin.viewsets.model import ModelViewSet, ModelViewSetGroup
 
-from .models import Author, AuthorPerson, Conference, LinkCategory, Paper
+from .models import Author, AuthorPerson, LinkCategory, Paper
 
 
 # ---------------------------------------------------------------- who edited last
@@ -78,37 +78,8 @@ PersonChooser = person_chooser.widget_class
 
 # ---------------------------------------------------------------- conferences
 
-class ConferenceViewSet(ModelViewSet):
-    model = Conference
-    menu_label = "Conferences"
-    icon = "date"
-    add_view_class = TrackedCreateView
-    edit_view_class = TrackedEditView
-    list_display = ["__str__", "start_date", "is_published"]
-    list_filter = ["is_published"]
-    search_fields = ["city", "country", "conference_title", "proceedings_title"]
-    ordering = ["-number"]
-    inspect_view_enabled = False
-    panels = [
-        MultiFieldPanel([
-            FieldRowPanel([FieldPanel("number"), FieldPanel("start_date"), FieldPanel("end_date")]),
-            FieldRowPanel([FieldPanel("city"), FieldPanel("country")]),
-            FieldPanel("is_published"),
-        ], heading="Conference"),
-        MultiFieldPanel([
-            FieldPanel("conference_title"), FieldPanel("proceedings_title"),
-            FieldRowPanel([FieldPanel("publisher"), FieldPanel("publication_location"), FieldPanel("issn")]),
-        ], heading="Proceedings"),
-        HelpPanel(template="archive/admin/conference_files.html", heading="Files"),
-        InlinePanel("editors", heading="Editors", label="Editor",
-                    panels=[FieldRowPanel([FieldPanel("first_name"), FieldPanel("last_name"), FieldPanel("order")]),
-                            FieldPanel("title_and_contact")]),
-        InlinePanel("tracks", heading="Tracks", label="Track",
-                    panels=[FieldRowPanel([FieldPanel("title"), FieldPanel("order")]), FieldPanel("description")]),
-        InlinePanel("volumes", heading="Volumes (printed books)", label="Volume",
-                    panels=[FieldRowPanel([FieldPanel("number"), FieldPanel("first_page"), FieldPanel("last_page"),
-                                           FieldPanel("isbn")])]),
-    ]
+# The conference record's list, edit form and dashboard are under Conferences → All conferences
+# (apps/conferences/admin_views.py), which uses TrackedCreateView and TrackedEditView above.
 
 
 # ---------------------------------------------------------------- papers
@@ -229,7 +200,6 @@ class ArchiveGroup(ModelViewSetGroup):
     menu_icon = "folder-inverse"
     menu_order = 200
     items = [
-        ConferenceViewSet("archive_conference", url_prefix="archive/conference"),
         PaperViewSet("archive_paper", url_prefix="archive/paper"),
         AuthorPersonViewSet("archive_person", url_prefix="archive/person"),
         LinkCategoryViewSet("archive_links", url_prefix="archive/links"),

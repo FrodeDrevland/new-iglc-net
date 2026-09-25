@@ -11,23 +11,55 @@ follows `SITE_URL` ("conference." + the host without "www."; setting `CONFERENCE
 `ConferenceHostMiddleware` gives that host its own URLs (`config/conference_urls.py`): the pages,
 robots.txt, a sitemap and uploaded files. The back office stays on the main site at `/manage/`.
 
+## The back office: Conferences
+
+Everything about a conference is under **Conferences** in the back office menu:
+
+- **All conferences**: the list, with the dates, whether the conference is upcoming or past, the
+  state of its website, programme and proceedings, and whether it is in the archive. Clicking a
+  conference opens its **dashboard**.
+- **Programmes** and **Proceedings production**: the programme and the proceedings of each conference
+  (docs/programme.md, docs/production-process.md).
+- **Website standard pages**: the pages every new conference website starts with (superusers).
+
+The dashboard shows the conference record and its tracks, the website and its pages, the important
+dates, the people (website organisers, programme chairs and editors, proceedings editors), the
+programme, the proceedings (production, archive, DOIs) and recent activity. Its actions are for
+superusers, each with a confirmation page:
+
+| Action | What it does |
+| --- | --- |
+| Create the website | The home page at `/<year>/` with the standard pages below it, all as drafts, the conference days as the first important date, the group **IGLC nn organisers** and the collection **IGLC nn**. |
+| Publish… | Publishes the pages ticked (their latest drafts); the home page comes with them. |
+| Unpublish… | Takes the home page and all pages below it off the public site; the drafts stay. |
+| Mark as current… | Served at the site's main address (only while published); unmarks the others. |
+| Freeze… / Unfreeze… | After the conference: the organisers can no longer change anything. |
+| Add an existing account / Invite someone new / Remove | The website organisers. An invitation makes an account (user name = e-mail address) and sends a link to choose a password; no password is sent or shown. |
+| Start the programme… | The programme with its usual parts and a group of editors for each. |
+| Show in / Hide from the archive… | The proceedings in the public archive (publishing through the production does this by itself). |
+| Delete… | See below. |
+
+**Deleting a conference** lists what goes with it (the website with its pages, the programme, an
+empty production, the organisers group, an empty collection) and deletes it in one go, the website
+through Wagtail so that the page tree stays consistent. It is refused while the conference has
+papers or Crossref deposits (DOIs must keep working), a production with papers, or a published or
+frozen website (unpublish or unfreeze it first).
+
 ## Setting up a conference's website (IGLC)
 
-1. The conference must be in the archive (Archive → Conferences) with its number, city, country and
-   dates. It stays hidden from the proceedings until its papers are published.
-2. Pages → IGLC conferences → Add child page → Conference home page. Choose the conference; the
-   address is its year. Saving creates:
-   - the standard pages below it, as drafts: call for papers, important dates, programme, keynotes,
-     committees, accepted papers, venue and travel, registration, sponsors (delete what is not needed).
-     The list, its order and each page's starting text are edited under Settings → Conference
-     standard pages (superusers); changes apply to sites created afterwards;
-   - the group **IGLC nn organisers**, which may edit these pages and upload pictures and documents
-     to the collection **IGLC nn**.
+1. Conferences → All conferences → Add conference, with its number, city, country and dates, and the
+   tracks. It stays out of the public archive until its proceedings are published.
+2. On its dashboard: **Create the website**. The standard pages come from Conferences → Website
+   standard pages; changes there apply to sites created afterwards. Delete the ones that are not
+   needed (All pages → the page → Delete).
 
    From the command line instead: `python manage.py seed_conference_site 35 --current`.
-3. Add the organisers' accounts to that group (Settings → Users). They log in at `/manage/`.
-4. Settings tab of the home page (superusers only): **current conference** (served at the site's main
-   address; marking one unmarks the others) and **frozen**.
+   Creating the home page under Pages → IGLC conferences → Add child page also works, but does not
+   add the conference days to the important dates.
+3. People → **Invite someone new** for each organiser (or add an existing account). They log in at
+   `/manage/`.
+4. When the organisers and chairs are ready: **Publish…**, and **Mark as current…** when it should be
+   the conference at the site's main address.
 
 ## What the organisers do
 
@@ -49,13 +81,13 @@ robots.txt, a sitemap and uploaded files. The back office stays on the main site
 
 ## After the conference
 
-Mark the home page **frozen**: organisers can no longer change anything, and the site says that the
+**Freeze…** the website on the dashboard: organisers can no longer change anything, and the site says that the
 conference has taken place and links to its proceedings. The archive's conference page links to the
 website ("Conference website") as long as it is published.
 
 ## The programme
 
-Sessions, chairs, locations and papers are entered under Manage → Conference programme, by the
+Sessions, chairs, locations and papers are entered under Conferences → Programmes, by the
 conference chairs and each part's editors (not the organisers, who keep the locations). The
 programme page shows them with the "Programme" block. See docs/programme.md, which also has what
 comes next: the registration backing of papers and program.iglc.net.

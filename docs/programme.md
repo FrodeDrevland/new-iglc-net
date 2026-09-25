@@ -5,11 +5,11 @@ check that every presented paper is backed by a registration. This is phase 3, s
 with the General Secretary, September 2026. Development steps 1 to 5 are built, except presenters from the
 IGLC's own submission system, which waits for that system (2028).
 
-Code: `apps/programme`. Back office: Manage → Conference programme (`/manage/programme/`).
+Code: `apps/programme`. Back office: Conferences → Programmes (`/manage/programme/`), or the conference's dashboard.
 
 ## Using it
 
-1. **Start the programme** (superusers): Manage → Conference programme → Start a programme, with
+1. **Start the programme** (superusers): Conferences → Programmes → Start a programme (or Start the programme… on the conference's dashboard), with
    the conference and its time zone (e.g. Europe/Berlin). This creates the four parts and the groups
    IGLC nn conference chairs, scientific chairs, industry day chairs, workshop day chairs and PhD
    summer school deans. The conference must have its dates in the archive.

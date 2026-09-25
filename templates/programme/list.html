@@ -1,7 +1,7 @@
 {% extends "programme/_base.html" %}
-{% block titletag %}Conference programme{% endblock %}
+{% block titletag %}Programmes{% endblock %}
 {% block main %}
-<div class="page-head"><p class="kicker">Back office</p><h1>Conference programme</h1>
+<div class="page-head"><p class="kicker">Back office</p><h1>Programmes</h1>
   <p class="lead">Sessions, locations, chairs and papers of each conference, for its website. <a href="{% url 'site_help:doc' 'programme' %}">How the programme works</a></p></div>
 <ul class="plain-list">
   {% for p in programmes %}<li><a href="{% url 'programme:overview' p.number %}">{{ p }}</a> <span class="muted">· {{ p.get_status_display }}</span></li>
@@ -17,7 +17,7 @@
     <button class="button" type="submit">Start</button>
   </form>
   {% if form.errors %}<p class="fail small">{% for field in form %}{% for e in field.errors %}{{ e }} {% endfor %}{% endfor %}{% for e in form.non_field_errors %}{{ e }} {% endfor %}</p>{% endif %}
-  <p class="small muted">Only conferences with dates and no programme are listed (Archive → Conferences).</p>
+  <p class="small muted">Only conferences with dates and no programme are listed (Conferences → All conferences).</p>
 </div>
 {% endif %}
 {% endblock %}

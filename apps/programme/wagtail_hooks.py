@@ -19,6 +19,6 @@ class ProgrammeMenuItem(MenuItem):
         return request.user.is_superuser or programmes_for(request.user).exists()
 
 
-@hooks.register("register_admin_menu_item")
+@hooks.register("register_conferences_menu_item")  # the Conferences menu (apps/conferences/admin_views.py)
 def programme_menu_item():
-    return ProgrammeMenuItem("Conference programme", reverse("programme:list"), icon_name="date", order=260)
+    return ProgrammeMenuItem("Programmes", reverse("programme:list"), icon_name="time", order=2)

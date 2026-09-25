@@ -43,7 +43,7 @@ def start(conference, time_zone: str) -> Programme:
     programme = Programme.objects.filter(conference=conference).first()
     if programme is None:
         if not conference.start_date:
-            raise ValueError("The conference needs its dates first (Archive → Conferences).")
+            raise ValueError("The conference needs its dates first (Conferences → All conferences).")
         programme = Programme.objects.create(conference=conference, time_zone=time_zone,
                                              first_day=conference.start_date,
                                              last_day=conference.end_date or conference.start_date)

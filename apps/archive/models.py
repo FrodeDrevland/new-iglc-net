@@ -36,7 +36,10 @@ class Conference(EditTracking, ClusterableModel):
     publisher = models.CharField(max_length=300, blank=True)
     publication_location = models.CharField(max_length=300, blank=True)
     issn = models.CharField("ISSN", max_length=20, blank=True)
-    is_published = models.BooleanField("published on website", default=False)
+    is_published = models.BooleanField(
+        "proceedings in the archive", default=False,
+        help_text="The conference and its papers are listed in the public archive, the search and the exports. "
+                  "Publishing through Proceedings production ticks it. (Not the conference website.)")
     papers_zip_url = models.URLField(
         "ZIP of all papers", max_length=1000, blank=True,
         help_text="Link to a ZIP file with every paper, shown on the conference page.",

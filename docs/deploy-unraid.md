@@ -80,7 +80,7 @@ The back office is at `/manage/` (pages, archive, committees, proceedings produc
 
 ## Conference sites
 
-After an update that adds a conference, create its website in the back office (Pages → IGLC conferences →
+After an update that adds a conference, create its website in the back office (Conferences → All conferences → the conference →
 Add child page → Conference home page), or for a quick start:
 `docker exec -it iglc-web python manage.py seed_conference_site 35 --current`
 (the conference must be in the archive with its dates). See `docs/conference-sites.md`.

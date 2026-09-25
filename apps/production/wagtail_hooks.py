@@ -30,10 +30,10 @@ class ProductionMenuItem(MenuItem):
         return productions_for(request.user).exists() or request.user.is_superuser
 
 
-@hooks.register("register_admin_menu_item")
+@hooks.register("register_conferences_menu_item")  # the Conferences menu (apps/conferences/admin_views.py)
 def production_menu_item():
     return ProductionMenuItem("Proceedings production", reverse("proceedings:productions"), icon_name="doc-full-inverse",
-                              order=250)
+                              order=3)
 
 
 # ---------------------------------------------------------------- production settings and editors

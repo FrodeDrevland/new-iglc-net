@@ -1,0 +1,1 @@
+{% if page.frozen %}<span class="badge state-frozen">frozen</span>{% endif %}{% if not page.live %}<span class="badge state-draft">draft</span>{% elif page.has_unpublished_changes %}<span class="badge state-published">published</span> <span class="badge state-draft">changes</span>{% else %}<span class="badge state-published">published</span>{% endif %}
