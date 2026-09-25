@@ -80,6 +80,7 @@ class CrossrefTests(TestCase):
         with self.assertRaises(crossref.DepositError):
             crossref.send(item, opener=opener)  # sent already
 
+    @override_settings(CROSSREF_LOGIN="", CROSSREF_PASSWORD="")
     def test_not_configured(self):
         item = crossref.make(self.conference, [self.paper])
         with self.assertRaises(crossref.DepositError):

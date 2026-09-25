@@ -250,6 +250,9 @@ if not DEBUG:
 DOI_PREFIX = os.environ.get("DOI_PREFIX", "10.24928")
 CROSSREF_LOGIN = os.environ.get("CROSSREF_LOGIN", "")        # user, or email/role
 CROSSREF_PASSWORD = os.environ.get("CROSSREF_PASSWORD", "")
+if len(sys.argv) > 1 and sys.argv[1] == "test":
+    # Tests never reach Crossref, whatever login the server's environment has.
+    CROSSREF_LOGIN = CROSSREF_PASSWORD = ""
 CROSSREF_TEST = env_bool("CROSSREF_TEST", True)
 CROSSREF_DEPOSITOR_NAME = os.environ.get("CROSSREF_DEPOSITOR_NAME", "International Group for Lean Construction")
 CROSSREF_DEPOSITOR_EMAIL = os.environ.get("CROSSREF_DEPOSITOR_EMAIL", "")
