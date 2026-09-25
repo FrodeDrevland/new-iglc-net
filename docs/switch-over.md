@@ -35,13 +35,15 @@ before this starts. Tick each item as it is done.
    - `@` (iglc.net) → A record to the new app's IP address (portal → new web app → Custom domains shows it)
    - The TXT records `asuid.www` and `asuid` with the new app's **Custom Domain Verification ID** (same page).
    - `conference` → CNAME `iglc-net.azurewebsites.net`, and TXT `asuid.conference` (the conference sites).
+   - `program` → CNAME `iglc-net.azurewebsites.net`, and TXT `asuid.program` (the programme at the venue).
 5. **Add the host names and free certificates** to the new app (portal → Custom domains →
    Add custom domain, App Service managed certificate), first `www.iglc.net`, then `iglc.net`,
-   then `conference.iglc.net`. `iglc.net` redirects to `www.iglc.net` by itself (setting `HOST_REDIRECTS`);
+   then `conference.iglc.net` and `program.iglc.net`. `iglc.net` redirects to `www.iglc.net` by itself (setting `HOST_REDIRECTS`);
    the conference sites' host name follows `SITE_URL` (no setting needed).
 6. **Check:**
    - [ ] `https://www.iglc.net` and `https://iglc.net` open the new site, with a valid certificate.
    - [ ] `https://conference.iglc.net` opens the current conference's website.
+   - [ ] `https://program.iglc.net` opens the current conference's programme (once it is published).
    - [ ] A DOI resolves to the paper page, e.g. https://doi.org/10.24928/2022/0123
    - [ ] An old URL redirects, e.g. https://www.iglc.net/Papers/Details/1000
    - [ ] https://www.iglc.net/robots.txt no longer says `Disallow: /`

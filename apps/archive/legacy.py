@@ -135,7 +135,7 @@ class LegacyUrlMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if getattr(request, "conference_host", False):
+        if getattr(request, "conference_host", False) or getattr(request, "programme_host", False):
             return self.get_response(request)  # old iglc.net addresses do not apply there
         if request.method in ("GET", "HEAD") and request.path.lower().startswith("/content/"):
             # Old files, now in blob storage. Temporary redirect, so the storage can move later.

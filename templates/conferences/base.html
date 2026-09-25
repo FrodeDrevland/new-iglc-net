@@ -11,6 +11,7 @@
   <link rel="preload" href="{% static 'fonts/source-sans-3-var.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
   <link rel="stylesheet" href="{% static 'css/conference.css' %}">
+  <script src="{% static 'js/programme.js' %}" defer></script>
   {% if home %}{% with c=home.colours %}
   <style>:root { --conf-primary: {{ c.primary }}; --conf-accent: {{ c.accent }}; --conf-on-accent: {{ c.on_accent }}; --conf-accent-text: {{ c.accent_text }}; --conf-heading: {{ c.heading_font|safe }}; }</style>
   {% endwith %}{% endif %}

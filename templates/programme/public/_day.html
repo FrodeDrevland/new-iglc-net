@@ -9,5 +9,5 @@
 </div>
 {% endwith %}
 <ol class="conf-sessions">
-  {% for s in day.sessions %}<li>{% include "programme/public/_card.html" with compact=False %}</li>{% endfor %}
+  {% for s in day.sessions %}<li data-session="{{ s.pk }}">{% include "programme/public/_card.html" with compact=False %}</li>{% endfor %}
 </ol>

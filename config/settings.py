@@ -54,6 +54,16 @@ if CONFERENCE_HOST:
     ALLOWED_HOSTS.append(CONFERENCE_HOST)
     if SITE_URL.startswith("https://"):
         CSRF_TRUSTED_ORIGINS.append(f"https://{CONFERENCE_HOST}")
+# The programme at the venue (apps.programme, venue views): "program." + the same host, i.e.
+# program.iglc.net, program.iglc.drevland.net on the preview, program.localhost when developing.
+PROGRAMME_HOST = os.environ.get("PROGRAMME_HOST", f"program.{_site_host}").strip().lower()
+if PROGRAMME_HOST:
+    ALLOWED_HOSTS.append(PROGRAMME_HOST)
+    if SITE_URL.startswith("https://"):
+        CSRF_TRUSTED_ORIGINS.append(f"https://{PROGRAMME_HOST}")
+_site = urlsplit(SITE_URL)
+PROGRAMME_URL = (f"{_site.scheme}://{PROGRAMME_HOST}{':' + str(_site.port) if _site.port else ''}"
+                 if PROGRAMME_HOST else "")
 
 INSTALLED_APPS = [
     "apps.archive",

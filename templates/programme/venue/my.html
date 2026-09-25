@@ -1,0 +1,21 @@
+{% extends "programme/venue/base.html" %}
+{% block title %}My programme{% endblock %}
+{% block content %}
+<div class="venue-my" data-my-programme="{{ year }}">
+  <h1 class="venue-h1">My programme</h1>
+  <noscript><p>Choosing sessions needs JavaScript.</p></noscript>
+  <p data-my-js hidden data-my-empty>Tap the star on a session, here or on the <a href="{{ links.today }}">day's programme</a>, to add it to your programme. It is kept in this browser only.</p>
+  <p data-my-js hidden data-my-tools><a class="conf-button" data-my-calendar="{{ links.calendar }}" data-webcal href="{{ links.calendar }}">Add to my calendar</a> <a data-my-calendar="{{ links.calendar }}" href="{{ links.calendar }}">download the calendar file</a></p>
+  {% for day in all_days %}
+  <section data-day hidden>
+    <h2>{{ day.date|date:"l j F" }}</h2>
+    <ol class="conf-sessions">{% for s in day.sessions %}{% if s.kind != "break" and s.kind != "meal" %}<li data-session="{{ s.pk }}" hidden>{% include "programme/public/_card.html" with compact=False several_parts=True key="" %}</li>{% endif %}{% endfor %}</ol>
+  </section>
+  {% endfor %}
+  <details class="venue-all"><summary>Choose from all sessions</summary>
+    {% for day in all_days %}<h3>{{ day.date|date:"l j F" }}</h3>
+    <ul class="venue-choose">{% for s in day.sessions %}{% if s.kind != "break" and s.kind != "meal" %}<li><button type="button" class="conf-star" data-star="{{ s.pk }}" data-year="{{ year }}" aria-pressed="false" hidden>★</button> {{ s.start|time:"H:i" }} {% if s.code %}<strong>{{ s.code }}</strong> {% endif %}{{ s.display_title }}{% if s.location %} <span class="muted">· {{ s.location.name }}</span>{% endif %}</li>{% endif %}{% endfor %}</ul>
+    {% endfor %}
+  </details>
+</div>
+{% endblock %}

@@ -26,7 +26,7 @@ class TimeInput(forms.TimeInput):
 class ProgrammeForm(forms.ModelForm):
     class Meta:
         model = Programme
-        fields = ["status", "time_zone", "first_day", "last_day"]
+        fields = ["status", "time_zone", "first_day", "last_day", "notice"]
         widgets = {"first_day": DateInput(), "last_day": DateInput()}
 
 
@@ -53,7 +53,7 @@ class SessionForm(forms.ModelForm):
     class Meta:
         model = Session
         fields = ["part", "kind", "code", "title", "date", "start", "end", "location", "plenary", "track",
-                  "keynote", "notes"]
+                  "keynote", "notes", "cancelled", "change_note"]
         widgets = {"date": DateInput(), "start": TimeInput(), "end": TimeInput(),
                    "notes": forms.Textarea(attrs={"rows": 3})}
 

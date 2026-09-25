@@ -1,0 +1,9 @@
+{% extends "programme/venue/base.html" %}
+{% block title %}{% if day %}{{ day.date|date:"l j F" }}{% else %}Programme{% endif %}{% endblock %}
+{% block content %}
+{% if days|length > 1 %}<nav class="conf-days" aria-label="Days">{% for d in days %}<a href="{{ links.today }}?day={{ d|date:'Y-m-d' }}"{% if d == day.date %} aria-current="page"{% endif %}>{% if d == today %}Today{% else %}{{ d|date:"D j M" }}{% endif %}</a>{% endfor %}</nav>{% endif %}
+{% if day %}
+<h1 class="venue-h1">{{ day.date|date:"l j F" }}</h1>
+{% include "programme/public/_day.html" with several_parts=True key="" %}
+{% else %}<p>The programme will be published here.</p>{% endif %}
+{% endblock %}

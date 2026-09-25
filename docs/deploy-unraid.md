@@ -70,7 +70,10 @@ docker exec -it iglc-web python manage.py createsuperuser
    point `conference.iglc.drevland.net` at your home IP, and copy `deploy/unraid/conference-iglc.subdomain.conf`
    to `/config/nginx/proxy-confs/`. It uses the same preview login. Nothing changes in `.env.prod`: the
    host name follows `SITE_URL`.
-5. Restart SWAG.
+5. For the programme at the venue (program.iglc.drevland.net, the same container): the same as step 4
+   with `program.iglc` and `deploy/unraid/program-iglc.subdomain.conf`. Its host name also follows
+   `SITE_URL`.
+6. Restart SWAG.
 
 Then open https://iglc.drevland.net and log in with `iglc` and the password. Give that login to whoever should see the preview.
 The back office is at `/manage/` (pages, archive, committees, proceedings production, users), with the account from `createsuperuser`. Django's own admin is at `/django-admin/`, for superusers only, as a fallback.

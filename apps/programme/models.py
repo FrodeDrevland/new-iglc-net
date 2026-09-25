@@ -60,6 +60,8 @@ class Programme(models.Model):
     last_day = models.DateField()
     chairs = models.ForeignKey("auth.Group", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
                                help_text="The conference chairs: they edit every part and the locations.")
+    notice = models.CharField(max_length=300, blank=True,
+                              help_text="A short notice at the top of every programme page, e.g. about a late change.")
     author_deadline = models.DateField(
         "deadline for authors", null=True, blank=True,
         help_text="By when every paper must be backed by a registration and its presentation confirmed.")
@@ -184,6 +186,12 @@ class Session(models.Model):
     keynote = models.ForeignKey("conferences.Keynote", null=True, blank=True, on_delete=models.SET_NULL,
                                 related_name="+", help_text="A speaker from the keynotes page.")
     notes = models.TextField(blank=True, help_text="Shown with the session.")
+    cancelled = models.BooleanField(default=False, help_text="Shown struck through, and cancelled in calendars.")
+    change_note = models.CharField(
+        max_length=200, blank=True,
+        help_text="A late change visitors should notice, e.g. 'Moved to Room 102' or 'Starts at 14:15'.")
+    changed = models.DateTimeField(null=True, blank=True, editable=False,
+                                   help_text="When the change note or cancellation was last set.")
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:

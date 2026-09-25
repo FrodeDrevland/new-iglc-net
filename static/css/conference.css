@@ -122,3 +122,29 @@
 .conf-floor-plan img { max-width: 100%; height: auto; }
 @media print { .conf-grid { display: none !important; } .conf-grid + .conf-sessions { display: block !important; } .conf-days { display: none; } }
 .conf-facts .nowrap { white-space: nowrap; }
+/* Late changes, and "my programme" stars */
+.conf-change { color: #8a1c1c; font-size: .95rem; }
+.conf-card.cancelled h3, .conf-card.cancelled .conf-items { text-decoration: line-through; opacity: .7; }
+.conf-card > div { position: relative; }
+.conf-star { float: right; margin: 0 0 .25rem .5rem; border: 1px solid #ccd; background: #fff; color: #999; border-radius: 999px;
+  width: 2.2rem; height: 2.2rem; font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.conf-star[aria-pressed="true"] { color: #fff; background: var(--conf-accent); border-color: var(--conf-accent); }
+.conf-grid-cell .conf-star { width: 1.8rem; height: 1.8rem; font-size: .95rem; }
+.venue-choose .conf-star { float: none; width: 1.9rem; height: 1.9rem; font-size: 1rem; vertical-align: middle; }
+.venue-choose { list-style: none; padding: 0; }
+.venue-choose li { padding: .3rem 0; border-top: 1px solid #eee; }
+/* The programme at the venue (program.iglc.net): phone first */
+.venue-header .wrap { padding-top: .6rem; padding-bottom: .6rem; }
+.venue-title { font-family: var(--conf-heading); font-size: 1.3rem; font-weight: 700; text-decoration: none; }
+.venue-title span { font-weight: 400; opacity: .9; }
+.venue-tabs { background: rgba(0, 0, 0, .18); position: sticky; top: 0; z-index: 3; }
+.venue-tabs .wrap { display: flex; gap: 0; padding-top: 0; padding-bottom: 0; }
+.venue-tabs a { flex: 1; text-align: center; padding: .65rem .25rem .55rem; font-weight: 700; text-decoration: none; border-bottom: 3px solid transparent; }
+.venue-tabs a[aria-current="page"] { border-bottom-color: var(--conf-accent); }
+.venue-main { padding-top: 1rem; padding-bottom: 2rem; max-width: 48rem; }
+.venue-clock { font-weight: 700; font-size: 1.05rem; margin: 0 0 .5rem; }
+.venue-h1 { font-size: 1.6rem; margin: .5rem 0 1rem; }
+.venue-changes { padding-left: 1.1rem; }
+.venue-footer { font-size: .95rem; color: #555; padding-bottom: 2rem; max-width: 48rem; }
+.venue .conf-days { top: 2.9rem; }
+.conf-tools { font-size: .95rem; } .conf-tools .conf-star { float: none; vertical-align: middle; }

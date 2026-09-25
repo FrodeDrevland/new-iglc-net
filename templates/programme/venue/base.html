@@ -1,0 +1,37 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} | IGLC {{ conference.number }} programme</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="{% static 'img/iglc-logo-symbol.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/conference.css' %}">
+  {% with c=home.colours %}<style>:root { --conf-primary: {{ c.primary }}; --conf-accent: {{ c.accent }}; --conf-on-accent: {{ c.on_accent }}; --conf-accent-text: {{ c.accent_text }}; --conf-heading: {{ c.heading_font|safe }}; }</style>{% endwith %}
+  <script src="{% static 'js/programme.js' %}" defer></script>
+</head>
+<body class="conference-site venue">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="conf-header venue-header">
+    <div class="wrap">
+      <a class="venue-title" href="{{ links.now }}">IGLC {{ conference.number }} <span>programme</span></a>
+    </div>
+    <nav class="venue-tabs" aria-label="Programme">
+      <div class="wrap">
+        <a href="{{ links.now }}"{% if tab == "now" %} aria-current="page"{% endif %}>Now</a>
+        <a href="{{ links.today }}"{% if tab == "today" %} aria-current="page"{% endif %}>Day</a>
+        <a href="{{ links.my }}"{% if tab == "my" %} aria-current="page"{% endif %}>Mine</a>
+        <a href="{{ programme_page_url }}">All</a>
+      </div>
+    </nav>
+  </header>
+  <main id="main" class="wrap venue-main">
+    {% include "programme/public/_status.html" %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="venue-footer wrap">
+    <p><a href="{{ home_url }}">The IGLC {{ conference.number }} website</a> · <a href="{{ links.calendar }}">Calendar file</a> · <a href="{{ main_site_url }}/">iglc.net</a></p>
+  </footer>
+</body>
+</html>

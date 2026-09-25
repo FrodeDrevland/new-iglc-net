@@ -64,7 +64,9 @@ def overview(request, number):
     parts = list(programme.parts.select_related("editors"))
     home = getattr(programme.conference, "site_home", None)
     for part in parts:
-        part.private_url = (f"{home.full_url}programme/private/{part.token}/"
+        from .public import home_url
+
+        part.private_url = (f"{home_url(home)}programme/private/{part.token}/"
                             if home and not part.public and (part in editable or access.is_chair(request.user, programme))
                             else "")
     return render(request, "programme/overview.html", {
@@ -156,6 +158,10 @@ def session_edit(request, number, pk=None):
     items = ItemFormSet(data, instance=session, prefix="items", submissions=_submissions(programme))
     if request.method == "POST" and form.is_valid() and people.is_valid() and items.is_valid():
         with transaction.atomic():
+            if {"cancelled", "change_note"} & set(form.changed_data) and (form.instance.cancelled or form.instance.change_note):
+                from django.utils import timezone
+
+                form.instance.changed = timezone.now()
             session = form.save()
             people.instance = items.instance = session
             people.save()
@@ -356,3 +362,23 @@ def backing_report(request, number):
         "no_registrations": not programme.registrations.exists(),
         "defaults": {"request_subject": backing.DEFAULT_REQUEST_SUBJECT, "warning_subject": backing.DEFAULT_WARNING_SUBJECT},
     })
+
+
+@login_required
+def room_signs(request, number):
+    from django.http import HttpResponse
+
+    from .signs import room_signs as make
+
+    programme = _programme(request, number)
+    home = getattr(programme.conference, "site_home", None)
+    if home is None:
+        messages.error(request, "The conference has no website yet, so the signs have nothing to link to.")
+        return redirect("programme:locations", number=number)
+    locations = programme.locations.all()
+    wanted = request.GET.get("location")
+    if wanted:
+        locations = locations.filter(pk=wanted)
+    response = HttpResponse(make(programme, locations, home), content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="iglc{number}-room-signs.pdf"'
+    return response

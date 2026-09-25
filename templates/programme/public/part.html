@@ -10,6 +10,7 @@
   {% if part.description %}<p class="lead">{{ part.description }}</p>{% endif %}
   {% if private %}<p class="conf-notice">This programme is for the participants: please do not share its address.</p>{% endif %}
   {% include "programme/public/_status.html" %}
+  <p class="conf-tools"><a href="{% programme_url 'calendar' year %}?{% if private %}k={{ key }}{% else %}part={{ part.pk }}{% endif %}">Calendar file for the {{ part.name|lower }}</a></p>
   {% if days|length > 1 %}<nav class="conf-days" aria-label="Days">{% for day in days %}<a href="#day-{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"D j M" }}</a>{% endfor %}</nav>{% endif %}
   {% for day in days %}<h2 id="day-{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"l j F" }}</h2>
   {% include "programme/public/_day.html" with several_parts=False %}

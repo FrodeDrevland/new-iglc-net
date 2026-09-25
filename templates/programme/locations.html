@@ -2,7 +2,8 @@
 {% block titletag %}Locations · {{ programme }}{% endblock %}
 {% block main %}
 {% include "programme/_head.html" with title="Locations" lead="Rooms at the venue and places elsewhere. The organisers and the conference chairs keep this list; everyone who edits sessions chooses from it." %}
-{% if can_edit %}<p><a class="button" href="{% url 'programme:location_add' programme.number %}">Add a location</a></p>{% endif %}
+<p>{% if can_edit %}<a class="button" href="{% url 'programme:location_add' programme.number %}">Add a location</a> {% endif %}<a class="button button-secondary" href="{% url 'programme:room_signs' programme.number %}">Room signs (PDF)</a></p>
+<p class="small muted">The room signs have a QR code for each location's page on the conference website: what is on in the room, and its map. Print them on A4, landscape.</p>
 <table class="listing prod-table">
   <thead><tr><th>Location</th><th>Building or floor</th><th>Capacity</th><th>Map</th><th>Sessions</th></tr></thead>
   <tbody>{% for l in locations %}<tr>

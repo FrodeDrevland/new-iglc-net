@@ -1,0 +1,23 @@
+{% extends "programme/venue/base.html" %}
+{% load programme_tags %}
+{% block title %}Now{% endblock %}
+{% block content %}
+<p class="venue-clock">{{ moment|date:"l j F, H:i" }}{% if chosen %} <span class="muted">(chosen time)</span>{% endif %}</p>
+{% if state == "after" %}
+  <p>IGLC {{ conference.number }} has taken place. Thank you for coming.{% if conference.is_published %} The papers are in the <a href="{{ main_site_url }}{{ conference.get_absolute_url }}">proceedings</a>.{% endif %}</p>
+{% else %}
+  {% if state == "during" %}
+  <h2>Now</h2>
+  {% if current %}<ol class="conf-sessions">{% for s in current %}<li data-session="{{ s.pk }}">{% include "programme/public/_card.html" with compact=False several_parts=True key="" %}</li>{% endfor %}</ol>
+  {% else %}<p class="muted">Nothing on the programme right now.</p>{% endif %}
+  {% elif state == "before" %}<p>IGLC {{ conference.number }} starts on {{ days.0|date:"l j F Y" }}.</p>{% endif %}
+  {% if upcoming %}
+  <h2>Next{% if state != "during" %}, {{ upcoming.0.date|date:"l j F" }}{% endif %}</h2>
+  <ol class="conf-sessions">{% for s in upcoming %}<li data-session="{{ s.pk }}">{% include "programme/public/_card.html" with compact=False several_parts=True key="" %}</li>{% endfor %}</ol>
+  {% elif state == "during" %}<p class="muted">Nothing more today.</p>{% endif %}
+{% endif %}
+{% if changes %}
+<h2>Changes</h2>
+<ul class="venue-changes">{% for s in changes %}<li><a href="{{ base }}{% programme_url 'session' year s.pk %}">{{ s.code|default:s.display_title }}</a>, {{ s.date|date:"D" }} {{ s.start|time:"H:i" }}: {% if s.cancelled %}cancelled{% if s.change_note %} ({{ s.change_note }}){% endif %}{% else %}{{ s.change_note }}{% endif %} <span class="muted small">{{ s.changed|timesince }} ago</span></li>{% endfor %}</ul>
+{% endif %}
+{% endblock %}

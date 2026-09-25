@@ -2,8 +2,8 @@
 
 The plan for the programme of each IGLC conference: sessions, rooms, chairs and papers, and the
 check that every presented paper is backed by a registration. This is phase 3, second step. Agreed
-with the General Secretary, September 2026. Development steps 1 (the back office), 2 (registration backing)
-and 3 (the public programme) are built; steps 4 and 5 are to come.
+with the General Secretary, September 2026. Development steps 1 to 4 (the back office, registration backing,
+the public programme and the programme at the venue) are built; step 5 is for later.
 
 Code: `apps/programme`. Back office: Manage → Conference programme (`/manage/programme/`).
 
@@ -149,6 +149,25 @@ it needs outgoing email from iglc.net.
 
 After the conference the frozen programme stays as the record of what was presented.
 
+## At the venue
+
+- **program.iglc.net** (program.iglc.drevland.net on the preview; its host name follows `SITE_URL`,
+  or the setting `PROGRAMME_HOST`) shows the current conference's programme for phones: **Now**
+  (what is on and what comes next, and the latest changes), **Day**, **Mine** and **All** (the
+  conference site's programme page). The same pages are on the conference site under
+  /2027/programme/now/, /today/ and /my/, for any year. Adding `?at=2027-07-20T10:45` to the
+  address shows the Now page at another moment, for trying it out.
+- **My programme**: a star on every session. The choice is kept in the visitor's browser only (no
+  login, nothing sent to the site), and can be added to a calendar.
+- **Calendar files**: the whole programme (/2027/programme/calendar.ics), a part (?part=), a private
+  part (?k= its private link), a visitor's own sessions, and one session (on its page). Calendar apps
+  that subscribe fetch them again, so changes and cancellations reach them. Breaks are left out.
+- **Late changes**: a session can be marked cancelled (struck through, and cancelled in calendars)
+  or given a change note, e.g. "Moved to Room 103"; both are dated and listed under Now. A notice
+  (Parts and settings) is shown at the top of every programme page.
+- **Room signs**: Locations → Room signs (PDF), one A4 page per location with a QR code for its page
+  on the conference site (what is on there, and its map).
+
 ## Development steps
 
 1. **Back office** (built): the models, locations, parts with their editor groups and public flag,
@@ -158,9 +177,9 @@ After the conference the frozen programme stays as the record of what was presen
    confirmation links, warnings and withdrawal. Sending needs email on iglc.net.
 3. **Public programme** (built): the pages on the conference site, with a "provisional" banner
    until the programme is final.
-4. **At the venue**: program.iglc.net, now and next, my programme (kept in the visitor's browser,
-   no login), calendar files and subscribable feeds, QR codes for room signs, marks for changed and
-   cancelled sessions, and a notice banner.
+4. **At the venue** (built): program.iglc.net, now and next, my programme (kept in the visitor's
+   browser, no login), calendar files and subscribable feeds, QR codes for room signs, marks for
+   changed and cancelled sessions, and a notice banner.
 5. **Later**: a designed PDF booklet, working offline at the venue, drag-and-drop planning,
    presenters' slide uploads, and presenters from the IGLC's own submission system (2028).
 

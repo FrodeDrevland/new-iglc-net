@@ -1,1 +1,2 @@
 {% if programme.status == "provisional" %}<p class="conf-notice">This programme is provisional and may still change.</p>{% elif programme.status == "hidden" %}<p class="conf-notice">Preview: this programme is hidden from visitors.</p>{% endif %}
+{% if programme.notice %}<p class="conf-notice conf-programme-notice" role="status">{{ programme.notice }}</p>{% endif %}

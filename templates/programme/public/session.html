@@ -8,6 +8,8 @@
   <p class="conf-crumbs">{% if private %}<a href="{% programme_url 'private' year key %}">{{ session.part.name }}</a>{% else %}<a href="{% pageurl programme_page %}">{{ programme_page.title }}</a> · <a href="{% programme_url 'day' year session.date|date:'Y-m-d' %}">{{ session.date|date:"l j F" }}</a>{% endif %}</p>
   <h1>{% if session.code %}{{ session.code }} {% endif %}{{ session.display_title }}</h1>
   {% include "programme/public/_status.html" %}
+  {% if session.cancelled %}<p class="conf-change"><strong>Cancelled</strong>{% if session.change_note %}: {{ session.change_note }}{% endif %}</p>{% elif session.change_note %}<p class="conf-change"><strong>Changed:</strong> {{ session.change_note }}</p>{% endif %}
+  <p class="conf-tools"><button type="button" class="conf-star" data-star="{{ session.pk }}" data-year="{{ year }}" aria-pressed="false" aria-label="Add to my programme" hidden>★</button> <a href="{% programme_url 'session_calendar' year session.pk key=key %}">Add to calendar</a>{% if not private %} · <a href="{% programme_url 'my' year %}">My programme</a>{% endif %}</p>
   <dl class="conf-facts">
     <dt>When</dt><dd>{{ session.date|date:"l j F Y" }}, <span class="nowrap"><time datetime="{{ session.date|date:'Y-m-d' }}T{{ session.start|time:'H:i' }}">{{ session.start|time:"H:i" }}</time>–{{ session.end|time:"H:i" }}</span></dd>
     {% if session.location %}<dt>Where</dt><dd>{% if private %}{{ session.location.name }}{% else %}<a href="{% programme_url 'location' year session.location.pk %}">{{ session.location.name }}</a>{% endif %}{% if session.location.building %}, {{ session.location.building }}{% endif %}{% if session.location.map_url %} · <a href="{{ session.location.map_url }}" rel="noopener">map</a>{% endif %}</dd>{% endif %}

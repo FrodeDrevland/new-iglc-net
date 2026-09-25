@@ -2,6 +2,7 @@
 {% if data and data.days %}
 <div class="conf-programme">
   {% with programme=data.programme %}{% include "programme/public/_status.html" %}{% endwith %}
+  <p class="conf-tools">{% if data.venue_url %}<strong>At the venue:</strong> <a href="{{ data.venue_url }}/">{{ data.venue_url|cut:"https://"|cut:"http://" }}</a>, with what is on now and next · {% endif %}<a href="{% programme_url 'my' data.year %}">My programme</a> · <a href="{% programme_url 'calendar' data.year %}">Calendar file</a></p>
   {% if data.days|length > 1 %}<nav class="conf-days" aria-label="Days">{% for day in data.days %}<a href="#day-{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"D j M" }}</a>{% endfor %}</nav>{% endif %}
   {% for day in data.days %}
   <h2 id="day-{{ day.date|date:'Y-m-d' }}">{{ day.date|date:"l j F" }} <a class="conf-day-link" href="{% programme_url 'day' data.year day.date|date:'Y-m-d' %}">this day on its own</a></h2>

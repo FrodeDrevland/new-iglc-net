@@ -12,6 +12,7 @@ urlpatterns = [
     path("<int:number>/settings/", views.programme_settings, name="settings"),
     path("<int:number>/locations/", views.locations, name="locations"),
     path("<int:number>/locations/add/", views.location_edit, name="location_add"),
+    path("<int:number>/locations/signs.pdf", views.room_signs, name="room_signs"),
     path("<int:number>/locations/<int:pk>/", views.location_edit, name="location"),
     path("<int:number>/sessions/add/", views.session_edit, name="session_add"),
     path("<int:number>/sessions/<int:pk>/", views.session_edit, name="session"),

@@ -49,7 +49,7 @@ def problems(programme) -> list[Problem]:
     sessions = _sessions(programme)
     found: list[Problem] = []
 
-    for a, b in _pairs(sessions):
+    for a, b in _pairs([s for s in sessions if not s.cancelled]):
         if a.location_id and a.location_id == b.location_id:
             found.append(Problem(ERROR, f"Two sessions in {a.location} at the same time.", [a, b]))
         if a.part_id == b.part_id and (a.plenary or b.plenary):

@@ -26,6 +26,12 @@ def url(name: str, *args) -> str:
     return reverse(f"conference_programme:{name}", args=args, urlconf=URLCONF)
 
 
+def home_url(home) -> str:
+    """The conference website's address, e.g. https://conference.iglc.net/2027/. Unlike
+    home.full_url, this works on hosts whose URLs do not include Wagtail's (program.iglc.net)."""
+    return f"{home.get_site().root_url}/{home.slug}/"
+
+
 def visible(programme, request=None) -> bool:
     if programme is None:
         return False
@@ -61,8 +67,12 @@ def programme_days(conference, kind: str = "", request=None, parts=None):
         if kind:
             parts = parts.filter(kind=kind)
     sessions = list(sessions_of(programme, parts))
+    from django.conf import settings
+
+    home = getattr(conference, "site_home", None)
     return {"programme": programme, "days": by_day(sessions), "year": conference.start_date.year,
-            "several_parts": len({s.part_id for s in sessions}) > 1}
+            "several_parts": len({s.part_id for s in sessions}) > 1,
+            "venue_url": settings.PROGRAMME_URL if home and home.is_current else ""}
 
 
 # ---------------------------------------------------------------- the grid of a day
