@@ -1,0 +1,15 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}{% if location.pk %}{{ location }}{% else %}New location{% endif %} · {{ programme }}{% endblock %}
+{% block extra_js %}{{ block.super }}{{ form.media.js }}{% endblock %}
+{% block extra_css %}{{ block.super }}{{ form.media.css }}{% endblock %}
+{% block main %}
+{% if location.pk %}{% include "programme/_head.html" with title=location.name %}{% else %}{% include "programme/_head.html" with title="New location" %}{% endif %}
+<form method="post">{% csrf_token %}
+  <div class="panel form-grid">
+    {% for field in form %}<label>{{ field.label }} {{ field }}{% if field.help_text %}<span class="muted small">{{ field.help_text }}</span>{% endif %}{% for e in field.errors %}<span class="fail small">{{ e }}</span>{% endfor %}</label>{% endfor %}
+  </div>
+  <p><button class="button" type="submit">Save</button>
+    {% if location.pk %}<button class="button button-secondary no" type="submit" name="delete" value="1" formnovalidate onclick="return confirm('Delete this location?')">Delete</button>{% endif %}
+    <a class="button button-secondary" href="{% url 'programme:locations' programme.number %}">Cancel</a></p>
+</form>
+{% endblock %}

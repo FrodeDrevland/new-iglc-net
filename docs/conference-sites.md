@@ -53,6 +53,9 @@ Mark the home page **frozen**: organisers can no longer change anything, and the
 conference has taken place and links to its proceedings. The archive's conference page links to the
 website ("Conference website") as long as it is published.
 
-## Later (phase 3, second step)
+## The programme
 
-The programme: sessions, chairs, rooms and papers, and program.iglc.net.
+Sessions, chairs, locations and papers are entered under Manage → Conference programme, by the
+conference chairs and each part's editors (not the organisers, who keep the locations). The
+programme page shows them with the "Programme" block. See docs/programme.md, which also has what
+comes next: the registration backing of papers and program.iglc.net.

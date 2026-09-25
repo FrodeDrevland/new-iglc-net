@@ -30,6 +30,8 @@ class Doc:
 DOCS = [
     Doc("conference-sites", "docs/conference-sites.md", EVERYONE, "Conferences",
         "Setting up a conference's website, and what the organisers can do."),
+    Doc("programme", "docs/programme.md", EVERYONE, "Conferences",
+        "The conference programme and the registration backing of papers (planned)."),
     Doc("paper-check-rules", "docs/paper-check-rules.md", EVERYONE, "Papers and proceedings",
         "Every rule of the paper check, what it looks for and how strict it is."),
     Doc("production-process", "docs/production-process.md", EDITORS, "Papers and proceedings",

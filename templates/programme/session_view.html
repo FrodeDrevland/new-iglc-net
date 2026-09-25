@@ -1,0 +1,14 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}{{ session }} · {{ programme }}{% endblock %}
+{% block main %}
+{% include "programme/_head.html" with title=session.display_title %}
+<p class="muted">{{ session.part.name }} · {{ session.get_kind_display }}{% if session.plenary %} · plenary{% endif %}. You can see this session but not edit it: it belongs to a part edited by others.</p>
+<dl class="facts">
+  <dt>When</dt><dd>{{ session.date|date:"l j F Y" }}, {{ session.start|time:"H:i" }}–{{ session.end|time:"H:i" }}</dd>
+  <dt>Where</dt><dd>{{ session.location.name|default:"–" }}</dd>
+  {% if session.notes %}<dt>Notes</dt><dd>{{ session.notes|linebreaksbr }}</dd>{% endif %}
+</dl>
+{% if session.people.all %}<h2>People</h2><ul>{% for p in session.people.all %}<li>{{ p.name }} ({{ p.get_role_display|lower }}){% if p.affiliation %}, {{ p.affiliation }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+{% if session.items.all %}<h2>Papers and items</h2><ol>{% for i in session.items.all %}<li>{{ i.display_title }}{% if i.presenter %} <span class="muted">· {{ i.presenter }}</span>{% endif %} <span class="muted small">({{ i.get_presentation_display|lower }})</span></li>{% endfor %}</ol>{% endif %}
+<p><a class="button button-secondary" href="{% url 'programme:overview' programme.number %}">Back to the programme</a></p>
+{% endblock %}

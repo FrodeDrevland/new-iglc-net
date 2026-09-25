@@ -2,6 +2,9 @@
 
 Primary keys keep the values from the old database, because every DOI points to
 /papers/details/<paper id> and conference pages to /papers/conference/<conference id>.
+
+get_absolute_url() reverses with the main site's URLconf, so that it also works on the
+conference sites (which have their own); they prefix it with the main site's address.
 """
 
 from django.conf import settings
@@ -55,7 +58,7 @@ class Conference(EditTracking, ClusterableModel):
         return ", ".join(part for part in (self.city, self.country) if part)
 
     def get_absolute_url(self):
-        return reverse("archive:conference", args=[self.pk])
+        return reverse("archive:conference", args=[self.pk], urlconf=settings.ROOT_URLCONF)
 
 
 class ProceedingsFile(models.Model):
@@ -148,7 +151,7 @@ class AuthorPerson(PersonName):
         return f"{self.first_name} {self.last_name}".strip()
 
     def get_absolute_url(self):
-        return reverse("archive:author", args=[self.pk])
+        return reverse("archive:author", args=[self.pk], urlconf=settings.ROOT_URLCONF)
 
 
 class Paper(EditTracking, ClusterableModel):
@@ -188,7 +191,7 @@ class Paper(EditTracking, ClusterableModel):
         return self.title
 
     def get_absolute_url(self):
-        return reverse("archive:paper", args=[self.pk])
+        return reverse("archive:paper", args=[self.pk], urlconf=settings.ROOT_URLCONF)
 
     @property
     def year(self):

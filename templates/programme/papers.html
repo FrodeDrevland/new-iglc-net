@@ -1,0 +1,30 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}Papers · {{ programme }}{% endblock %}
+{% block main %}
+{% include "programme/_head.html" with title="Papers" lead="The accepted papers from the proceedings production. Tick papers not yet placed and add them to a paper or poster session; order, presenters and minutes are set on the session." %}
+<h2>Not placed ({{ unplaced|length }})</h2>
+{% if unplaced %}
+<form method="post">{% csrf_token %}
+  <table class="listing prod-table">
+    <thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.pick').forEach(c => c.checked = this.checked)" aria-label="All"></th><th>ID</th><th>Title</th><th>Track</th><th>Authors</th></tr></thead>
+    <tbody>{% for s in unplaced %}<tr>
+      <td><input class="pick" type="checkbox" name="paper" value="{{ s.pk }}"></td><td>{{ s.conftool_id }}</td><td>{{ s.title }}</td>
+      <td>{{ s.track.title|default:"–" }}</td>
+      <td class="small">{% for a in s.registered_authors %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% if targets %}
+  <p class="prod-filters"><label>Add the ticked papers to <select name="session">{% for t in targets %}<option value="{{ t.pk }}">{{ t }}{% if t.location %} · {{ t.location }}{% endif %}</option>{% endfor %}</select></label>
+    <button class="button" type="submit">Add</button></p>
+  {% else %}<p class="muted">There is no paper or poster session you can edit yet.</p>{% endif %}
+</form>
+{% else %}<p>Every paper is placed.</p>{% endif %}
+
+<h2>Placed ({{ placed|length }})</h2>
+<table class="listing prod-table">
+  <thead><tr><th>ID</th><th>Title</th><th>Track</th><th>Session</th><th>As</th><th>Presenter</th></tr></thead>
+  <tbody>{% for i in placed %}<tr><td>{{ i.submission.conftool_id }}</td><td>{{ i.submission.title }}</td><td>{{ i.submission.track.title|default:"–" }}</td>
+    <td><a href="{% url 'programme:session' programme.number i.session.pk %}">{{ i.session }}</a></td>
+    <td>{{ i.get_presentation_display }}</td><td>{{ i.presenter|default:"–" }}</td></tr>
+  {% empty %}<tr><td colspan="6">None yet.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

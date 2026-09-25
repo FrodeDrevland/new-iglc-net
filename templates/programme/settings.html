@@ -1,0 +1,23 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}Parts and settings · {{ programme }}{% endblock %}
+{% block main %}
+{% include "programme/_head.html" with title="Parts and settings" lead="The programme's status and days, and its parts. Each part has its own group of editors (Settings → Groups); the conference chairs edit every part." %}
+<form method="post">{% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="panel form-grid">
+    {% for field in form %}<label>{{ field.label }} {{ field }}{% if field.help_text %}<span class="muted small">{{ field.help_text }}</span>{% endif %}{% for e in field.errors %}<span class="fail small">{{ e }}</span>{% endfor %}</label>{% endfor %}
+  </div>
+  <h2>Parts</h2>
+  {{ parts.management_form }}{% for e in parts.non_form_errors %}<p class="fail">{{ e }}</p>{% endfor %}
+  <table class="listing prod-table formset">
+    <thead><tr><th>Name</th><th>Kind</th><th>Colour</th><th>Public</th><th>Description</th><th>Order</th><th>Editors</th><th>Delete</th></tr></thead>
+    <tbody>{% for f in parts %}<tr>{{ f.id }}
+      <td>{{ f.name }}{% for e in f.name.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+      <td>{{ f.kind }}</td><td>{{ f.colour }}{% for e in f.colour.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+      <td>{{ f.public }}</td><td>{{ f.description }}</td><td>{{ f.sort_order }}</td>
+      <td class="small muted">{{ f.instance.editors.name|default:"made when saved" }}</td>
+      <td>{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p><button class="button" type="submit">Save</button></p>
+</form>
+{% endblock %}

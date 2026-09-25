@@ -1,0 +1,6 @@
+<tr>{{ f.id }}
+  <td>{{ f.role }}</td>
+  <td>{{ f.name }}{% for e in f.name.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+  <td>{{ f.affiliation }}</td><td>{{ f.order }}</td>
+  <td>{{ f.DELETE }}</td>
+</tr>

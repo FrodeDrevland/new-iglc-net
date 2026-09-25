@@ -1,0 +1,8 @@
+<tr>{{ f.id }}
+  <td>{{ f.order }}</td>
+  <td class="wide">{{ f.submission }}{% for e in f.submission.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}{% for e in f.non_field_errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+  <td>{{ f.presentation }}</td>
+  <td>{{ f.presenter }}</td><td>{{ f.minutes }}</td><td>{{ f.board }}</td>
+  <td>{{ f.title }}</td><td>{{ f.speaker }}</td>
+  <td>{{ f.DELETE }}</td>
+</tr>

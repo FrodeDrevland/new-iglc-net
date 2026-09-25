@@ -1,0 +1,60 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}{% if session.pk %}{{ session }}{% else %}New session{% endif %} · {{ programme }}{% endblock %}
+{% block main %}
+{% if session.pk %}{% include "programme/_head.html" with title=session.display_title %}{% else %}{% include "programme/_head.html" with title="New session" %}{% endif %}
+<form method="post" id="session-form">{% csrf_token %}
+  {% for e in form.non_field_errors %}<p class="fail">{{ e }}</p>{% endfor %}
+  <div class="panel form-grid">
+    {% for field in form %}<label>{{ field.label }} {{ field }}{% if field.help_text %}<span class="muted small">{{ field.help_text }}</span>{% endif %}{% for e in field.errors %}<span class="fail small">{{ e }}</span>{% endfor %}</label>{% endfor %}
+  </div>
+
+  <h2>People</h2>
+  <p class="small muted">Chairs, facilitators, moderators, panellists and speakers. Someone may chair a session and present a paper in it.</p>
+  {{ people.management_form }}{% for e in people.non_form_errors %}<p class="fail">{{ e }}</p>{% endfor %}
+  <table class="listing prod-table formset" data-formset="people">
+    <thead><tr><th>Role</th><th>Name</th><th>Affiliation</th><th>Order</th><th>Remove</th></tr></thead>
+    <tbody>{% for f in people %}{% include "programme/_person_row.html" %}{% endfor %}</tbody>
+  </table>
+  <template id="people-empty">{% with f=people.empty_form %}{% include "programme/_person_row.html" %}{% endwith %}</template>
+  <p><button type="button" class="button button-secondary button-small" data-add="people">Add a person</button></p>
+
+  <h2>Papers and items</h2>
+  <p class="small muted">A paper from the proceedings, presented as a talk or a poster, with its presenter (one of its authors); or an item that is not a paper, with a title and speaker. Minutes and poster boards are optional.</p>
+  {{ items.management_form }}{% for e in items.non_form_errors %}<p class="fail">{{ e }}</p>{% endfor %}
+  <table class="listing prod-table formset" data-formset="items">
+    <thead><tr><th>Order</th><th>Paper</th><th>As</th><th>Presenter</th><th>Min.</th><th>Board</th><th>Or: title</th><th>Speaker</th><th>Remove</th></tr></thead>
+    <tbody>{% for f in items %}{% include "programme/_item_row.html" %}{% endfor %}</tbody>
+  </table>
+  <template id="items-empty">{% with f=items.empty_form %}{% include "programme/_item_row.html" %}{% endwith %}</template>
+  <p><button type="button" class="button button-secondary button-small" data-add="items">Add an item</button>
+     <a class="small" href="{% url 'programme:papers' programme.number %}">Add several papers at once</a></p>
+  {% for id, names in authors.items %}<datalist id="authors-{{ id }}">{% for n in names %}<option value="{{ n }}">{% endfor %}</datalist>{% endfor %}
+
+  <p><button class="button" type="submit">Save</button>
+     <button class="button button-secondary" type="submit" name="again" value="1">Save and keep editing</button>
+     {% if session.pk %}<button class="button button-secondary no" type="submit" name="delete" value="1" formnovalidate onclick="return confirm('Delete this session and its items?')">Delete</button>{% endif %}
+     <a class="button button-secondary" href="{% url 'programme:overview' programme.number %}">Cancel</a></p>
+</form>
+{% endblock %}
+{% block page_js %}
+<script>
+(() => {
+  const form = document.getElementById("session-form");
+  // New rows from the <template>, numbered by the formset's TOTAL_FORMS.
+  form.querySelectorAll("[data-add]").forEach(button => button.addEventListener("click", () => {
+    const prefix = button.dataset.add;
+    const total = form.querySelector(`#id_${prefix}-TOTAL_FORMS`);
+    const html = document.getElementById(`${prefix}-empty`).innerHTML.replaceAll("__prefix__", total.value);
+    form.querySelector(`[data-formset="${prefix}"] tbody`).insertAdjacentHTML("beforeend", html);
+    total.value = Number(total.value) + 1;
+  }));
+  // The presenter is chosen from the paper's authors.
+  const linkPresenter = select => {
+    const presenter = select.closest("tr").querySelector("input[name$='-presenter']");
+    if (presenter) presenter.setAttribute("list", select.value ? `authors-${select.value}` : "");
+  };
+  form.addEventListener("change", e => { if (e.target.matches("select[name$='-submission']")) linkPresenter(e.target); });
+  form.querySelectorAll("select[name$='-submission']").forEach(linkPresenter);
+})();
+</script>
+{% endblock %}

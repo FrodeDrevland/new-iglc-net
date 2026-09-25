@@ -123,6 +123,15 @@ class ConferenceSiteTests(TestCase):
         self.assertNotContains(response, "ann@example.org")
         self.assertNotContains(response, "Withdrawn one")
 
+    def test_published_papers_link_to_the_main_site(self):
+        from apps.archive.models import Paper
+
+        paper = Paper.objects.create(title="Takt in Munich", conference=self.conference)
+        self.conference.is_published = True
+        self.conference.save()
+        response = self.get("/2027/accepted-papers/")
+        self.assertContains(response, f'href="http://localhost:8000/papers/details/{paper.pk}')
+
     def test_committees(self):
         page = CommitteesPage.objects.get()
         page.members.create(committee="Scientific chairs", name="Kristen Parrish", role="Chair")

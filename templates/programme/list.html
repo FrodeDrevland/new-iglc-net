@@ -1,0 +1,23 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}Conference programme{% endblock %}
+{% block main %}
+<div class="page-head"><p class="kicker">Back office</p><h1>Conference programme</h1>
+  <p class="lead">Sessions, locations, chairs and papers of each conference, for its website. <a href="{% url 'site_help:doc' 'programme' %}">How the programme works</a></p></div>
+<ul class="plain-list">
+  {% for p in programmes %}<li><a href="{% url 'programme:overview' p.number %}">{{ p }}</a> <span class="muted">· {{ p.get_status_display }}</span></li>
+  {% empty %}<li>You do not work on any conference's programme.</li>{% endfor %}
+</ul>
+{% if form %}
+<h2>Start a programme</h2>
+<div class="panel">
+  <p class="small muted">Creates the programme with four parts (academic conference, industry day, workshop day, PhD summer school) and a group of editors for each, plus the conference chairs' group. Parts can be renamed, added or deleted afterwards.</p>
+  <form method="post" class="prod-filters">{% csrf_token %}
+    <label>Conference {{ form.conference }}</label>
+    <label>Time zone {{ form.time_zone }}</label>
+    <button class="button" type="submit">Start</button>
+  </form>
+  {% if form.errors %}<p class="fail small">{% for field in form %}{% for e in field.errors %}{{ e }} {% endfor %}{% endfor %}{% for e in form.non_field_errors %}{{ e }} {% endfor %}</p>{% endif %}
+  <p class="small muted">Only conferences with dates and no programme are listed (Archive → Conferences).</p>
+</div>
+{% endif %}
+{% endblock %}

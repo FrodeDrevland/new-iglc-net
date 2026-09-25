@@ -54,6 +54,8 @@ To (re)build them: download both families from fonts.google.com ("Get font" > "D
 | `apps/archive/` | Papers, authors, conferences, volumes, links; old-URL redirects (`legacy.py`); exports |
 | `apps/pages/` | Wagtail page types for content pages |
 | `apps/governance/` | Committees and officers |
+| `apps/conferences/` | The conference websites on conference.iglc.net |
+| `apps/programme/` | The conference programme: parts, locations, sessions and papers |
 | `apps/core/` | Health check, host redirects, and the site documentation under Help in the back office |
 | `templates/`, `static/` | Templates, CSS and fonts |
 | `tools/url_inventory.py` | URL inventory and checking, standard library only |

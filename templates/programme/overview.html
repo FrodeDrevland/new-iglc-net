@@ -1,0 +1,54 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}{{ programme }}{% endblock %}
+{% block main %}
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'programme:list' %}">Conference programme</a></p>
+  <h1>{{ programme }}</h1>
+  <p class="lead">{{ programme.get_status_display }} · {{ programme.first_day|date:"j M" }} to {{ programme.last_day|date:"j M Y" }} · {{ programme.time_zone }}{% if frozen %} · <strong>frozen</strong>: the conference has taken place{% endif %}</p>
+  <p>{% if can_add %}<a class="button" href="{% url 'programme:session_add' programme.number %}">Add a session</a>
+     <a class="button button-secondary" href="{% url 'programme:papers' programme.number %}">Papers{% if unplaced %} ({{ unplaced }} not placed){% endif %}</a>{% endif %}
+     <a class="button button-secondary" href="{% url 'programme:locations' programme.number %}">Locations</a>
+     {% if can_settings %}<a class="button button-secondary" href="{% url 'programme:settings' programme.number %}">Parts and settings</a>{% endif %}
+     <a class="button button-secondary" href="{% url 'site_help:doc' 'programme' %}">Guide</a></p>
+</div>
+
+<h2>Parts</h2>
+<table class="listing prod-table">
+  <thead><tr><th>Part</th><th>Shown</th><th>Edited by</th><th></th></tr></thead>
+  <tbody>{% for part in parts %}
+  <tr><td><span class="part-swatch" style="background: {{ part.colour }}"></span> {{ part.name }}</td>
+    <td>{% if part.public %}public{% else %}private link only{% endif %}</td>
+    <td>{{ programme.chairs.name|default:"–" }}{% if part.editors %}, {{ part.editors.name }}{% endif %}</td>
+    <td>{% if part.pk in editable_ids %}<a href="{% url 'programme:session_add' programme.number %}?part={{ part.pk }}">Add a session</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+
+{% if problems %}
+<h2>Checks</h2>
+<ul class="problems">
+  {% for p in problems %}<li class="{{ p.level }}"><span class="badge {{ p.level }}">{{ p.level }}</span> {{ p.text }}
+    {% for s in p.sessions %}<a href="{% url 'programme:session' programme.number s.pk %}">{{ s.code|default:s.display_title }} ({{ s.date|date:"D" }} {{ s.start|time:"H:i" }})</a>{% if not forloop.last %}, {% endif %}{% endfor %}</li>{% endfor %}
+</ul>
+{% endif %}
+
+{% for day, sessions in days %}
+<h2>{{ day|date:"l j F Y" }}</h2>
+{% if sessions %}
+<table class="listing prod-table sessions">
+  <thead><tr><th>Time</th><th>Session</th><th>Part</th><th>Location</th><th>People</th><th>Papers</th></tr></thead>
+  <tbody>{% for s in sessions %}
+  <tr>
+    <td class="nowrap">{{ s.start|time:"H:i" }}–{{ s.end|time:"H:i" }}</td>
+    <td><a href="{% url 'programme:session' programme.number s.pk %}">{% if s.code %}<strong>{{ s.code }}</strong> {% endif %}{{ s.display_title }}</a>
+      <br><span class="muted small">{{ s.get_kind_display }}{% if s.plenary %} · plenary{% endif %}</span></td>
+    <td><span class="part-swatch" style="background: {{ s.part.colour }}"></span> {{ s.part.name }}</td>
+    <td>{{ s.location.name|default:"–" }}</td>
+    <td class="small">{% for p in s.people.all %}{{ p.name }} <span class="muted">({{ p.get_role_display|lower }})</span>{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</td>
+    <td>{% with n=s.items.all|length %}{% if n %}{{ n }}{% else %}–{% endif %}{% endwith %}</td>
+  </tr>{% endfor %}</tbody>
+</table>
+{% else %}
+<p class="muted">No sessions.{% if can_add %} <a href="{% url 'programme:session_add' programme.number %}?date={{ day|date:'Y-m-d' }}">Add one</a>{% endif %}</p>
+{% endif %}
+{% endfor %}
+{% endblock %}

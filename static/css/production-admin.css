@@ -70,3 +70,19 @@
 .iglc-prod .help-doc table { border-collapse: collapse; margin-bottom: 1rem; display: block; overflow-x: auto; }
 .iglc-prod .help-doc th, .iglc-prod .help-doc td { border: 1px solid var(--w-color-border-furniture, #e0e0e0); padding: .35rem .6rem; text-align: left; vertical-align: top; }
 .iglc-prod .help-doc th { background: rgba(128, 128, 128, .14); }
+/* Conference programme (apps/programme) */
+.iglc-prod .part-swatch { display: inline-block; width: .8rem; height: .8rem; border-radius: 2px; vertical-align: -.05rem; }
+.iglc-prod .nowrap { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.iglc-prod .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: .9rem 1.25rem; }
+.iglc-prod .form-grid label { display: flex; flex-direction: column; gap: .25rem; font-weight: 600; }
+.iglc-prod .form-grid label > * { font-weight: normal; }
+.iglc-prod table.formset input:not([type=checkbox]), .iglc-prod table.formset select { width: 100%; box-sizing: border-box; min-width: 5rem; }
+.iglc-prod table.formset .narrow, .iglc-prod .narrow { min-width: 3.5rem; max-width: 5rem; }
+.iglc-prod table.formset td.wide { min-width: 18rem; }
+.iglc-prod .problems { list-style: none; padding: 0; }
+.iglc-prod .problems li { padding: .3rem 0; border-top: 1px solid var(--w-color-border-furniture, #e0e0e0); }
+.iglc-prod .badge.error { background: var(--w-color-critical-50, #fde9e9); }
+.iglc-prod .badge.warning { background: var(--w-color-warning-50, #faecd5); }
+.iglc-prod .badge.note { background: var(--w-color-info-50, #e2f5fc); }
+.iglc-prod .facts { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; }
+.iglc-prod .facts dt { font-weight: 600; }

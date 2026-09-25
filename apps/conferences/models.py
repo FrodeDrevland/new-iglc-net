@@ -88,6 +88,20 @@ class ImageBlock(blocks.StructBlock):
         template = "conferences/blocks/image.html"
 
 
+class ProgrammeBlock(blocks.StructBlock):
+    """The programme, from Manage → Conference programme. Shown once it is not hidden."""
+
+    part = blocks.ChoiceBlock(
+        required=False, choices=[("academic", "Academic conference"), ("industry", "Industry day"),
+                                 ("workshop", "Workshop day"), ("phd", "PhD summer school"), ("other", "Other parts")],
+        help_text="Blank: every public part.")
+
+    class Meta:
+        icon = "date"
+        label = "Programme"
+        template = "conferences/blocks/programme.html"
+
+
 BODY_BLOCKS = [
     ("text", blocks.RichTextBlock(features=RICH_TEXT_FEATURES)),
     ("image", ImageBlock()),
@@ -99,6 +113,7 @@ BODY_BLOCKS = [
     ("tracks", blocks.StaticBlock(
         admin_text="The conference's tracks, from the IGLC's conference record.",
         template="conferences/blocks/tracks.html", icon="list-ul")),
+    ("programme", ProgrammeBlock()),
 ]
 
 

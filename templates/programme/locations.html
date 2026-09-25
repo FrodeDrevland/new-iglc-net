@@ -1,0 +1,15 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}Locations · {{ programme }}{% endblock %}
+{% block main %}
+{% include "programme/_head.html" with title="Locations" lead="Rooms at the venue and places elsewhere. The organisers and the conference chairs keep this list; everyone who edits sessions chooses from it." %}
+{% if can_edit %}<p><a class="button" href="{% url 'programme:location_add' programme.number %}">Add a location</a></p>{% endif %}
+<table class="listing prod-table">
+  <thead><tr><th>Location</th><th>Building or floor</th><th>Capacity</th><th>Map</th><th>Sessions</th></tr></thead>
+  <tbody>{% for l in locations %}<tr>
+    <td>{% if can_edit %}<a href="{% url 'programme:location' programme.number l.pk %}">{{ l.name }}</a>{% else %}{{ l.name }}{% endif %}{% if l.address %}<br><span class="muted small">{{ l.address }}</span>{% endif %}</td>
+    <td>{{ l.building|default:"–" }}</td><td>{{ l.capacity|default:"–" }}</td>
+    <td>{% if l.map_url %}<a href="{{ l.map_url }}" target="_blank" rel="noopener">map</a>{% else %}–{% endif %}</td>
+    <td>{{ l.sessions.count }}</td></tr>
+  {% empty %}<tr><td colspan="5">No locations yet.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

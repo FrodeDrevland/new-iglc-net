@@ -66,3 +66,19 @@
 .conf-footer { background: var(--soft); border-top: 1px solid var(--line); padding: 2rem 0; font-size: 1rem; margin-top: 2rem; }
 .conf-footer p { max-width: 44rem; }
 .conf-footer-links { color: var(--muted); }
+/* The programme (apps/programme, block "programme") */
+.conf-programme .conf-notice { padding: .6rem .9rem; border-left: 3px solid var(--conf-accent); background: #f6f6f8; }
+.conf-sessions { list-style: none; padding: 0; margin: 0 0 2rem; }
+.conf-session { display: grid; grid-template-columns: 6.5rem 1fr; gap: 1rem; padding: .9rem 0 .9rem .75rem; border-top: 1px solid #ddd; border-left: 4px solid var(--part, #ccc); }
+.conf-session h3 { margin: 0 0 .25rem; font-size: 1.05rem; }
+.conf-session p { margin: 0 0 .3rem; }
+.conf-session-time { font-variant-numeric: tabular-nums; font-weight: 600; }
+.conf-session-code { font-weight: 700; }
+.conf-session-meta, .conf-session-people, .conf-session-notes { font-size: .92rem; color: #555; }
+.conf-session.kind-break, .conf-session.kind-meal { background: #f6f6f8; }
+.conf-session.kind-break h3, .conf-session.kind-meal h3 { font-weight: 400; }
+.conf-items { margin: .4rem 0 0; padding-left: 1.25rem; }
+.conf-items li { margin-bottom: .45rem; }
+.conf-items .presenter { text-decoration: underline; }
+.conf-board { font-variant-numeric: tabular-nums; font-weight: 600; }
+@media (max-width: 40rem) { .conf-session { grid-template-columns: 1fr; gap: .2rem; } }

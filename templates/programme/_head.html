@@ -1,0 +1,5 @@
+<div class="page-head">
+  <p class="kicker"><a href="{% url 'programme:list' %}">Conference programme</a>{% if programme and title %} · <a href="{% url 'programme:overview' programme.number %}">IGLC {{ programme.number }}</a>{% endif %}</p>
+  <h1>{% if title %}{{ title }}{% else %}{{ programme }}{% endif %}</h1>
+  {% if lead %}<p class="lead">{{ lead }}</p>{% endif %}
+</div>
