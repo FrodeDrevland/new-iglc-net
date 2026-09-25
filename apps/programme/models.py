@@ -9,13 +9,19 @@
         SessionItem     a paper (from the proceedings production) presented as a talk or a poster,
                         or a free item
 
+    RegistrationType, Registration     the organisers' export of registrations; only some types
+                                       (the technical/academic conference) back papers
+    PaperPresentation                  per paper: the authors' answer (presented, by whom, backed by
+                                       whom), the emails sent, and the editors' choice of backer
+
 Who may edit what is in access.py; the checks across sessions (clashes, papers placed twice)
-in checks.py. See docs/programme.md.
+in checks.py; the registration backing in backing.py. See docs/programme.md.
 """
 
 from __future__ import annotations
 
 import re
+import uuid
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -54,6 +60,13 @@ class Programme(models.Model):
     last_day = models.DateField()
     chairs = models.ForeignKey("auth.Group", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
                                help_text="The conference chairs: they edit every part and the locations.")
+    author_deadline = models.DateField(
+        "deadline for authors", null=True, blank=True,
+        help_text="By when every paper must be backed by a registration and its presentation confirmed.")
+    request_subject = models.CharField("confirmation email: subject", max_length=300, blank=True)
+    request_body = models.TextField("confirmation email: text", blank=True)
+    warning_subject = models.CharField("warning email: subject", max_length=300, blank=True)
+    warning_body = models.TextField("warning email: text", blank=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -298,3 +311,78 @@ class SessionItem(models.Model):
     @property
     def url(self):
         return self.paper.get_absolute_url() if self.paper else ""
+
+
+# ---------------------------------------------------------------- registrations and backing
+
+class RegistrationType(models.Model):
+    """A registration type from the organisers' export. Only types for the technical/academic
+    conference back papers; new types start as not counting, until someone ticks them."""
+
+    programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="registration_types")
+    name = models.CharField(max_length=200)
+    counts = models.BooleanField("backs papers", default=False,
+                                 help_text="A registration for the technical/academic conference.")
+    decided = models.BooleanField(default=False, editable=False, help_text="Someone has looked at it.")
+
+    class Meta:
+        ordering = ["programme", "name"]
+        unique_together = [("programme", "name")]
+
+    def __str__(self):
+        return self.name
+
+
+class Registration(models.Model):
+    programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="registrations")
+    key = models.CharField(max_length=200, help_text="The registration's ID in the export, or its email address.")
+    reference = models.CharField(max_length=100, blank=True)
+    name = models.CharField(max_length=300)
+    email = models.EmailField(blank=True)
+    type = models.ForeignKey(RegistrationType, null=True, blank=True, on_delete=models.SET_NULL, related_name="registrations")
+    paid = models.BooleanField(default=False)
+    active = models.BooleanField(default=True, help_text="In the latest export.")
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["programme", "name"]
+        unique_together = [("programme", "key")]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def counts(self):
+        return self.active and self.paid and self.type_id is not None and self.type.counts
+
+
+class PaperPresentation(models.Model):
+    """One accepted paper: will it be presented, by whom, and which registered author backs it.
+    The authors answer through a secret link; the editors can choose the backer themselves."""
+
+    class Answer(models.TextChoices):
+        PRESENT = "present", "Will be presented"
+        NOT_PRESENT = "not_present", "Published, not presented"
+        WITHDRAW = "withdraw", "The authors withdraw it"
+
+    submission = models.OneToOneField("production.Submission", on_delete=models.CASCADE, related_name="presentation")
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    recipients = models.JSONField(default=list, blank=True)
+    requested = models.DateTimeField(null=True, blank=True)
+    reminded = models.DateTimeField(null=True, blank=True)
+    warned = models.DateTimeField(null=True, blank=True)
+    answer = models.CharField(max_length=20, choices=Answer.choices, blank=True)
+    presenter = models.CharField(max_length=200, blank=True)
+    backer = models.CharField("backed by", max_length=200, blank=True, help_text="The author who is registered.")
+    backer_email = models.EmailField(blank=True, help_text="The address the backer registered with, if different.")
+    comment = models.TextField(blank=True)
+    responder = models.CharField(max_length=200, blank=True)
+    responded = models.DateTimeField(null=True, blank=True)
+    registration = models.ForeignKey(Registration, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                     help_text="Chosen by the editors: this registration backs the paper.")
+
+    class Meta:
+        ordering = ["submission__conftool_id"]
+
+    def __str__(self):
+        return f"{self.submission.conftool_id}: {self.get_answer_display() or 'no answer'}"

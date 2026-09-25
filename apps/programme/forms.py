@@ -164,3 +164,24 @@ class StartForm(forms.Form):
         value = self.cleaned_data["time_zone"].strip()
         validate_time_zone(value)
         return value
+
+
+class BackingEmailsForm(forms.ModelForm):
+    class Meta:
+        model = Programme
+        fields = ["author_deadline", "request_subject", "request_body", "warning_subject", "warning_body"]
+        widgets = {"author_deadline": DateInput(), "request_body": forms.Textarea(attrs={"rows": 14}),
+                   "warning_body": forms.Textarea(attrs={"rows": 14})}
+
+    def __init__(self, *args, **kwargs):
+        from . import backing
+
+        super().__init__(*args, **kwargs)
+        for name, default in (("request_subject", backing.DEFAULT_REQUEST_SUBJECT),
+                              ("request_body", backing.DEFAULT_REQUEST_BODY),
+                              ("warning_subject", backing.DEFAULT_WARNING_SUBJECT),
+                              ("warning_body", backing.DEFAULT_WARNING_BODY)):
+            if not getattr(self.instance, name):
+                self.initial[name] = default
+            self.fields[name].help_text = ("Blank: the standard text. Filled in when sent: {title}, {paper_id}, "
+                                           "{number}, {deadline}, {link} (the authors' page).")

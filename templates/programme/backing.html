@@ -1,0 +1,95 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}Backing of the papers · {{ programme }}{% endblock %}
+{% block main %}
+{% include "programme/_head.html" with title="Backing of the papers" lead="Every paper must be backed by a paid registration for the technical/academic conference of one of its authors; one registration backs at most two papers. A backed paper is published even if it is not presented." %}
+<p><a class="button button-secondary" href="{% url 'programme:registrations' programme.number %}">Registrations</a>
+   {% if programme.author_deadline %}<span class="muted">Deadline for authors: <strong>{{ programme.author_deadline|date:"j F Y" }}</strong></span>{% endif %}</p>
+{% if no_registrations %}<p class="fail">No registrations are uploaded yet, so no paper is backed.</p>{% endif %}
+
+<p class="small">{% for key, label, n in counts %}<a href="?status={{ key }}">{{ label }}: {{ n }}</a> · {% endfor %}
+  {% for key, label, n in answers %}<a href="?status={{ key }}">{{ label }}: {{ n }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}
+  {% if wanted %} · <a href="?">show all</a>{% endif %}</p>
+
+{% if can_manage %}
+<div class="panel">
+  <h3>Emails to the authors</h3>
+  <p class="small muted">Every author of a paper gets the same secret link to answer: presented or not, by whom, and which author is registered. Every email is recorded on the paper.</p>
+  <form id="send-form">{% csrf_token %}
+    <button class="button button-secondary" type="button" data-action="request" data-confirm="Email the authors of {{ to_request }} paper(s)?"{% if not to_request %} disabled{% endif %}>Ask the authors of {{ to_request }} paper{{ to_request|pluralize }}</button>
+    <button class="button button-secondary" type="button" data-action="reminder" data-confirm="Remind the authors of {{ to_remind }} paper(s)?"{% if not to_remind %} disabled{% endif %}>Remind {{ to_remind }} that have not answered</button>
+    <button class="button button-secondary" type="button" data-action="warning" data-confirm="Warn the authors of {{ to_warn }} paper(s) that no registration backs them?"{% if not to_warn %} disabled{% endif %}>Warn {{ to_warn }} without backing</button>
+    <span class="publish-progress muted" id="send-progress" role="status"></span>
+    <ul class="small" id="send-problems"></ul>
+  </form>
+  <details><summary>Deadline and email texts</summary>
+    <form method="post" class="form-grid">{% csrf_token %}<input type="hidden" name="action" value="emails">
+      {% for field in emails %}<label>{{ field.label }} {{ field }}{% if field.help_text %}<span class="muted small">{{ field.help_text }}</span>{% endif %}{% for e in field.errors %}<span class="fail small">{{ e }}</span>{% endfor %}</label>{% endfor %}
+      <p><button class="button" type="submit">Save</button></p>
+    </form>
+  </details>
+</div>
+{% endif %}
+
+<form method="post" id="withdraw-form">{% csrf_token %}
+<table class="listing prod-table">
+  <thead><tr>{% if can_manage %}<th></th>{% endif %}<th>ID</th><th>Paper</th><th>Backing</th><th>Authors' answer</th><th>Emails</th><th>Session</th></tr></thead>
+  <tbody>{% for row in rows %}{% with s=row.submission p=row.presentation %}
+  <tr{% if row.status != "backed" %} class="differs"{% endif %}>
+    {% if can_manage %}<td>{% if row.status != "backed" or row.answer == "withdraw" %}<input type="checkbox" name="paper" value="{{ s.pk }}" aria-label="Withdraw {{ s.conftool_id }}">{% endif %}</td>{% endif %}
+    <td>{{ s.conftool_id }}</td>
+    <td>{% if s.paper %}{{ s.paper.title }}{% else %}{{ s.title }}{% endif %}<br><span class="muted small">{% for a in row.authors %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></td>
+    <td><span class="badge {% if row.status == 'backed' %}approved{% else %}needs_work{% endif %}">{{ row.label }}</span>
+      {% if row.registration %}<br><span class="small">{{ row.registration.name }}{% if p.registration_id == row.registration.pk %} <span class="muted">(chosen by the editors)</span>{% endif %}</span>{% endif %}
+      {% if row.status == "over_limit" %}<br><span class="small muted">{% for r in row.candidates %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %} already back{{ row.candidates|length|pluralize:"s," }} two papers</span>{% endif %}
+      {% if row.status == "unpaid" %}<br><span class="small muted">{% for r in row.unpaid %}{{ r.name }} ({% if not r.paid %}not paid{% elif not r.active %}not in the latest export{% else %}{{ r.type.name }}{% endif %}){% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}</td>
+    <td>{% if p.answer %}{{ p.get_answer_display }}{% if p.presenter %}<br><span class="small">by {{ p.presenter }}{% if row.presenter_registered is False %} <span class="fail">(not registered)</span>{% endif %}</span>{% endif %}{% if p.backer %}<br><span class="small muted">backer: {{ p.backer }}{% if p.backer_email %} ({{ p.backer_email }}){% endif %}</span>{% endif %}{% if p.comment %}<br><span class="small muted">“{{ p.comment|truncatechars:120 }}”</span>{% endif %}{% else %}<span class="muted">–</span>{% endif %}</td>
+    <td class="small">{% if p.requested %}asked {{ p.requested|date:"j M" }}{% endif %}{% if p.reminded %}<br>reminded {{ p.reminded|date:"j M" }}{% endif %}{% if p.warned %}<br><span class="fail">warned {{ p.warned|date:"j M" }}</span>{% endif %}{% if not p.requested and not p.warned %}–{% endif %}</td>
+    <td class="small">{% for session in row.sessions %}<a href="{% url 'programme:session' programme.number session.pk %}">{{ session.code|default:session.display_title }}</a>{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>
+  </tr>{% endwith %}
+  {% empty %}<tr><td colspan="7">No papers.</td></tr>{% endfor %}</tbody>
+</table>
+{% if can_manage %}
+<input type="hidden" name="action" value="withdraw">
+<p class="prod-filters"><label>Reason <input type="text" name="reason" value="no registration backs the paper" size="40"></label>
+  <button class="button button-secondary no" type="submit" onclick="return confirm('Withdraw the ticked papers from the conference and the proceedings?{% if programme.author_deadline %} The deadline for authors is {{ programme.author_deadline|date:"j F Y" }}.{% endif %}')">Withdraw the ticked papers</button></p>
+{% endif %}
+</form>
+
+{% if can_manage %}
+<h2>Choose the backer</h2>
+<p class="small muted">When the matching cannot find a registration (a different name or email address), choose it here. The chosen registration still backs at most two papers.</p>
+<form method="post" class="prod-filters">{% csrf_token %}<input type="hidden" name="action" value="backer">
+  <label>Paper <select name="paper">{% for row in all_rows %}<option value="{{ row.submission.pk }}">{{ row.submission.conftool_id }}: {{ row.submission.title|truncatechars:60 }}</option>{% endfor %}</select></label>
+  <label>Registration <select name="registration"><option value="">– leave it to the matching –</option>{% for r in registrations %}<option value="{{ r.pk }}">{{ r.name }}{% if r.email %} ({{ r.email }}){% endif %}{% if not r.counts %} – does not count{% endif %}</option>{% endfor %}</select></label>
+  <button class="button button-secondary" type="submit">Save</button>
+</form>
+{% endif %}
+{% endblock %}
+{% block page_js %}
+<script>
+(function () {
+  const form = document.getElementById("send-form");
+  if (!form) return;
+  const token = form.querySelector("[name=csrfmiddlewaretoken]").value;
+  const status = document.getElementById("send-progress"), list = document.getElementById("send-problems");
+  form.querySelectorAll("[data-action]").forEach(button => button.addEventListener("click", async () => {
+    if (!confirm(button.dataset.confirm)) return;
+    form.querySelectorAll("button").forEach(b => b.disabled = true);
+    let after = 0, sent = 0, failed = 0;
+    for (;;) {
+      const body = new URLSearchParams({csrfmiddlewaretoken: token, action: button.dataset.action, after: after});
+      let data;
+      try {
+        const response = await fetch(location.pathname, {method: "POST", body: body, headers: {"X-CSRFToken": token}});
+        data = await response.json();
+      } catch (e) { status.textContent = "The connection failed. Press the button again to go on."; break; }
+      sent += data.sent; failed += data.problems.length; after = data.next;
+      data.problems.forEach(text => { const li = document.createElement("li"); li.textContent = text; list.appendChild(li); });
+      status.textContent = sent + " sent, " + data.left + " to go…";
+      if (data.left === 0) break;
+    }
+    status.textContent = sent + " sent" + (failed ? ", " + failed + " not (listed below)" : "") + ". Reload the page to see the new state.";
+  }));
+})();
+</script>
+{% endblock %}

@@ -48,6 +48,7 @@ urlpatterns = [
     path("", include("apps.archive.urls")),
     path("", include("apps.governance.urls")),
     path("", include("apps.production.urls")),
+    path("", include("apps.programme.urls")),
 ]
 
 if settings.DEBUG:

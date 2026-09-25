@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 
 from apps.archive.management.commands.group_authors import fold
 
-from .models import Session, SessionItem
+from .models import PaperPresentation, Session, SessionItem
 
 ERROR, WARNING, NOTE = "error", "warning", "note"
 
@@ -108,8 +108,18 @@ def paper_problems(programme) -> list[Problem]:
     by_paper = defaultdict(list)
     for item in items:
         by_paper[item.submission_id].append(item)
+    answers = {p.submission_id: p for p in PaperPresentation.objects.filter(submission_id__in=by_paper.keys())}
     for placed in by_paper.values():
         submission = placed[0].submission
+        answer = answers.get(submission.pk)
+        if answer and answer.answer in (PaperPresentation.Answer.NOT_PRESENT, PaperPresentation.Answer.WITHDRAW):
+            found.append(Problem(WARNING, f"The authors of paper {submission.conftool_id} say: "
+                                          f"{answer.get_answer_display().lower()}.", [i.session for i in placed]))
+        elif answer and answer.presenter:
+            for item in placed:
+                if item.presenter and _key(item.presenter) != _key(answer.presenter):
+                    found.append(Problem(WARNING, f"Paper {submission.conftool_id}: the authors say {answer.presenter} "
+                                                  f"presents, the session says {item.presenter}.", [item.session]))
         if len(placed) > 1:
             found.append(Problem(ERROR, f"Paper {submission.conftool_id} is placed {len(placed)} times.",
                                  [i.session for i in placed]))
@@ -123,10 +133,12 @@ def paper_problems(programme) -> list[Problem]:
 
 
 def unplaced(programme):
-    """Papers of the conference (not withdrawn) that are in no session."""
+    """Papers of the conference (not withdrawn) that are in no session, leaving out those whose
+    authors say they will not be presented."""
     from apps.production.models import Submission
 
     return (Submission.objects.filter(production__conference=programme.conference)
             .exclude(status=Submission.Status.WITHDRAWN)
             .exclude(programme_items__session__programme=programme)
+            .exclude(presentation__answer__in=[PaperPresentation.Answer.NOT_PRESENT, PaperPresentation.Answer.WITHDRAW])
             .select_related("track").order_by("track__order", "position", "conftool_id"))

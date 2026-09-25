@@ -2,8 +2,8 @@
 
 The plan for the programme of each IGLC conference: sessions, rooms, chairs and papers, and the
 check that every presented paper is backed by a registration. This is phase 3, second step. Agreed
-with the General Secretary, September 2026. Development step 1 (the back office) is built, with a
-first version of the public programme; the other steps are to come.
+with the General Secretary, September 2026. Development steps 1 (the back office, with a first version
+of the public programme) and 2 (registration backing) are built; the other steps are to come.
 
 Code: `apps/programme`. Back office: Manage → Conference programme (`/manage/programme/`).
 
@@ -23,7 +23,18 @@ Code: `apps/programme`. Back office: Manage → Conference programme (`/manage/p
 5. **Sessions** (each part's editors): time, location, kind, plenary, people, and the papers with
    their presenters; **Papers** adds several unplaced papers to a session at once. The overview
    lists the checks below.
-6. **On the website**: a "Programme" block on a conference page shows the programme once it is not
+6. **Registrations** (organisers, conference chairs, chief editors): upload the export of
+   registrations (Excel or CSV) under Registrations, as often as there is a newer one, and tick the
+   registration types that back papers (the technical/academic conference). New types start
+   unticked and are flagged.
+7. **Backing of the papers** (conference chairs and the chief editors of the proceedings; the
+   organisers can look): set the deadline for authors and, if wanted, edit the email texts; then
+   ask the authors, remind those who have not answered, and warn the papers without backing. The
+   report shows every paper's backing, the authors' answer and where it is in the programme; a
+   backer the matching misses can be chosen by hand; papers still without backing after the
+   deadline are withdrawn from the same page (published papers cannot be withdrawn there).
+   The authors answer on the main site, under /for-authors/confirm-presentation/ and their secret link.
+8. **On the website**: a "Programme" block on a conference page shows the programme once it is not
    hidden (all public parts, or one part, e.g. for an industry day page). New conference sites get it
    on their programme page; on an existing site, add the block to the programme page.
 
@@ -138,8 +149,8 @@ After the conference the frozen programme stays as the record of what was presen
 1. **Back office** (built): the models, locations, parts with their editor groups and public flag,
    sessions (plenary and poster sessions included), papers placed as talks or posters, the checks
    above, and a programme block for the conference pages.
-2. **Registration backing**: registration import, the backing check, the authors' confirmation
-   links, warnings and withdrawal. Needs email on iglc.net.
+2. **Registration backing** (built): registration import, the backing check, the authors'
+   confirmation links, warnings and withdrawal. Sending needs email on iglc.net.
 3. **Public programme**: the pages on the conference site, with a "provisional" banner until the
    programme is final.
 4. **At the venue**: program.iglc.net, now and next, my programme (kept in the visitor's browser,

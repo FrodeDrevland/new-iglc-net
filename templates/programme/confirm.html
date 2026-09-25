@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Presentation and registration{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="kicker">IGLC {{ conference.number }} · for authors</p>
+  <h1>Presentation and registration</h1>
+  <p class="lead">“{{ title }}” (IGLC{{ conference.number }}-{{ submission.conftool_id }})</p>
+</div>
+{% if withdrawn %}
+  <p class="upload-report">This paper is withdrawn. For questions, reply to the email you received.</p>
+{% else %}
+  <p>Every paper must be backed by a registration for the technical/academic conference of one of its authors, and one registration backs at most {{ limit }} papers. A backed paper is published in the proceedings even if it is not presented.{% if programme.author_deadline %} Please answer by <strong>{{ programme.author_deadline|date:"j F Y" }}</strong>.{% endif %}</p>
+  <p class="upload-report">{% if backed %}We have found a registration that backs this paper.{% else %}We have not yet found a registration that backs this paper. If an author has registered (and paid), say who below, with the email address used for the registration if it differs from the one we wrote to.{% endif %}</p>
+  {% if presentation.responded %}<p class="upload-report">{{ presentation.responder }} answered on {{ presentation.responded|date:"j F Y" }}: {{ presentation.get_answer_display|lower }}{% if presentation.presenter %}, presented by {{ presentation.presenter }}{% endif %}{% if presentation.backer %}, backed by {{ presentation.backer }}{% endif %}. You can change the answer below.</p>{% endif %}
+  {% if errors %}<div class="upload-report"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+  <form method="post" class="metadata-check">{% csrf_token %}
+    <fieldset><legend>The paper</legend>
+      {% for value, label in answers %}<p><label><input type="radio" name="answer" value="{{ value }}"{% if data.answer == value %} checked{% endif %}> {{ label }}</label></p>{% endfor %}
+    </fieldset>
+    <p><label>Presented by<br><select name="presenter"><option value="">–</option>{% for a in authors %}<option{% if data.presenter == a %} selected{% endif %}>{{ a }}</option>{% endfor %}</select></label></p>
+    <p><label>Backed by the registration of<br><select name="backer"><option value="">–</option>{% for a in authors %}<option{% if data.backer == a %} selected{% endif %}>{{ a }}</option>{% endfor %}</select></label></p>
+    <p><label>The email address used for that registration, if different<br><input type="email" name="backer_email" value="{{ data.backer_email }}"></label></p>
+    <p><label>Anything else<br><textarea name="comment" rows="3">{{ data.comment }}</textarea></label></p>
+    <p><label>Your name<br><input type="text" name="responder" value="{{ data.responder }}" required></label></p>
+    <p class="small muted">The presenter must also be registered for the technical/academic conference. Your co-authors receive a copy of the answer.</p>
+    <p><button class="button" type="submit">Send</button></p>
+  </form>
+{% endif %}
+{% endblock %}

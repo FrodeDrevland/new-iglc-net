@@ -66,6 +66,7 @@ def overview(request, number):
         "editable_ids": {p.pk for p in editable}, "can_add": bool(editable),
         "can_locations": access.can_edit_locations(request.user, programme),
         "can_settings": access.can_edit_settings(request.user, programme),
+        "can_backing": access.can_see_backing(request.user, programme),
         "frozen": access.is_frozen(programme),
         "problems": checks.problems(programme),
         "unplaced": checks.unplaced(programme).count(),
@@ -193,14 +194,15 @@ def papers(request, number):
                .select_related("location").order_by("date", "start", "code"))
     if request.method == "POST":
         session = get_object_or_404(targets, pk=request.POST.get("session"))
-        chosen = checks.unplaced(programme).filter(pk__in=request.POST.getlist("paper"))
+        chosen = checks.unplaced(programme).filter(pk__in=request.POST.getlist("paper")).select_related("presentation")
         presentation = (SessionItem.Presentation.POSTER if session.kind == Session.Kind.POSTERS
                         else SessionItem.Presentation.TALK)
         last = session.items.count()
         added = 0
         for added, submission in enumerate(chosen, start=1):
+            answer = getattr(submission, "presentation", None)
             SessionItem.objects.create(session=session, submission=submission, order=last + added,
-                                       presentation=presentation)
+                                       presentation=presentation, presenter=answer.presenter if answer else "")
         if added:
             messages.success(request, f"{added} paper{'s' if added != 1 else ''} added to {session}.")
         else:
@@ -211,3 +213,140 @@ def papers(request, number):
                                                                                   "session__code", "order"))
     return render(request, "programme/papers.html", {
         "programme": programme, "unplaced": checks.unplaced(programme), "placed": placed, "targets": targets})
+
+
+# ---------------------------------------------------------------- registrations and backing
+
+@login_required
+def registrations(request, number):
+    """The organisers' export of registrations, and which registration types back papers."""
+    import tempfile
+    from pathlib import Path
+
+    from . import backing
+    from .models import RegistrationType
+
+    programme = _programme(request, number)
+    if not access.can_see_backing(request.user, programme):
+        raise PermissionDenied
+    can_manage = access.can_manage_registrations(request.user, programme)
+    if request.method == "POST":
+        if not can_manage:
+            raise PermissionDenied
+        if request.POST.get("action") == "upload":
+            upload = request.FILES.get("file")
+            if not upload or Path(upload.name).suffix.lower() not in (".xlsx", ".csv"):
+                messages.error(request, "Choose the export of registrations (.xlsx or .csv).")
+            else:
+                with tempfile.TemporaryDirectory() as folder:
+                    path = Path(folder) / f"registrations{Path(upload.name).suffix.lower()}"
+                    path.write_bytes(upload.read())
+                    try:
+                        report = backing.import_registrations(programme, path)
+                    except ValueError as error:
+                        messages.error(request, str(error))
+                    else:
+                        messages.success(request, f"{report['created']} new, {report['updated']} updated, "
+                                                  f"{report['inactive']} no longer in the export.")
+                        if report["no_paid_column"]:
+                            messages.warning(request, "The export has no payment column: every registration in it "
+                                                      "is taken as paid.")
+        elif request.POST.get("action") == "types":
+            ticked = set(request.POST.getlist("counts"))
+            for rtype in programme.registration_types.all():
+                rtype.counts, rtype.decided = str(rtype.pk) in ticked, True
+                rtype.save(update_fields=["counts", "decided"])
+            messages.success(request, "Saved.")
+        return redirect("programme:registrations", number=number)
+    rows = backing.assess(programme)
+    backs = backing.backers(rows)
+    regs = list(programme.registrations.select_related("type"))
+    for r in regs:
+        r.backs = [row.submission.conftool_id for row in backs.get(r.pk, [])]
+    types = list(programme.registration_types.all())
+    return render(request, "programme/registrations.html", {
+        "programme": programme, "registrations": regs, "types": types, "can_manage": can_manage,
+        "undecided": [t for t in types if not t.decided],
+        "counting": sum(1 for r in regs if r.counts)})
+
+
+@login_required
+def backing_report(request, number):
+    """Every paper's backing and the authors' answer; emails, backers and withdrawals."""
+    from django.http import JsonResponse
+
+    from . import backing
+    from .forms import BackingEmailsForm
+    from .models import PaperPresentation
+
+    programme = _programme(request, number)
+    if not access.can_see_backing(request.user, programme):
+        raise PermissionDenied
+    can_manage = access.can_manage_backing(request.user, programme)
+    action = request.POST.get("action") if request.method == "POST" else None
+    if action and not can_manage:
+        raise PermissionDenied
+    if action in ("request", "reminder", "warning"):
+        after = request.POST.get("after", "0")
+        return JsonResponse(backing.send_batch(programme, action, request.user, n=10,
+                                               after=int(after) if after.isdigit() else 0))
+    emails = BackingEmailsForm(request.POST if action == "emails" else None, instance=programme)
+    if action == "emails":
+        if emails.is_valid():
+            emails.save()
+            messages.success(request, "Saved.")
+            return redirect("programme:backing", number=number)
+    elif action == "backer":
+        submission = _submissions(programme).filter(pk=request.POST.get("paper")).first()
+        registration = programme.registrations.filter(pk=request.POST.get("registration")).first()
+        if submission is None:
+            messages.error(request, "Choose the paper.")
+        else:
+            presentation, _ = PaperPresentation.objects.get_or_create(submission=submission)
+            presentation.registration = registration
+            presentation.save(update_fields=["registration"])
+            from apps.production.models import Event
+
+            Event.objects.create(submission=submission, user=request.user,
+                                 action=f"backer chosen by the editors: {registration}" if registration
+                                 else "the editors' choice of backer removed")
+            messages.success(request, f"Paper {submission.conftool_id}: "
+                                      + (f"backed by {registration}." if registration else "backer left to the matching."))
+        return redirect("programme:backing", number=number)
+    elif action == "withdraw":
+        done, refused = [], []
+        for submission in _submissions(programme).filter(pk__in=request.POST.getlist("paper")):
+            try:
+                backing.withdraw(submission, request.user, request.POST.get("reason") or "no registration backs the paper")
+                done.append(str(submission.conftool_id))
+            except ValueError as error:
+                refused.append(str(error))
+        if done:
+            messages.success(request, f"Withdrawn: {', '.join(done)}.")
+        for text in refused:
+            messages.error(request, text)
+        return redirect("programme:backing", number=number)
+    rows = backing.assess(programme)
+    placed = {}
+    for item in SessionItem.objects.filter(session__programme=programme, submission__isnull=False).select_related("session"):
+        placed.setdefault(item.submission_id, []).append(item.session)
+    for row in rows:
+        row.sessions = placed.get(row.submission.pk, [])
+    wanted = request.GET.get("status", "")
+    shown = [r for r in rows if not wanted or r.status == wanted or r.answer == wanted
+             or (wanted == "unanswered" and not r.answer)]
+    from collections import Counter
+
+    counts = Counter(r.status for r in rows)
+    answers = Counter(r.answer or "unanswered" for r in rows)
+    return render(request, "programme/backing.html", {
+        "programme": programme, "rows": shown, "all_rows": rows, "can_manage": can_manage, "emails": emails,
+        "wanted": wanted, "counts": [(key, label, counts.get(key, 0)) for key, label in backing.Backing.LABELS.items()],
+        "answers": [(key, label, answers.get(key, 0)) for key, label in
+                    [("unanswered", "No answer yet")] + list(PaperPresentation.Answer.choices)],
+        "registrations": programme.registrations.filter(active=True).select_related("type"),
+        "to_request": len(backing.to_request(programme)), "to_remind": len(backing.to_remind(programme)),
+        "to_warn": len(backing.to_warn(programme)),
+        "no_registrations": not programme.registrations.exists(),
+        "defaults": {"request_subject": backing.DEFAULT_REQUEST_SUBJECT, "warning_subject": backing.DEFAULT_WARNING_SUBJECT},
+    })
