@@ -2,21 +2,25 @@
 {% block pagetitle %}Branding{% endblock %}
 {% block extra_js %}{{ block.super }}{{ form.media.js }}{% endblock %}
 {% block heading %}Branding{% endblock %}
-{% block lead %}<p class="lead">The website keeps the IGLC's layout, so that it works on phones and for screen readers; these set its logo, photograph, colours and heading font.</p>{% endblock %}
+{% block lead %}<p class="lead">The website keeps the IGLC's layout, so that it works on phones and for screen readers; these set its logos, photograph, colours and heading font. Each logo is shown on a known background: choose a version of your logo that reads well there.</p>{% endblock %}
 {% block content_main %}
 {{ form.media.css }}
 {% if frozen %}<p class="upload-report">The website is frozen: only the IGLC can change it.</p>{% endif %}
 <div class="conf-branding">
   <form method="post" class="conf-branding-form">{% csrf_token %}
     {% if form.non_field_errors %}<div class="upload-report">{{ form.non_field_errors }}</div>{% endif %}
-    {% for field in form %}
+    {% for title, fields in form.sections %}
+    <h2>{{ title }}</h2>
+    {% for field in fields %}
       <div class="conf-field">
-        <label for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
-        {{ field }}
+        {% if field.field.widget.input_type == "checkbox" %}<label for="{{ field.id_for_label }}">{{ field }} <strong>{{ field.label }}</strong></label>
+        {% else %}<label for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
+        {{ field }}{% endif %}
         {% if field.help_text %}<p class="small muted">{{ field.help_text }}</p>{% endif %}
-        {% if field.name == "hero_image" and hero_note %}<p class="small fail">{{ hero_note }} Use Preview to see how it looks.</p>{% endif %}
+        {% for key, note in notes.items %}{% if key == field.name and note %}<p class="small fail">{{ note }} Use Preview to see how it looks.</p>{% endif %}{% endfor %}
         {% for e in field.errors %}<p class="fail small">{{ e }}</p>{% endfor %}
       </div>
+    {% endfor %}
     {% endfor %}
     {% if other_changes %}<p class="small">The home page also has other changes that are not yet published; "Save and publish" publishes them too.</p>{% endif %}
     {% if not frozen %}<p class="conf-actions"><button class="button" type="submit" name="publish" value="1">Save and publish</button>

@@ -16,7 +16,8 @@ from django.urls import path
 from apps.archive.models import Conference
 
 from . import dashboard, roles
-from .models import HEADING_FONTS, HERO_HELP, HERO_SIZE, ConferenceHomePage
+from .models import (DARKEN_HELP, HEADING_FONTS, HERO_HELP, HERO_LOGO_HELP, HERO_SIZE, ICON_HELP,
+                     LIGHT_LOGO_HELP, LOGO_HELP, ConferenceHomePage)
 
 app_name = "conference"
 
@@ -73,26 +74,54 @@ def people(request, number):
 
 
 class BrandingForm(forms.Form):
-    logo = forms.ModelChoiceField(queryset=None, required=False,
-                                  help_text="The conference logo, shown in the header (about 60 pixels high).")
     hero_image = forms.ModelChoiceField(queryset=None, required=False, label="Photograph", help_text=HERO_HELP)
+    hero_darken = forms.BooleanField(required=False, label="Darken the photograph", help_text=DARKEN_HELP)
+    hero_logo = forms.ModelChoiceField(queryset=None, required=False, label="Logo on the photograph",
+                                       help_text=HERO_LOGO_HELP)
+    logo = forms.ModelChoiceField(queryset=None, required=False, label="Logo in the header", help_text=LOGO_HELP)
     primary_colour = forms.CharField(max_length=7, widget=forms.TextInput(attrs={"type": "color"}),
                                      help_text="Header, links and headings. White text must be readable on it.")
     accent_colour = forms.CharField(max_length=7, widget=forms.TextInput(attrs={"type": "color"}),
                                     help_text="Buttons and highlights.")
     heading_font = forms.ChoiceField(choices=[(key, value[1]) for key, value in HEADING_FONTS.items()])
+    logo_on_light = forms.ModelChoiceField(queryset=None, required=False, label="Logo on light backgrounds",
+                                           help_text=LIGHT_LOGO_HELP)
+    icon = forms.ModelChoiceField(queryset=None, required=False, label="Icon", help_text=ICON_HELP)
+
+    IMAGES = ("hero_image", "hero_logo", "logo", "logo_on_light", "icon")
+    SECTIONS = [
+        ("The top of the home page", ("hero_image", "hero_darken", "hero_logo")),
+        ("The header and colours", ("logo", "primary_colour", "accent_colour", "heading_font")),
+        ("Elsewhere", ("logo_on_light", "icon")),
+    ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from wagtail.images import get_image_model
         from wagtail.images.widgets import AdminImageChooser
 
-        for name in ("logo", "hero_image"):
+        for name in self.IMAGES:
             self.fields[name].queryset = get_image_model().objects.all()
             self.fields[name].widget = AdminImageChooser()
 
+    def sections(self):
+        return [(title, [self[name] for name in names]) for title, names in self.SECTIONS]
 
-BRANDING_FIELDS = ("logo", "hero_image", "primary_colour", "accent_colour", "heading_font")
+
+BRANDING_FIELDS = ("hero_image", "hero_darken", "hero_logo", "logo", "primary_colour", "accent_colour",
+                   "heading_font", "logo_on_light", "icon")
+
+
+def icon_note(image) -> str:
+    if image is None or not image.width or not image.height:
+        return ""
+    notes = []
+    if image.width != image.height:
+        notes.append(f"The chosen icon is {image.width} × {image.height} pixels, not square: it will be cut to a square "
+                     f"in the middle.")
+    if min(image.width, image.height) < 512:
+        notes.append("It is smaller than 512 × 512 pixels and may look blurred on phones.")
+    return " ".join(notes)
 
 
 def hero_note(image) -> str:
@@ -146,7 +175,8 @@ def branding(request, number):
                                           "it on the website.")
             return redirect("conference:branding", number)
     context.update({"tab": "branding", "form": form, "other_changes": other_changes, "frozen": frozen,
-                    "draft": draft, "hero_note": hero_note(draft.hero_image)})
+                    "draft": draft, "notes": {"hero_image": hero_note(draft.hero_image),
+                                              "icon": icon_note(draft.icon)}})
     return render(request, "conferences/admin/branding.html", context)
 
 

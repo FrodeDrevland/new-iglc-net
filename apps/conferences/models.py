@@ -36,6 +36,18 @@ from apps.pages.models import RICH_TEXT_FEATURES
 
 IMAGE = get_image_model_string()
 HERO_SIZE = (1600, 600)  # the home page's photograph: shown 8:3 on wide screens (see conference.css)
+LOGO_HELP = ("Shown in the header of every page, on the conference's main colour, about 60 pixels high, "
+             "with the place and dates next to it. Choose a version of the logo that reads well on that colour; a "
+             "wide one suits the header best.")
+HERO_LOGO_HELP = ("Shown large at the top of the home page, on the photograph, instead of the title. Choose a "
+                  "version of the logo that reads well on your photograph. Without it, the title is shown.")
+LIGHT_LOGO_HELP = ("Used where the conference is shown on a white or light background: its page in the IGLC's "
+                   "proceedings archive, and link previews when the photograph is not set. Choose a version of "
+                   "the logo that reads well on white.")
+ICON_HELP = ("A square image, at least 512 × 512 pixels: the browser tab and the icon when someone adds the website "
+             "to a phone's home screen. Without it, the IGLC symbol is used.")
+DARKEN_HELP = ("A dark shade over the left part of the photograph, so that white text and logos stay readable. "
+               "Turn it off if your photograph is dark enough, or if your logo reads better without it.")
 HERO_HELP = ("A wide photograph for the top of the home page: 1600 × 600 pixels, or larger in the same shape "
              "(8:3, e.g. 2400 × 900). The title sits on its left side over a darkened band, and phones show "
              "only the middle, so keep what matters in the centre; the picture's focal point (under Images) "
@@ -229,8 +241,17 @@ class ConferenceHomePage(ConferencePageMixin, Page):
                                  "and the site says that the conference has taken place.")
     tagline = models.CharField(max_length=200, blank=True, help_text="The conference theme, if there is one.")
     intro = RichTextField(features=["bold", "italic", "link"], blank=True)
+    # The logos: each is shown on a known background, and the organisers choose a version of their logo
+    # that reads well there (the platform says where, not which colours).
     logo = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
-                             help_text="The conference logo, shown in the header (about 60 pixels high).")
+                             verbose_name="logo in the header", help_text=LOGO_HELP)
+    hero_logo = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                  verbose_name="logo on the photograph", help_text=HERO_LOGO_HELP)
+    logo_on_light = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                                      verbose_name="logo on light backgrounds", help_text=LIGHT_LOGO_HELP)
+    icon = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                             help_text=ICON_HELP)
+    hero_darken = models.BooleanField("darken the photograph", default=True, help_text=DARKEN_HELP)
     hero_image = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
                                    help_text=HERO_HELP)
     primary_colour = models.CharField(

@@ -7,7 +7,13 @@
   <meta name="description" content="{% block description %}{{ page.search_description|default:page.intro|default:page.title|striptags }}{% endblock %}">
   {% block canonical %}{% if page.full_url %}<link rel="canonical" href="{{ page.full_url }}">{% endif %}{% endblock %}
   {% block meta %}{% endblock %}
-  <link rel="icon" href="{% static 'img/iglc-logo-symbol.svg' %}" type="image/svg+xml">
+  {% if home.icon %}{% image home.icon fill-64x64 format-png as icon_small %}{% image home.icon fill-180x180 format-png as icon_large %}
+  <link rel="icon" href="{{ icon_small.url }}" type="image/png" sizes="64x64">
+  <link rel="apple-touch-icon" href="{{ icon_large.url }}">
+  {% else %}<link rel="icon" href="{% static 'img/iglc-logo-symbol.svg' %}" type="image/svg+xml">{% endif %}
+  {% if home %}{% if home.hero_image %}{% image home.hero_image fill-1200x630 as share %}{% elif home.logo_on_light %}{% image home.logo_on_light max-1200x630 as share %}{% endif %}
+  {% if share %}<meta property="og:image" content="{% if share.full_url %}{{ share.full_url }}{% else %}{{ share.url }}{% endif %}">{% endif %}
+  <meta property="og:title" content="{{ page.seo_title|default:page.title }}">{% endif %}
   <link rel="preload" href="{% static 'fonts/source-sans-3-var.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
   <link rel="stylesheet" href="{% static 'css/conference.css' %}">
@@ -22,9 +28,9 @@
   <header class="conf-header">
     <div class="wrap conf-header-top">
       <a class="conf-brand" href="{% pageurl home %}">
-        {% if home.logo %}{% image home.logo height-60 alt=home.short_name %}{% else %}<img class="conf-brand-iglc" src="{% static 'img/iglc-logo-symbol-white.svg' %}" alt="" width="43" height="48">{% endif %}
+        {% if home.logo %}{% image home.logo height-60 alt=home.short_name class="conf-brand-logo" %}{% else %}<img class="conf-brand-iglc" src="{% static 'img/iglc-logo-symbol-white.svg' %}" alt="" width="43" height="48">{% endif %}
         <span class="conf-brand-text">
-          <span class="conf-name">{{ home.short_name }}</span>
+          {% if not home.logo %}<span class="conf-name">{{ home.short_name }}</span>{% endif %}
           <span class="conf-where">{% if conference.city %}{{ conference.location }}{% endif %}{% if conference.start_date %} &middot; {% date_range conference.start_date conference.end_date %}{% endif %}</span>
         </span>
       </a>

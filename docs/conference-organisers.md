@@ -90,17 +90,34 @@ publish** shows them at once.
 
 ## Branding
 
-**Branding** in the menu sets the conference logo (about 60 pixels high in the header), a wide
-photograph for the top of the home page, two colours and the heading font, with a preview of the
-colours. The layout stays the IGLC's, so the website works on phones and for screen readers. A main
-colour too light for white text is refused, with the reason. Without a conference logo, the header
-shows the IGLC symbol in white.
+**Branding** in the menu sets how the website looks. The layout stays the IGLC's, so the website
+works on phones and for screen readers. Each logo is shown on a known background; choose the
+version of your logo that reads well there (a white one, a colour one, with or without the name).
 
-The photograph should be **1600 × 600 pixels**, or larger in the same shape (8:3, for example
-2400 × 900). On wide screens it is shown whole; the title sits on its left side over a darkened
-band, and phones show only the middle, so keep what matters in the centre. The picture's focal
-point (open it under Images) decides what stays in view when it is cut. If the chosen photograph
-has another shape or is too small, Branding says how much will be cut off.
+**The top of the home page**
+
+- **Photograph**: **1600 × 600 pixels**, or larger in the same shape (8:3, for example 2400 × 900).
+  On wide screens it is shown whole; phones show only the middle, so keep what matters in the
+  centre. The picture's focal point (open it under Images) decides what stays in view when it is
+  cut. If the chosen photograph has another shape or is too small, Branding says how much will be
+  cut off.
+- **Darken the photograph**: a dark shade over its left part, so that white text and logos stay
+  readable. Turn it off if the photograph is dark enough, or if your logo reads better without it.
+- **Logo on the photograph**: shown large on the photograph instead of the title.
+
+**The header and colours**
+
+- **Logo in the header**: on the conference's main colour, about 60 pixels high, with the place and
+  dates next to it (a wide version suits best). Without it, the header shows the IGLC symbol in
+  white and the conference's name.
+- Two colours and the heading font. A main colour too light for white text is refused, with the
+  reason.
+
+**Elsewhere**
+
+- **Logo on light backgrounds**: the conference's page in the IGLC's proceedings archive, and link
+  previews when there is no photograph.
+- **Icon**: square, at least 512 × 512 pixels, for the browser tab and a phone's home screen.
 
 **Save draft** keeps the change for later; **Preview** opens the home page with the new settings in
 a new tab without saving them; **Save and publish** shows it at once (together with any other

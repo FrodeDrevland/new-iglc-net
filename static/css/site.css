@@ -173,6 +173,7 @@ aside .facts dt { font-size: .82rem; text-transform: uppercase; letter-spacing: 
 /* Conference page */
 .conf-head { background: var(--soft); border-bottom: 1px solid var(--line); padding: 2rem 0 1.5rem; margin-bottom: 1.5rem; }
 .conf-head .facts { max-width: 40rem; }
+.conf-head-logo { display: block; max-height: 110px; width: auto; margin: .25rem 0 .75rem; }  /* the conference's logo on light backgrounds */
 .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
 
 /* Content pages */

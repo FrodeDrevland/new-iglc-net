@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load wagtailimages_tags %}
 {% block title %}IGLC {{ conference.number }}{% endblock %}
 {% block admin_edit %}<a class="admin-edit" href="{% url 'conference:overview' conference.number %}">Manage this conference</a>{% endblock %}
 {% block hero %}
@@ -6,6 +7,7 @@
   <div class="wrap">
     <p class="crumbs"><a href="{% url 'archive:conference_list' %}">Proceedings</a></p>
     <p class="kicker">{{ conference.year }}{% if conference.location %} &middot; {{ conference.location }}{% endif %}</p>
+    {% with site=conference.site_home %}{% if site.live and site.logo_on_light %}{% image site.logo_on_light max-480x160 alt="" class="conf-head-logo" %}{% endif %}{% endwith %}
     <h1>IGLC {{ conference.number }}</h1>
     {% if conference.proceedings_title %}<p class="lead">{{ conference.proceedings_title }}</p>{% endif %}
     <dl class="facts">

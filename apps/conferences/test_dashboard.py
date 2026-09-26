@@ -368,6 +368,42 @@ class DashboardTests(TestCase):
         sponsors = home.get_children().get(slug="sponsors")
         self.assertIn(f"/manage/pages/{sponsors.pk}/view_draft/", page)
 
+    def test_logos(self):
+        from wagtail.images import get_image_model
+        from wagtail.images.tests.utils import get_test_image_file
+
+        Image = get_image_model()
+        wide = Image.objects.create(title="Header logo", file=get_test_image_file(size=(600, 160)))
+        stacked = Image.objects.create(title="Stacked logo", file=get_test_image_file(size=(500, 400)))
+        light = Image.objects.create(title="Colour logo", file=get_test_image_file(size=(600, 160)))
+        icon = Image.objects.create(title="Icon", file=get_test_image_file(size=(300, 200)))
+        photo = Image.objects.create(title="Photo", file=get_test_image_file(size=(1600, 600)))
+        home = seed(self.conference, publish=True)
+        site = self.client.get("/2099/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("iglc-logo-symbol-white.svg", site)
+        self.assertIn('class="conf-name"', site)
+        self.assertIn("<h1>", site)
+        page = self.client.get(self.url() + "branding/").content.decode()
+        for label in ("Logo on the photograph", "Logo in the header", "Logo on light backgrounds", "Icon",
+                      "Darken the photograph"):
+            self.assertIn(label, page)
+        data = {"hero_image": photo.pk, "hero_logo": stacked.pk, "logo": wide.pk, "logo_on_light": light.pk,
+                "icon": icon.pk, "primary_colour": "#365a91", "accent_colour": "#d4772a", "heading_font": "serif",
+                "publish": "1"}  # "darken" left unticked
+        self.client.post(self.url() + "branding/", data)
+        self.assertIn("not square", self.client.get(self.url() + "branding/").content.decode())
+        site = self.client.get("/2099/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("conf-hero-logo", site)
+        self.assertIn('<h1 class="visually-hidden">', site)
+        self.assertNotIn("darkened", site)
+        self.assertNotIn('class="conf-name"', site)  # the header logo carries the name
+        self.assertIn('rel="apple-touch-icon"', site)
+        self.assertIn('property="og:image"', site)
+        self.conference.is_published = True
+        self.conference.save()
+        archive = self.client.get(f"/papers/conference/{self.conference.pk}").content.decode()
+        self.assertIn("conf-head-logo", archive)
+
     def test_scientific_chairs_edit_the_proceedings(self):
         from apps.production.access import productions_for, role
         from apps.production.models import Production
