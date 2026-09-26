@@ -28,6 +28,12 @@ class ProgrammeTestCase(TestCase):
         self.academic = self.programme.parts.get(kind=Part.Kind.ACADEMIC)
         self.industry = self.programme.parts.get(kind=Part.Kind.INDUSTRY)
         self.phd = self.programme.parts.get(kind=Part.Kind.PHD)
+        # Tuesday holds three parts side by side, so that the tests can mix them on one day.
+        from .models import ProgrammeDay
+
+        ProgrammeDay.objects.create(programme=self.programme, date=date(2027, 7, 20)).parts.set(
+            [self.academic, self.industry, self.phd])
+        ProgrammeDay.objects.create(programme=self.programme, date=date(2027, 7, 17)).parts.set([self.phd])
         self.room_a = Location.objects.create(programme=self.programme, name="Room A", map_url="https://use.mazemap.com/x")
         self.room_b = Location.objects.create(programme=self.programme, name="Room B")
         production = Production.objects.create(conference=self.conference)

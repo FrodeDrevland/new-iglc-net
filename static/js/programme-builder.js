@@ -17,6 +17,10 @@
   const part = id => S.parts.find(p => p.id === id) || {};
   const room = id => S.rooms.find(r => r.id === id);
   const editableParts = () => S.parts.filter(p => p.editable);
+  // A day belongs to a part (the industry day, the academic conference ...), sometimes two side by side.
+  const dayParts = () => S.parts.filter(p => S.day_parts.includes(p.id));
+  const editableDayParts = () => dayParts().filter(p => p.editable);
+  const KIND_FOR_PART = {industry: "industry", workshop: "workshop", phd: "other", academic: "papers", other: "other"};
 
   function say(text, bad) { statusBox.textContent = text || ""; statusBox.classList.toggle("bad", !!bad); }
 
@@ -56,10 +60,20 @@
   // ------------------------------------------------------------ days
   function renderDays() {
     $("b-days").innerHTML = S.days.map(d =>
-      `<button type="button" class="b-day${d.date === S.day ? " current" : ""}" data-day="${d.date}"${d.date === S.day ? ' aria-current="date"' : ""}>${esc(d.label)}${d.count ? ` <span class="b-count">${d.count}</span>` : ""}</button>`).join("");
+      `<button type="button" class="b-day${d.date === S.day ? " current" : ""}" data-day="${d.date}"${d.date === S.day ? ' aria-current="date"' : ""}>${esc(d.label)}${d.count ? ` <span class="b-count">${d.count}</span>` : ""}
+        <span class="b-day-parts">${d.parts.map(id => { const p = part(id); return `<span class="b-day-part" style="--part:${esc(p.colour)}">${esc(p.name)}</span>`; }).join("")}</span></button>`).join("");
+    const box = $("b-dayparts");
+    box.innerHTML = S.can_days
+      ? `<span class="b-dayparts-label">This day belongs to</span> ${S.parts.map(p => `<label class="b-daypart" style="--part:${esc(p.colour)}"><input type="checkbox" value="${p.id}"${S.day_parts.includes(p.id) ? " checked" : ""}> ${esc(p.name)}</label>`).join("")}`
+      : `<span class="b-dayparts-label">This day belongs to</span> ${dayParts().map(p => `<strong class="b-daypart" style="--part:${esc(p.colour)}">${esc(p.name)}</strong>`).join(" and ")}${editableDayParts().length ? "" : " – you can look, but not change it"}`;
     const copyTo = $("b-copy-to");
     if (copyTo) copyTo.innerHTML = S.days.filter(d => d.date !== S.day).map(d => `<option value="${d.date}">${esc(d.label)}</option>`).join("");
   }
+  $("b-dayparts").addEventListener("change", e => {
+    if (!e.target.matches("input[type=checkbox]")) return;
+    const parts = [...$("b-dayparts").querySelectorAll("input:checked")].map(i => Number(i.value));
+    send({action: "day_parts", parts});
+  });
   $("b-days").addEventListener("click", e => { const b = e.target.closest("[data-day]"); if (b) { open = null; load(b.dataset.day); } });
 
   // ------------------------------------------------------------ the grid
@@ -130,7 +144,7 @@
       gesture = {kind: e.target.closest(".bb-resize") ? "resize" : "move", s, block, x0: e.clientX, y0: e.clientY, moved: false,
                  top0: parseFloat(block.style.top), height0: parseFloat(block.style.height), box};
       if (!s.editable) gesture.kind = "view";
-    } else if (e.target.closest(".bg-col") && editableParts().length) {
+    } else if (e.target.closest(".bg-col") && editableDayParts().length) {
       const col = e.target.closest(".bg-col");
       const t = at(e.clientY);
       const ghost = document.createElement("div");
@@ -200,13 +214,13 @@
   function openCreate(roomId, from, to) {
     const f = createForm.elements;
     f.kind.innerHTML = S.kinds.map(([k, label]) => `<option value="${k}">${esc(label)}</option>`).join("");
-    const parts = editableParts();
+    const parts = editableDayParts();
     f.part.innerHTML = parts.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
-    const main = parts.find(p => p.kind === "academic");
-    if (main) f.part.value = main.id;
+    createForm.querySelector("[data-part-choice]").hidden = parts.length < 2;
     f.location.innerHTML = '<option value="">no room (a break)</option>' + S.rooms.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join("");
     f.location.value = roomId;
-    f.start.value = from; f.end.value = to; f.title.value = ""; f.kind.value = "papers";
+    f.start.value = from; f.end.value = to; f.title.value = "";
+    f.kind.value = KIND_FOR_PART[(parts[0] || {}).kind] || "papers";
     createForm.querySelector("[data-room-name]").textContent = (room(roomId) || {}).name || "";
     createForm.dataset.room = roomId;
     f.mode.value = "room";
@@ -326,7 +340,7 @@
     panel.hidden = false;
     const ro = s.editable ? "" : " disabled";
     const options = (list, value) => list.map(([k, label]) => `<option value="${k}"${String(k) === String(value) ? " selected" : ""}>${esc(label)}</option>`).join("");
-    const parts = s.editable ? editableParts() : S.parts;
+    const parts = s.editable ? editableDayParts() : dayParts();
     panel.innerHTML = `
       <form class="bpanel" data-panel="${s.id}">
         <p class="bpanel-top"><button type="button" class="button button-small button-secondary" data-close>Back to the list</button></p>
@@ -337,7 +351,7 @@
           <label class="wide">Title <input name="title" value="${esc(s.title)}"${ro}></label>
           <label>Code <input name="code" value="${esc(s.code)}" size="6"${ro}></label>
           <label>Kind <select name="kind"${ro}>${options(S.kinds, s.kind)}</select></label>
-          <label>Part <select name="part"${ro}>${options(parts.map(p => [p.id, p.name]), s.part)}</select></label>
+          <label${parts.length < 2 ? " hidden" : ""}>Part <select name="part"${ro}>${options(parts.map(p => [p.id, p.name]), s.part)}</select></label>
           <label>Day <select name="date"${ro}>${options(S.days.map(d => [d.date, d.label]), S.day)}</select></label>
           <label>From <input type="time" step="900" name="start" value="${s.start}"${ro}></label>
           <label>To <input type="time" step="900" name="end" value="${s.end}"${ro}></label>

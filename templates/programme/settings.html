@@ -18,6 +18,13 @@
       <td class="small muted">{{ f.instance.editors.name|default:"made when saved" }}</td>
       <td>{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td></tr>{% endfor %}</tbody>
   </table>
+  <h2>Days</h2>
+  <p class="small muted">What each day belongs to. A day's sessions belong to its part and are edited by that part's editors; a day can hold two parts side by side. Days not set belong to the academic conference.</p>
+  <table class="listing prod-table">
+    <thead><tr><th>Day</th>{% for part in all_parts %}<th><span class="part-swatch" style="background: {{ part.colour }}"></span> {{ part.name }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for day, chosen in days %}<tr><td>{{ day|date:"l j F" }}</td>
+      {% for part in all_parts %}<td><input type="checkbox" name="day-{{ day|date:'Y-m-d' }}" value="{{ part.pk }}"{% if part.pk in chosen %} checked{% endif %} aria-label="{{ day|date:'j F' }}: {{ part.name }}"></td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table>
   <p><button class="button" type="submit">Save</button></p>
 </form>
 {% endblock %}

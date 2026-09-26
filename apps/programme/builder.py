@@ -111,7 +111,10 @@ def state(programme, user, day: Date) -> dict:
     return {
         "day": day.isoformat(),
         "days": [{"date": d.isoformat(), "label": f"{d:%a} {d.day} {d:%b}",
-                  "count": programme.sessions.filter(date=d).count()} for d in days_of(programme)],
+                  "count": programme.sessions.filter(date=d).count(),
+                  "parts": [p.pk for p in programme.day_parts(d)]} for d in days_of(programme)],
+        "day_parts": [p.pk for p in programme.day_parts(day)],
+        "can_days": access.can_edit_settings(user, programme),
         "range": {"start": f"{max(first - 1, 0):02d}:00", "end": f"{min(last + 1, 24):02d}:00"},
         "rooms": [{"id": loc.pk, "name": loc.name} for loc in programme.locations.all()],
         "can_rooms": access.can_edit_locations(user, programme),
@@ -170,8 +173,26 @@ def _location(programme, value):
     return location
 
 
+def _day_part(user, programme, day, wanted=None) -> Part:
+    """The part a session on this day belongs to: the day's own, or the one chosen among the day's
+    parts when it has several."""
+    parts = programme.day_parts(day)
+    if wanted not in (None, ""):
+        part = next((p for p in parts if str(p.pk) == str(wanted)), None)
+        if part is None:
+            raise BuildError(f"{day:%A %d %B} belongs to {' and '.join(p.name for p in parts)}.")
+        if not access.can_edit_part(user, part):
+            raise BuildError(f"You do not edit the {part.name.lower()}.")
+    else:
+        part = next((p for p in parts if access.can_edit_part(user, p)), parts[0] if parts else None)
+    if part is None or not access.can_edit_part(user, part):
+        raise BuildError(f"{day:%A %d %B} belongs to {' and '.join(p.name for p in parts)}, "
+                         f"which you do not edit.")
+    return part
+
+
 def create(programme, user, day, data) -> list[Session]:
-    part = _editable_part(user, programme, data.get("part"))
+    part = _day_part(user, programme, day, data.get("part"))
     kind = data.get("kind") or Session.Kind.PAPERS
     if kind not in Session.Kind.values:
         raise BuildError("Unknown kind of session.")
@@ -220,7 +241,9 @@ def update(programme, user, data):
     if "track" in data:
         session.track = programme.conference.tracks.filter(pk=data["track"]).first() if data["track"] else None
     if "part" in data and str(data["part"]) != str(session.part_id):
-        session.part = _editable_part(user, programme, data["part"])
+        session.part = _day_part(user, programme, session.date, data["part"])
+    elif session.part not in programme.day_parts(session.date):  # moved to a day of another part
+        session.part = _day_part(user, programme, session.date)
     if (session.cancelled, session.change_note) != before and (session.cancelled or session.change_note):
         session.changed = timezone.now()
     _save(session)
@@ -316,15 +339,43 @@ def copy_day(programme, user, source: Date, target: Date, replace: bool = False)
     parts = access.editable_parts(user, programme)
     if not (programme.first_day <= target <= programme.last_day):
         raise BuildError("That day is outside the programme's days.")
+    from .models import ProgrammeDay
+
+    target_parts = programme.day_parts(target)
+    if not programme.days_set.filter(date=target).exists() and not programme.sessions.filter(date=target).exists():
+        # an empty day that was never set takes the parts of the day it is copied from
+        target_parts = programme.day_parts(source)
+        ProgrammeDay.objects.get_or_create(programme=programme, date=target)[0].parts.set(target_parts)
     if replace:
         programme.sessions.filter(date=target, part__in=parts).delete()
     count = 0
     for s in programme.sessions.filter(date=source, part__in=parts):
-        copy = Session(programme=programme, part=s.part, date=target, start=s.start, end=s.end, location=s.location,
+        part = s.part if s.part in target_parts else next((p for p in target_parts if p in parts), None)
+        if part is None:
+            raise BuildError(f"{target:%A %d %B} belongs to {' and '.join(p.name for p in target_parts)}, "
+                             f"which you do not edit.")
+        copy = Session(programme=programme, part=part, date=target, start=s.start, end=s.end, location=s.location,
                        kind=s.kind, title=s.title, plenary=s.plenary, track=s.track)
         _save(copy)
         count += 1
     return count
+
+
+def set_day_parts(programme, user, day, part_ids) -> str:
+    """What the day belongs to (the conference chairs). A part that still has sessions on the day
+    cannot be taken off it."""
+    from .models import ProgrammeDay
+
+    if not access.can_edit_settings(user, programme):
+        raise BuildError("Only the conference chairs decide what a day belongs to.")
+    parts = list(programme.parts.filter(pk__in=[p for p in part_ids or [] if str(p).isdigit()]))
+    if not parts:
+        raise BuildError("A day belongs to at least one part.")
+    busy = [p for p in programme.parts.filter(sessions__date=day).distinct() if p not in parts]
+    if busy:
+        raise BuildError(f"The {busy[0].name.lower()} still has sessions on this day: move or delete them first.")
+    ProgrammeDay.objects.get_or_create(programme=programme, date=day)[0].parts.set(parts)
+    return f"{day:%A %d %B}: {' and '.join(p.name for p in parts)}."
 
 
 def renumber(programme, user) -> int:
@@ -378,6 +429,8 @@ def apply(programme, user, day: Date, data: dict) -> dict:
     elif action == "copy_day":
         count = copy_day(programme, user, day, _date(data.get("to")), bool(data.get("replace")))
         note = f"{count} session{'s' if count != 1 else ''} copied to {_date(data.get('to')):%A %d %B}."
+    elif action == "day_parts":
+        note = set_day_parts(programme, user, day, data.get("parts"))
     elif action == "renumber":
         note = f"{renumber(programme, user)} codes changed."
     elif action == "contribution":

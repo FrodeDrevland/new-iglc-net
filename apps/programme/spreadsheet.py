@@ -6,7 +6,8 @@ needed): Day, Start, End, Room, Part, Kind, Code, Title, Plenary, Chairs, Papers
 
 - Day: a date (2027-07-20) or a cell formatted as a date. Start and End: 10:30.
 - Room: its name; a new name adds the room (for those who keep the rooms).
-- Part and Kind: their names as in the builder, e.g. "Academic conference", "Paper session".
+- Part: only for a day that holds two parts; otherwise the day's own. Kind: as in the builder,
+  e.g. "Paper session".
 - Plenary: yes or no. Chairs: "Ann Smith (NTNU); Bo Jones".
 - Papers: ConfTool IDs, e.g. "101, 117, 123". Contributions: titles, separated by ";". A title not in
   the list of contributions is added to it.
@@ -153,9 +154,14 @@ def import_sheet(programme, user, path, replace_days: bool = False) -> dict:
                                                        sort_order=len(rooms) + 1)
                         rooms[_norm(room_name)] = room
                 part_name = str(row.get("Part") or "").strip()
-                part = by_part.get(_norm(part_name)) if part_name else parts[0]
-                if part is None:
-                    raise BuildError(f"No part “{part_name}” that you edit")
+                if part_name:
+                    part = by_part.get(_norm(part_name))
+                    if part is None:
+                        raise BuildError(f"No part “{part_name}” that you edit")
+                else:  # the day's own part
+                    from .builder import _day_part
+
+                    part = _day_part(user, programme, day)
                 kind = kinds.get(_norm(row.get("Kind")), "papers" if not row.get("Kind") else None)
                 if kind is None:
                     raise BuildError(f"Unknown kind “{row.get('Kind')}”")

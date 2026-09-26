@@ -116,6 +116,16 @@ class Programme(models.Model):
             day += timedelta(days=1)
         return days
 
+    def day_parts(self, day) -> list:
+        """The parts a day belongs to (usually one: the industry day, the academic conference ...).
+        A day not set belongs to the academic conference."""
+        found = self.days_set.filter(date=day).first() if self.pk else None
+        parts = list(found.parts.all()) if found else []
+        if parts:
+            return parts
+        default = self.parts.filter(kind=Part.Kind.ACADEMIC).first() or self.parts.first()
+        return [default] if default else []
+
     MARGIN_DAYS = 31  # how far the programme's days may reach beyond the conference's own
 
     def sync_days(self, save=True):
@@ -162,6 +172,23 @@ class Part(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ProgrammeDay(models.Model):
+    """Which part(s) of the programme a day belongs to: Monday the PhD summer school, Tuesday to
+    Thursday the academic conference, Friday the industry day. Its sessions belong to that part,
+    and are edited by that part's editors. A day can hold two parts running side by side."""
+
+    programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="days_set")
+    date = models.DateField()
+    parts = models.ManyToManyField(Part, related_name="days", blank=True)
+
+    class Meta:
+        ordering = ["programme", "date"]
+        unique_together = [("programme", "date")]
+
+    def __str__(self):
+        return f"{self.date}: {', '.join(p.name for p in self.parts.all())}"
 
 
 class Location(models.Model):
@@ -267,6 +294,10 @@ class Session(models.Model):
         if programme:
             if self.part_id and self.part.programme_id != programme.pk:
                 errors["part"] = "Not a part of this programme."
+            elif self.part_id and self.date and self.part not in programme.day_parts(self.date):
+                errors["part"] = (f"{self.date:%A %d %B} belongs to "
+                                  f"{' and '.join(p.name for p in programme.day_parts(self.date))}, "
+                                  f"not to the {self.part.name.lower()}.")
             if self.location_id and self.location.programme_id != programme.pk:
                 errors["location"] = "Not a location of this programme."
             if self.track_id and self.track.conference_id != programme.conference_id:

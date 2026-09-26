@@ -174,6 +174,13 @@ After the conference the frozen programme stays as the record of what was presen
 
 One day at a time, as a grid with a column per room and time running down in 15-minute steps.
 
+- **Days belong to parts**: each day belongs to a part of the conference (the PhD summer school on
+  Monday, the academic conference Tuesday to Thursday, the industry day on Friday ...), and its
+  sessions to that part; they are edited by that part's editors. The conference chairs set this
+  at the top of the builder or under Parts and settings; a day can hold two parts side by side, and
+  then the builder asks which one a new session belongs to. Days not set belong to the academic
+  conference. Moving a session to another day moves it to that day's part.
+
 - **Draw** a session by dragging down in a room's column (a click gives an hour). A small form asks
   for its kind, title and part, and where: in that room, **across all rooms** (a plenary session, a
   break or a meal; a plenary session is held in a room of its own), or **parallel sessions in every

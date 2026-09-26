@@ -130,7 +130,7 @@ class PermissionTests(BuilderTestCase):
         status, answer = self.send(action="create", part=self.academic.pk, kind="papers", start="10:00", end="11:00",
                                    mode="room", location=self.room_a.pk)
         self.assertEqual(status, 400)
-        self.assertIn("cannot edit that part", answer["error"])
+        self.assertIn("You do not edit the academic conference", answer["error"])
         a = self.session(code="1A")
         status, _ = self.send(action="update", id=a.pk, start="09:00")
         self.assertEqual(status, 400)
@@ -274,3 +274,87 @@ class DaysTests(BuilderTestCase):
         self.programme.first_day = date(2026, 9, 26)
         with self.assertRaises(ValidationError):
             self.programme.full_clean()
+
+
+class DayPartTests(BuilderTestCase):
+    def test_sessions_take_the_day_s_part(self):
+        from .models import ProgrammeDay
+
+        ProgrammeDay.objects.create(programme=self.programme, date=date(2027, 7, 23)).parts.set([self.industry])
+        url = reverse("programme:build", args=[35]) + "?day=2027-07-23"
+        state = self.client.get(url + "&format=json").json()
+        self.assertEqual(state["day_parts"], [self.industry.pk])
+        answer = self.client.post(url, json.dumps({"action": "create", "kind": "industry", "start": "10:00",
+                                                  "end": "11:00", "mode": "room", "location": self.room_a.pk}),
+                                  content_type="application/json").json()
+        self.assertEqual(answer["sessions"][0]["part"], self.industry.pk)
+        # a day of the academic conference by default
+        self.assertEqual(self.client.get(reverse("programme:build", args=[35]) + "?day=2027-07-21&format=json")
+                         .json()["day_parts"], [self.academic.pk])
+
+    def test_moving_to_another_day_changes_the_part(self):
+        from .models import ProgrammeDay
+
+        ProgrammeDay.objects.create(programme=self.programme, date=date(2027, 7, 23)).parts.set([self.industry])
+        s = self.session(code="1A")
+        self.ok(action="update", id=s.pk, date="2027-07-23")
+        self.assertEqual(Session.objects.get(pk=s.pk).part, self.industry)
+        scientific = self.user("sci", "IGLC 35 scientific chairs")
+        self.client.force_login(scientific)
+        s2 = self.session(code="1B")
+        status, answer = self.send(action="update", id=s2.pk, date="2027-07-23")
+        self.assertEqual(status, 400)
+        self.assertIn("which you do not edit", answer["error"])
+
+    def test_the_part_must_be_the_day_s(self):
+        from django.core.exceptions import ValidationError
+
+        with self.assertRaises(ValidationError) as caught:
+            self.session(part=self.industry, day=date(2027, 7, 21))
+        self.assertIn("belongs to Academic conference", str(caught.exception))
+
+    def test_chairs_set_what_a_day_belongs_to(self):
+        url = reverse("programme:build", args=[35]) + "?day=2027-07-22"
+        post = lambda parts: self.client.post(url, json.dumps({"action": "day_parts", "parts": parts}),  # noqa: E731
+                                              content_type="application/json")
+        answer = post([self.industry.pk]).json()
+        self.assertEqual(answer["day_parts"], [self.industry.pk])
+        self.assertEqual(answer["note"], "Thursday 22 July: Industry day.")
+        self.assertEqual(post([]).status_code, 400)
+        Session.objects.create(programme=self.programme, part=self.industry, date=date(2027, 7, 22), start=time(9),
+                               end=time(10), location=self.room_a)
+        response = post([self.academic.pk])
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("still has sessions", response.json()["error"])
+        self.client.force_login(self.user("sci", "IGLC 35 scientific chairs"))
+        self.assertEqual(post([self.academic.pk, self.industry.pk]).status_code, 400)
+
+    def test_copying_to_an_unset_day_copies_its_parts(self):
+        from .models import ProgrammeDay
+
+        ProgrammeDay.objects.create(programme=self.programme, date=date(2027, 7, 22)).parts.set([self.industry])
+        Session.objects.create(programme=self.programme, part=self.industry, date=date(2027, 7, 22), start=time(9),
+                               end=time(10), location=self.room_a)
+        url = reverse("programme:build", args=[35]) + "?day=2027-07-22"
+        self.client.post(url, json.dumps({"action": "copy_day", "to": "2027-07-23"}), content_type="application/json")
+        self.assertEqual([p.pk for p in self.programme.day_parts(date(2027, 7, 23))], [self.industry.pk])
+        self.assertEqual(Session.objects.get(date=date(2027, 7, 23)).part, self.industry)
+
+
+class SettingsDaysTests(BuilderTestCase):
+    def test_days_on_the_settings_page(self):
+        url = reverse("programme:settings", args=[35])
+        response = self.client.get(url)
+        self.assertContains(response, 'name="day-2027-07-23"')
+        parts = list(self.programme.parts.all())
+        data = {"status": "hidden", "time_zone": "Europe/Berlin", "first_day": "2027-07-17", "last_day": "2027-07-23",
+                "notice": "", "parts-TOTAL_FORMS": str(len(parts)), "parts-INITIAL_FORMS": str(len(parts)),
+                "day-2027-07-23": [str(self.industry.pk)]}
+        for i, part in enumerate(parts):
+            data.update({f"parts-{i}-id": part.pk, f"parts-{i}-name": part.name, f"parts-{i}-kind": part.kind,
+                         f"parts-{i}-colour": part.colour, f"parts-{i}-sort_order": part.sort_order,
+                         f"parts-{i}-description": ""})
+            if part.public:
+                data[f"parts-{i}-public"] = "on"
+        self.assertRedirects(self.client.post(url, data), reverse("programme:overview", args=[35]))
+        self.assertEqual([p.pk for p in self.programme.day_parts(date(2027, 7, 23))], [self.industry.pk])

@@ -90,17 +90,27 @@ def programme_settings(request, number):
     form = ProgrammeForm(request.POST or None, instance=programme)
     parts = PartFormSet(request.POST or None, instance=programme, prefix="parts")
     if request.method == "POST" and form.is_valid() and parts.is_valid():
+        from .builder import BuildError, set_day_parts
+
         try:
             with transaction.atomic():
                 form.save()
                 for part in parts.save():
                     setup.part_group(part)
+                for day in programme.days():
+                    chosen = request.POST.getlist(f"day-{day.isoformat()}")
+                    if chosen and {int(c) for c in chosen if c.isdigit()} != {p.pk for p in programme.day_parts(day)}:
+                        set_day_parts(programme, request.user, day, chosen)
         except ProtectedError:
             messages.error(request, "A part that still has sessions cannot be deleted: move or delete its sessions first.")
+        except BuildError as error:
+            messages.error(request, str(error))
         else:
             messages.success(request, "Saved.")
             return redirect("programme:overview", number=number)
-    return render(request, "programme/settings.html", {"programme": programme, "form": form, "parts": parts})
+    days = [(day, {p.pk for p in programme.day_parts(day)}) for day in programme.days()]
+    return render(request, "programme/settings.html", {"programme": programme, "form": form, "parts": parts,
+                                                      "days": days, "all_parts": programme.parts.all()})
 
 
 @login_required
