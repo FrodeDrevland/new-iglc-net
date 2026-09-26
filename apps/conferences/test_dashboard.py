@@ -408,6 +408,28 @@ class DashboardTests(TestCase):
         archive = self.client.get(f"/papers/conference/{self.conference.pk}").content.decode()
         self.assertIn("conf-head-logo", archive)
 
+    def test_committees_with_portraits(self):
+        from wagtail.images import get_image_model
+        from wagtail.images.tests.utils import get_test_image_file
+
+        from .models import CommitteeMember
+
+        home = seed(self.conference, publish=True)
+        page = home.get_children().get(slug="committees").specific
+        photo = get_image_model().objects.create(title="Portrait", file=get_test_image_file(size=(400, 400)))
+        page.members = [
+            CommitteeMember(committee="Organising committee", name="Anna Müller", role="Chair", photo=photo),
+            CommitteeMember(committee="Organising committee", name="Jonas Weber", url="https://example.org/jw"),
+            CommitteeMember(committee="Scientific committee", name="Lauri Koskela", affiliation="Huddersfield"),
+        ]
+        page.save_revision().publish()
+        html = self.client.get("/2099/committees/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn('class="conf-portraits"', html)          # a committee with a photograph: cards
+        self.assertIn(">JW<", html)                              # initials for the one without
+        self.assertIn('href="https://example.org/jw"', html)
+        self.assertIn('class="conf-members"', html)             # nobody with a photograph: a compact list
+        self.assertLess(html.index("Organising committee"), html.index("Scientific committee"))
+
     def test_scientific_chairs_edit_the_proceedings(self):
         from apps.production.access import productions_for, role
         from apps.production.models import Production

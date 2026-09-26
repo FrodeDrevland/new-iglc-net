@@ -124,6 +124,15 @@ version of your logo that reads well there (a white one, a colour one, with or w
 a new tab without saving them; **Save and publish** shows it at once (together with any other
 unpublished changes to the home page).
 
+## Committees
+
+The committees page lists the members by committee, in the order you enter them. Give each member a
+**portrait** (at least 400 × 400 pixels; it is shown round, cut to a square around the picture's
+focal point), a **role** (such as "Conference chair", shown as a label) and a **profile page** if
+you like. A committee where someone has a portrait is shown as cards, with the initials for those
+without one; a committee where nobody has one (a long scientific committee, say) is shown as a
+compact list.
+
 ## Pictures and documents
 
 Upload them in a picture block, a button or under **Images** and **Documents** in the menu. They go
@@ -139,6 +148,14 @@ You do not need to type these in; the website shows them from the IGLC's records
 - the proceedings editors, on the committees page;
 - the programme (the "programme" block), from the programme editors' work (see the
   [programme guide](programme.md)).
+
+## Your conference's email address (planned)
+
+The IGLC plans to give each conference an address on iglc.net, for example iglc35@iglc.net, to use on
+the website and in the call for papers. It forwards to the people you choose among your conference's
+roles, in your conference's workspace. You reply from your own address. After the conference the
+address is passed on to the proceedings editors, so later questions still reach someone. The exact
+addresses are still to be agreed by the Standardisation Committee.
 
 ## After the conference
 

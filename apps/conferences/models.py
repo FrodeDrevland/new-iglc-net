@@ -460,10 +460,12 @@ class CommitteesPage(ConferencePageMixin, Page):
         verbose_name = "committees page"
 
     def groups(self):
+        """[(committee, members, with_photos)]: a committee where nobody has a photograph is shown as a
+        compact list rather than cards with initials."""
         grouped: dict[str, list] = {}
-        for member in self.members.all():
+        for member in self.members.select_related("photo", "person"):
             grouped.setdefault(member.committee, []).append(member)
-        return list(grouped.items())
+        return [(name, members, any(m.photo_id for m in members)) for name, members in grouped.items()]
 
 
 class CommitteeMember(Orderable):
@@ -474,11 +476,22 @@ class CommitteeMember(Orderable):
     role = models.CharField(max_length=120, blank=True, help_text="For example 'Chair'.")
     affiliation = models.CharField(max_length=300, blank=True)
     country = models.CharField(max_length=100, blank=True)
+    photo = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+                              help_text="A portrait, at least 400 × 400 pixels; shown round, cut to a square "
+                                        "around the picture's focal point. Without one, the initials are shown.")
+    url = models.URLField("profile page", blank=True,
+                          help_text="The person's page at their university or company, or on LinkedIn.")
     person = models.ForeignKey("archive.AuthorPerson", null=True, blank=True, on_delete=models.SET_NULL,
-                               related_name="+", help_text="Links the name to the person's author page.")
+                               related_name="+", help_text="The person's author page in the IGLC proceedings, if "
+                                                           "they have one (used when no profile page is given).")
 
-    panels = [FieldPanel("committee"), FieldPanel("name"), FieldPanel("role"), FieldPanel("affiliation"),
-              FieldPanel("country"), FieldPanel("person")]
+    panels = [FieldPanel("committee"), FieldPanel("name"), FieldPanel("role"), FieldPanel("photo"),
+              FieldPanel("affiliation"), FieldPanel("country"), FieldPanel("url"), FieldPanel("person")]
+
+    @property
+    def initials(self) -> str:
+        words = [w for w in self.name.replace("-", " ").split() if w[:1].isalpha()]
+        return ((words[0][0] + (words[-1][0] if len(words) > 1 else "")).upper()) if words else "?"
 
 
 class SponsorsPage(ConferencePageMixin, Page):

@@ -167,3 +167,21 @@
 /* the logo on the photograph (Branding), large, instead of the title */
 .conf-hero-logo { display: block; max-width: min(36rem, 90%); max-height: 16rem; width: auto; height: auto; margin: .5rem 0 1rem; }
 .conf-hero.with-logo .conf-hero-kicker { margin-bottom: 0; }
+
+/* Committees: cards with round portraits (or the initials in the main colour) */
+.conf-committee { margin-bottom: 2.5rem; }
+.conf-portraits { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: 2rem 1.5rem; }
+.conf-portrait { display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.35; }
+.conf-portrait-photo { width: 9rem; height: 9rem; border-radius: 50%; object-fit: cover; margin-bottom: .8rem;
+  box-shadow: 0 0 0 4px #fff, 0 0 0 6px var(--line); }
+.conf-portrait.has-role .conf-portrait-photo { box-shadow: 0 0 0 4px #fff, 0 0 0 7px var(--conf-accent); }
+.conf-initials { display: flex; align-items: center; justify-content: center; background: var(--conf-primary); color: var(--conf-on-primary);
+  font-family: var(--conf-heading); font-size: 2.6rem; font-weight: 700; letter-spacing: .02em; }
+.conf-portrait-name { font-weight: 700; font-size: 1.08rem; }
+.conf-portrait-name a { text-decoration: none; }
+.conf-portrait-name a:hover { text-decoration: underline; }
+.conf-portrait-role { display: inline-block; margin: .3rem 0 .15rem; padding: .1rem .6rem; border-radius: 999px; font-size: .82rem; font-weight: 700;
+  background: var(--conf-accent); color: var(--conf-on-accent); }
+.conf-members .conf-portrait-role { margin: 0 0 0 .3rem; }
+.conf-portrait-where { color: var(--muted); font-size: .92rem; }
+@media (max-width: 36rem) { .conf-portraits { grid-template-columns: repeat(2, 1fr); gap: 1.5rem 1rem; } .conf-portrait-photo { width: 7rem; height: 7rem; } }
