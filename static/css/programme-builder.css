@@ -85,9 +85,12 @@
 .b-dialog-buttons { display: flex; gap: .5rem; margin-top: 1rem; }
 
 /* Compact controls: Wagtail's form fields are made for full-width forms */
-.b-toolbar input, .b-toolbar select, .b-side input, .b-side select, .b-side textarea, .b-dialog input, .b-dialog select {
+/* (not tick boxes and radio buttons: Wagtail draws those itself, and its tick needs their own size) */
+.b-toolbar input:not([type=checkbox]):not([type=radio]), .b-toolbar select,
+.b-side input:not([type=checkbox]):not([type=radio]), .b-side select, .b-side textarea,
+.b-dialog input:not([type=checkbox]):not([type=radio]), .b-dialog select {
   font-size: .9rem; padding: .25rem .45rem; min-height: 0; height: auto; border-radius: 4px; }
-.b-toolbar input[type=checkbox], .b-side input[type=checkbox] { width: auto; }
+.b-daypart input[type=checkbox] { margin: 0; }
 .b-side .button, .b-toolbar .button { width: auto; }
 .bp-add .button { justify-self: start; }
 .b-side .b-form { grid-template-columns: 1fr 1fr; }
