@@ -266,7 +266,7 @@
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", dragged);
   });
-  document.addEventListener("dragend", e => { const li = e.target.closest && e.target.closest("li"); if (li) li.classList.remove("dragging"); dragged = null; document.querySelectorAll(".drop").forEach(x => x.classList.remove("drop")); });
+  document.addEventListener("dragend", e => { const li = e.target.closest && e.target.closest("li"); if (li) li.classList.remove("dragging"); dragged = null; showGhost(null); document.querySelectorAll(".drop").forEach(x => x.classList.remove("drop")); });
   function target(e) {
     const block = e.target.closest(".bb");
     if (block) {
@@ -275,15 +275,35 @@
       return {block, s};
     }
     if (e.target.closest("#b-pool") && dragged && dragged[0] === "i") return {pool: true};
+    // A contribution dropped where there is no session gets a session as long as the contribution.
+    const col = e.target.closest(".bg-col");
+    if (col && dragged && dragged[0] === "c" && editableDayParts().length) {
+      const c = S.pool.contributions.find(x => x.entry === dragged);
+      if (!c) return null;
+      const cols = $("bg-cols"), box = cols.getBoundingClientRect(), start = Number(cols.dataset.start);
+      const t = start + Math.floor((e.clientY - box.top) / PX / STEP) * STEP;
+      return {col, lane: Number(col.dataset.lane), start: t, minutes: c.minutes || 60,
+              everyone: ["welcome", "keynote", "awards", "closing"].includes(c.kind)};
+    }
     return null;
+  }
+  function showGhost(t) {
+    let ghost = $("b-dropghost");
+    if (!t || !t.col) { if (ghost) ghost.remove(); return; }
+    if (!ghost) { ghost = document.createElement("div"); ghost.id = "b-dropghost"; ghost.className = "bb ghost"; $("bg-cols").appendChild(ghost); }
+    const start = Number($("bg-cols").dataset.start);
+    ghost.style.cssText = `top:${(t.start - start) * PX}px;height:${t.minutes * PX}px;` +
+      (t.everyone ? "left:0;width:100%" : `left:${t.col.style.left};width:${t.col.style.width}`);
+    ghost.textContent = `${hm(t.start)}–${hm(t.start + t.minutes)} new session`;
   }
   document.addEventListener("dragover", e => {
     if (!dragged) return;
     const t = target(e);
     document.querySelectorAll(".drop").forEach(x => x.classList.remove("drop"));
+    showGhost(t);
     if (!t) return;
     e.preventDefault();
-    (t.block || poolBox).classList.add("drop");
+    if (!t.col) (t.block || poolBox).classList.add("drop");
   });
   document.addEventListener("drop", e => {
     if (!dragged) return;
@@ -292,7 +312,9 @@
     e.preventDefault();
     const entry = dragged;
     dragged = null;
+    showGhost(null);
     if (t.pool) { send({action: "unplace", item: Number(entry.slice(1))}); return; }
+    if (t.col) { send({action: "new_session", entry, start: hm(t.start), lane: t.lane}); return; }
     const items = [...t.block.querySelectorAll(".bb-items > li")].filter(li => li.dataset.entry !== entry);
     let index = items.findIndex(li => { const box = li.getBoundingClientRect(); return e.clientY < box.top + box.height / 2; });
     if (index < 0) index = items.length;
@@ -315,9 +337,9 @@
         <button type="button" role="tab" data-tab="papers" aria-selected="${poolTab === "papers"}">Papers (${papers.length})</button>
         <button type="button" role="tab" data-tab="contributions" aria-selected="${poolTab === "contributions"}">Contributions (${contributions.length})</button>
       </div>
-      <p class="bp-hint small muted">${poolTab === "papers" ? "Accepted papers not in a session yet." : "Welcomes, keynotes, talks, workshops and panels not in a session yet."} Drag them into a session; drag items here to take them out.</p>
+      <p class="bp-hint small muted">${poolTab === "papers" ? "Accepted papers not in a session yet." : "Welcomes, keynotes, talks, workshops and panels not in a session yet."} Drag them into a session; drag items here to take them out.${poolTab === "contributions" ? " Dropped where there is no session, a contribution gets a session as long as it is." : ""}</p>
       <div class="bp-filters"><select data-filter aria-label="Filter">${filter}</select> <input type="search" data-search placeholder="Search" value="${esc(poolSearch)}" aria-label="Search"></div>
-      <ul class="bp-list">${list.map(x => `<li draggable="${canDrag}" data-entry="${x.entry}"><span class="bi-label">${esc(x.label)}</span> ${esc(x.title)}${x.sub ? `<br><span class="muted small">${esc(x.sub)}</span>` : ""}</li>`).join("") || '<li class="bp-none">None.</li>'}</ul>
+      <ul class="bp-list">${list.map(x => `<li draggable="${canDrag}" data-entry="${x.entry}"><span class="bi-label">${esc(x.label)}</span> ${esc(x.title)}${x.minutes ? ` <span class="muted small">(${x.minutes} min)</span>` : ""}${x.sub ? `<br><span class="muted small">${esc(x.sub)}</span>` : ""}</li>`).join("") || '<li class="bp-none">None.</li>'}</ul>
       ${poolTab === "contributions" && canDrag ? `
       <form class="bp-add" data-add>
         <h3>Add a contribution</h3>
@@ -325,6 +347,7 @@
         <select name="part" aria-label="Part">${editableParts().map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select>
         <input type="text" name="title" placeholder="Title, e.g. Welcome by the dean" required>
         <input type="text" name="speakers" placeholder="Speaker(s), e.g. Ann Smith (TUM)">
+        <label class="small">Minutes <input type="number" name="minutes" min="5" step="5" style="width:4.5rem"></label>
         <button class="button button-small" type="submit">Add</button>
         <a class="small" href="${cfg.contributions_url}">All contributions, and from Speakers</a>
       </form>` : ""}`;
@@ -346,7 +369,7 @@
     if (!e.target.matches("[data-add]")) return;
     e.preventDefault();
     const f = e.target.elements;
-    send({action: "contribution", kind: f.kind.value, part: Number(f.part.value), title: f.title.value, speakers: f.speakers.value});
+    send({action: "contribution", kind: f.kind.value, part: Number(f.part.value), title: f.title.value, speakers: f.speakers.value, minutes: f.minutes.value});
   });
 
   // ------------------------------------------------------------ a session's details

@@ -396,3 +396,46 @@ class LaneTests(BuilderTestCase):
         self.session(code="1B", start_at=time(10, 30), end_at=time(11, 30))
         self.assertIn("Two sessions in Room A at the same time.",
                       [p.text for p in checks.problems(self.programme) if p.level == checks.ERROR])
+
+
+class SessionForContributionTests(BuilderTestCase):
+    def contribution(self, **kwargs):
+        values = dict(programme=self.programme, part=self.academic, kind="talk", title="Talk", minutes=40)
+        values.update(kwargs)
+        return Contribution.objects.create(**values)
+
+    def test_a_session_as_long_as_the_contribution(self):
+        c = self.contribution(kind="workshop", title="Takt in practice", minutes=90)
+        answer = self.ok(action="new_session", entry=f"c{c.pk}", start="13:00", lane=2)
+        self.assertEqual(answer["note"], "Session added, 13:00–14:30.")
+        s = Session.objects.get(title="Takt in practice")
+        self.assertEqual((s.start, s.end, s.lane, s.kind, s.plenary), (time(13), time(14, 30), 2, "workshop", False))
+        self.assertEqual([i.contribution_id for i in s.items.all()], [c.pk])
+        self.assertEqual(answer["pool"]["contributions"], [])
+
+    def test_for_everyone_spans_and_no_length_gets_an_hour(self):
+        c = self.contribution(kind="welcome", title="Welcome", minutes=None)
+        answer = self.ok(action="new_session", entry=f"c{c.pk}", start="08:30", lane=1)
+        self.assertIn("got 60 minutes", answer["note"])
+        s = Session.objects.get(title="Welcome")
+        self.assertEqual((s.end, s.lane, s.plenary, s.kind), (time(9, 30), None, True, "other"))
+
+    def test_not_on_top_of_a_session(self):
+        self.session(start_at=time(10), end_at=time(11), lane=1)
+        c = self.contribution()
+        status, answer = self.send(action="new_session", entry=f"c{c.pk}", start="10:30", lane=1)
+        self.assertEqual(status, 400)
+        self.assertIn("already there", answer["error"])
+        self.ok(action="new_session", entry=f"c{c.pk}", start="10:30", lane=2)  # beside it is fine
+        status, answer = self.send(action="new_session", entry="s1", start="12:00", lane=1)
+        self.assertIn("Only contributions", answer["error"])
+
+    def test_industry_talk_on_the_industry_part(self):
+        c = self.contribution(part=self.industry, title="Site logistics")
+        self.ok(action="new_session", entry=f"c{c.pk}", start="14:00", lane=3)
+        s = Session.objects.get(title="Site logistics")
+        self.assertEqual((s.part, s.kind), (self.industry, "industry"))
+
+    def test_quick_add_takes_minutes(self):
+        self.ok(action="contribution", kind="talk", part=self.academic.pk, title="Short", speakers="", minutes="20")
+        self.assertEqual(Contribution.objects.get(title="Short").minutes, 20)

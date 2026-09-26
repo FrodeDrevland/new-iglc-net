@@ -203,6 +203,10 @@ One day at a time, as a grid with a column per room and time running down in 15-
   industry day talks, workshops, panels, the awards, the closing. They are added in the builder's
   list, or on the Contributions page, which can also make one for every speaker under Speakers
   (keynote speakers become keynotes, industry day speakers go to the industry day).
+- **A contribution dropped where there is no session** gets a session of its own, as long as the
+  contribution's minutes (an hour when it has none), in the lane it was dropped in. A welcome,
+  keynote, awards or closing spans the lanes; a keynote, workshop or panel gives the session its
+  kind, an industry day talk makes an industry session. It is refused on top of another session.
 - **Copy this day's sessions** to another day (without papers and people), to start from the same
   structure; **Number the sessions** gives the parallel sessions codes by time slot (1A, 1B ...; I1A
   for the industry day, W1A for the workshop day, P1A for the PhD summer school).
@@ -219,11 +223,13 @@ room) and the form for a single session.
 
 ## Extras
 
-- **Booklet**: the programme as an A5 PDF (title page, parts, every day's sessions with chairs,
-  papers and presenters, late changes, locations, and an index of people with their sessions), at
-  /2027/programme/programme.pdf and on program.iglc.net, and in the back office (Booklet (PDF)) also
-  while the programme is hidden. It uses the proceedings' Times New Roman where the site has it,
-  else Helvetica.
+- **Booklet**: the programme as an A4 landscape PDF laid out like the IGLC 34 booklet: a title page,
+  the parts, and every day as a table with the time on the left. Sessions side by side get a column
+  each, headed by code, title, room and chairs, with a row for each paper (title and authors, the
+  presenter underlined); plenary sessions and breaks take the whole width. Then the rooms and an
+  index of people with their sessions. It is at /2027/programme/programme.pdf and on
+  program.iglc.net, and in the back office (Booklet (PDF)) also while the programme is hidden. It
+  uses the proceedings' Times New Roman where the site has it, else Helvetica.
 - **Offline**: once a visitor has opened the programme (on program.iglc.net, or the programme page on
   the conference site), their browser keeps its pages, so they open without a network; the pages
   are fetched again when the programme changes. The venue pages say when they are shown offline.

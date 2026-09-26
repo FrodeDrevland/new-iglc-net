@@ -330,6 +330,48 @@ def place(programme, user, data):
         each.save()
 
 
+# A contribution dropped where there is no session gets a session of its own, as long as the
+# contribution: its kind follows the contribution's, and the ones for everyone span the lanes.
+SESSION_FOR = {Contribution.Kind.KEYNOTE: Session.Kind.KEYNOTE, Contribution.Kind.WORKSHOP: Session.Kind.WORKSHOP,
+               Contribution.Kind.PANEL: Session.Kind.PANEL}
+FOR_EVERYONE = {Contribution.Kind.WELCOME, Contribution.Kind.KEYNOTE, Contribution.Kind.AWARDS,
+                Contribution.Kind.CLOSING}
+DEFAULT_MINUTES = 60
+
+
+def session_for(programme, user, day, data) -> Session:
+    """A new session for a contribution dropped at a time (and lane) where there is none."""
+    entry = str(data.get("entry", ""))
+    if entry[:1] != "c" or not entry[1:].isdigit():
+        raise BuildError("Only contributions get a session of their own; drop papers into a session.")
+    contribution = programme.contributions.select_related("part").filter(pk=int(entry[1:])).first()
+    if contribution is None:
+        raise BuildError("That contribution no longer exists.")
+    if contribution.programme_items.exists():
+        raise BuildError("That contribution is already in a session.")
+    parts = programme.day_parts(day)
+    wanted = contribution.part_id if contribution.part in parts else None
+    part = _day_part(user, programme, day, wanted)
+    start = _time(data.get("start"))
+    minutes = contribution.minutes or DEFAULT_MINUTES
+    ends = datetime.combine(day, start) + timedelta(minutes=minutes)
+    if ends.date() != day:
+        raise BuildError("The session would end after midnight.")
+    kind = SESSION_FOR.get(contribution.kind)
+    if kind is None:
+        kind = Session.Kind.INDUSTRY if part.kind == Part.Kind.INDUSTRY and contribution.kind == "talk" else Session.Kind.OTHER
+    plenary = contribution.kind in FOR_EVERYONE
+    session = Session(programme=programme, part=part, date=day, start=start, end=ends.time(), kind=kind,
+                      title=contribution.title[:300], plenary=plenary,
+                      lane=None if plenary else _lane(programme, day, data.get("lane")))
+    for other in programme.sessions.filter(date=day, cancelled=False):
+        if other.overlaps(session) and (plenary or lanes.spans(other) or other.lane in (None, session.lane)):
+            raise BuildError(f"{other.display_title} is already there at {_hm(other.start)}–{_hm(other.end)}.")
+    _save(session)
+    SessionItem.objects.create(session=session, contribution=contribution, minutes=contribution.minutes, order=1)
+    return session
+
+
 def unplace(programme, user, data):
     item = SessionItem.objects.select_related("session__part").filter(pk=data.get("item"),
                                                                      session__programme=programme).first()
@@ -484,6 +526,11 @@ def apply(programme, user, day: Date, data: dict) -> dict:
         note = "Session deleted."
     elif action == "place":
         place(programme, user, data)
+    elif action == "new_session":
+        made = session_for(programme, user, day, data)
+        minutes = (made.items.first().contribution.minutes or 0)
+        note = (f"Session added, {_hm(made.start)}–{_hm(made.end)}."
+                + ("" if minutes else f" The contribution has no length, so it got {DEFAULT_MINUTES} minutes."))
     elif action == "unplace":
         unplace(programme, user, data)
     elif action == "item":
@@ -505,7 +552,8 @@ def apply(programme, user, day: Date, data: dict) -> dict:
         part = _editable_part(user, programme, data.get("part"))
         contribution = Contribution(programme=programme, part=part, kind=data.get("kind") or "talk",
                                     title=(data.get("title") or "").strip()[:300],
-                                    speakers=(data.get("speakers") or "").strip()[:300])
+                                    speakers=(data.get("speakers") or "").strip()[:300],
+                                    minutes=int(data["minutes"]) if str(data.get("minutes") or "").isdigit() else None)
         try:
             contribution.full_clean()
         except ValidationError as error:

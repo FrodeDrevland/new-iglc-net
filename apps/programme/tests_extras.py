@@ -78,7 +78,7 @@ class BookletTests(VenueTestCase):
         response = self.client.get("/2027/programme/programme.pdf", **HOST)
         self.assertEqual(response["Content-Type"], "application/pdf")
         text = pdf_text(response.content)
-        for expected in ("IGLC 35", "Munich", "1A Takt", "Takt in hospitals, published", "Changed: Moved to Room A",
+        for expected in ("IGLC 35", "Munich", "1A: Takt", "Takt in hospitals, published", "Changed: Moved to Room A",
                          "Chair: Cy Lee", "Room A", "People"):
             self.assertIn(expected, text)
         self.assertNotIn("Doctoral colloquium", text)
@@ -89,7 +89,7 @@ class BookletTests(VenueTestCase):
         self.assertEqual(self.client.get("/2027/programme/programme.pdf", **HOST).status_code, 404)
         self.client.force_login(self.user("chair", "IGLC 35 conference chairs"))
         response = self.client.get(reverse("programme:booklet", args=[35]))
-        self.assertIn("1A Takt", pdf_text(response.content))
+        self.assertIn("1A: Takt", pdf_text(response.content))
 
 
 class OfflineTests(VenueTestCase):
