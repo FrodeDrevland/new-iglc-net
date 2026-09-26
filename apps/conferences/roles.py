@@ -43,7 +43,8 @@ DESCRIPTIONS = {
                 "locations.",
 }
 
-PAGE_PERMISSIONS = ("add_page", "change_page", "publish_page")
+# No add_page: which pages a conference website has is the IGLC's standard (superusers add them).
+PAGE_PERMISSIONS = ("change_page", "publish_page")
 IMAGE_PERMISSIONS = ("add_image", "change_image", "choose_image")
 DOCUMENT_PERMISSIONS = ("add_document", "change_document", "choose_document")
 

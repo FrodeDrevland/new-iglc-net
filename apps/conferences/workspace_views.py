@@ -15,7 +15,7 @@ from django.urls import path
 
 from apps.archive.models import Conference
 
-from . import committee_views, dashboard, roles, track_views
+from . import committee_views, dashboard, roles, speaker_views, track_views
 from .models import (DARKEN_HELP, HEADING_FONTS, HERO_HELP, HERO_LOGO_HELP, HERO_SIZE, ICON_HELP,
                      LIGHT_LOGO_HELP, LOGO_HELP, PRIMARY_HELP, ConferenceHomePage)
 
@@ -522,6 +522,8 @@ urlpatterns = [
     path("committees/", committee_views.committees, name="committees"),
     path("committees/<int:index>/", committee_views.member_edit, name="committee_member"),
     path("tracks/", track_views.tracks, name="tracks"),
+    path("speakers/", speaker_views.speakers, name="speakers"),
+    path("speakers/<int:pk>/", speaker_views.speaker_edit, name="speaker"),
     path("branding/", branding, name="branding"),
     path("branding/preview/", branding_preview, name="branding_preview"),
     path("people/", people, name="people"),

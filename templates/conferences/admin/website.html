@@ -28,7 +28,7 @@
   <p class="conf-actions">
     {% if can_publish and not home.frozen %}
       {% if unpublished_pages %}<a class="button" href="{% url 'conference:action' conference.number 'publish-website' %}">Publish changes…</a>{% endif %}
-      <a class="button button-secondary" href="{% url 'wagtailadmin_pages:add_subpage' home.pk %}">Add a page</a>
+      {% if is_iglc %}<a class="button button-secondary" href="{% url 'wagtailadmin_pages:add_subpage' home.pk %}">Add a page</a>{% endif %}
       {% if home.live %}<a class="button button-secondary" href="{% url 'conference:action' conference.number 'unpublish-website' %}">Unpublish the website…</a>{% endif %}
     {% endif %}
     {% if is_iglc %}

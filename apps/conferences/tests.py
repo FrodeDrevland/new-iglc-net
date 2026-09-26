@@ -241,7 +241,7 @@ class StandardPageTemplateTests(TestCase):
         with self.assertRaises(ValidationError):
             StandardPageTemplate(page_type="AcceptedPapersPage", title="x", slug="more-papers").full_clean()
         with self.assertRaises(ValidationError):
-            StandardPageTemplate(page_type="KeynotesPage", title="x", slug="talks",
+            StandardPageTemplate(page_type="CommitteesPage", title="x", slug="people",
                                  body=[("text", "<p>x</p>")]).full_clean()
 
     def test_admin_for_superusers_only(self):

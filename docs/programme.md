@@ -64,7 +64,8 @@ Code: `apps/programme`. Back office: Conferences → Programmes (`/manage/progra
 - **Session items**, in order: an accepted paper with its presenter and its form of presentation
   (**talk** or **poster**), or a free item (title and speaker). Talks may have minutes; posters may
   have a board number.
-- Keynote sessions link to the speakers on the keynotes page, so name, photo and talk are entered once.
+- Keynote sessions link to a speaker from Speakers in the conference's workspace, so name, photo and talk
+  are entered once.
 
 Rules the back office enforces or warns about:
 

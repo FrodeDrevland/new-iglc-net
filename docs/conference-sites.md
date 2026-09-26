@@ -20,7 +20,8 @@ Everything about a conference is under **Conferences** in the back office menu:
   conference opens its workspace.
 - **Programmes** and **Proceedings production**: the programme and the proceedings of each conference
   (docs/programme.md, docs/production-process.md).
-- **Website standard pages**: the pages every new conference website starts with (superusers).
+- **Website standard pages**: the pages every new conference website starts with (superusers). Drag the
+  rows (Sort item order) to set their order in the menu.
 
 The Overview shows the conference record and its tracks, the website and its pages, the important
 dates, the people (conference chairs, scientific chairs, editorial assistants, website organisers and
@@ -90,8 +91,10 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
    scientific chairs add the tracks themselves (Tracks in the workspace). It stays out of the public
    archive until its proceedings are published.
 2. In its workspace (All conferences → the conference): Website → **Create the website**. The standard pages come from Conferences → Website
-   standard pages; changes there apply to sites created afterwards. Delete the ones that are not
-   needed (All pages → the page → Delete).
+   standard pages (the Standardisation Committee's standard: which pages, their titles, addresses and
+   order); changes there apply to sites created afterwards. Only superusers add, delete, rename or move
+   a conference's pages (Pages → the page); the organisers and chairs edit and publish the content
+   (the page editor locks the title, address and "show in menus" for them).
 
    From the command line instead: `python manage.py seed_conference_site 35 --current`.
    Creating the home page under Pages → IGLC conferences → Add child page also works, but does not

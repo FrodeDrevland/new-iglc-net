@@ -1,0 +1,14 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% block pagetitle %}{{ speaker.name }}{% endblock %}
+{% block extra_js %}{{ block.super }}{{ form.media.js }}{% endblock %}
+{% block heading %}{{ speaker.name }}{% endblock %}
+{% block lead %}<p class="lead"><a href="{% url 'conference:speakers' conference.number %}">Speakers</a> · {{ speaker.group }}</p>{% endblock %}
+{% block content_main %}
+{{ form.media.css }}
+<datalist id="speaker-groups">{% for name in group_names %}<option value="{{ name }}">{% endfor %}</datalist>
+<form method="post" class="conf-member-form">{% csrf_token %}
+  {% include "conferences/admin/_member_fields.html" %}
+  {% if not frozen %}<p class="conf-actions"><button class="button" type="submit">Save</button>
+    <a class="button button-secondary" href="{% url 'conference:speakers' conference.number %}">Cancel</a></p>{% endif %}
+</form>
+{% endblock %}

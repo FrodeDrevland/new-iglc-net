@@ -608,6 +608,74 @@ class DashboardTests(TestCase):
         self.client.post(self.url() + "tracks/", data(rows[:2]))
         self.assertFalse(ConferenceTrack.objects.filter(title="Too late").exists())
 
+    def test_speakers(self):
+        from wagtail.models import Page
+
+        from .models import ConferencePage, Speaker
+
+        home = seed(self.conference, publish=True)
+        page = ConferencePage.objects.child_of(home).get(slug="keynotes")
+        self.assertEqual(page.body.raw_data[0]["type"], "speakers")  # the standard page has the block
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        url = self.url() + "speakers/"
+        self.assertEqual(self.client.get(url).status_code, 200)
+        from wagtail.test.utils.form_data import rich_text
+
+        base = {"action": "add", "add-group": "Keynote speakers", "add-affiliation": "", "add-talk_title": "",
+                "add-biography": rich_text(""), "add-url": ""}
+        self.client.post(url, {**base, "add-name": "Glenn Ballard", "add-talk_title": "Where lean goes next"})
+        self.client.post(url, {**base, "add-name": "Iris Tommelein"})
+        self.client.post(url, {**base, "add-name": "Secret Person", "add-hidden": "on"})
+        self.client.post(url, {**base, "add-group": "Industry day speakers", "add-name": "Site Manager"})
+        names = list(Speaker.objects.filter(conference=self.conference).order_by("sort_order")
+                     .values_list("name", flat=True))
+        self.assertEqual(names, ["Glenn Ballard", "Iris Tommelein", "Secret Person", "Site Manager"])
+        iris = Speaker.objects.get(name="Iris Tommelein")
+        self.client.post(url, {"action": "up", "speaker": iris.pk})
+        self.assertEqual(Speaker.objects.order_by("sort_order").first(), iris)
+
+        # the block shows its group, without the ones not yet announced
+        live = self.client.get(page.url, HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("Where lean goes next", live)
+        self.assertLess(live.index("Iris Tommelein"), live.index("Glenn Ballard"))
+        self.assertNotIn("Secret Person", live)
+        self.assertNotIn("Site Manager", live)
+
+        # edit
+        edit = self.client.get(self.url() + f"speakers/{iris.pk}/")
+        self.assertContains(edit, "Iris Tommelein")
+        self.client.post(self.url() + f"speakers/{iris.pk}/", {
+            "group": "Keynote speakers", "name": "Iris D. Tommelein", "affiliation": "UC Berkeley", "talk_title": "",
+            "biography": rich_text("<p>Professor.</p>"), "url": ""})
+        self.assertEqual(Speaker.objects.get(pk=iris.pk).name, "Iris D. Tommelein")
+
+        # programme sessions pick from the conference's speakers
+        from apps.programme import setup as programme_setup
+        from apps.programme.forms import SessionForm
+
+        programme = programme_setup.start(self.conference, "Europe/Oslo")
+        form = SessionForm(programme=programme, parts=programme.parts.all())
+        self.assertEqual(set(form.fields["keynote"].queryset.values_list("name", flat=True)),
+                         {"Iris D. Tommelein", "Glenn Ballard", "Secret Person", "Site Manager"})
+        self.assertFalse(Page.objects.filter(content_type__model="keynotespage").exists())
+
+    def test_pages_follow_the_standard(self):
+        home = seed(self.conference)
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        website = self.client.get(self.url() + "website/").content.decode()
+        self.assertNotIn("Add a page", website)
+        self.assertNotEqual(self.client.get(f"/manage/pages/add/conferences/conferencepage/{home.pk}/").status_code,
+                            200)
+        cfp = home.get_children().get(slug="call-for-papers")
+        edit = self.client.get(f"/manage/pages/{cfp.pk}/edit/").content.decode()
+        self.assertRegex(edit, r'<input[^>]*name="title"[^>]*disabled')
+        self.client.force_login(self.admin)
+        edit = self.client.get(f"/manage/pages/{cfp.pk}/edit/").content.decode()
+        self.assertNotRegex(edit, r'<input[^>]*name="title"[^>]*disabled')
+        self.assertIn("Add a page", self.client.get(self.url() + "website/").content.decode())
+
     def test_existing_sites_get_chairs_with_website_rights(self):
         """What migration 0007 does, through the setup code: both groups edit the website."""
         home = seed(self.conference)
@@ -616,7 +684,7 @@ class DashboardTests(TestCase):
 
         self.assertEqual(set(GroupPagePermission.objects.filter(group=chairs, page=home)
                              .values_list("permission__codename", flat=True)),
-                         {"add_page", "change_page", "publish_page"})
+                         {"change_page", "publish_page"})
 
     # --- deleting
 

@@ -7,7 +7,7 @@
 {% block content_main %}
 {{ add_form.media.css }}
 {% if not page %}
-  <p class="upload-report">The website has no committees page. Add one under <a href="{% url 'conference:website' conference.number %}">Website</a> (Add a page), or ask the webmaster.</p>
+  <p class="upload-report">The website has no committees page. Ask the webmaster.</p>
 {% else %}
 {% if frozen %}<p class="upload-report">The website is frozen: only the IGLC can change it.</p>{% endif %}
 <p class="conf-actions">
@@ -15,7 +15,7 @@
   <span class="muted">{{ count }} member{{ count|pluralize }}</span>
   {% if unpublished and can_publish and not frozen %}<form class="inline" method="post">{% csrf_token %}<input type="hidden" name="action" value="publish"><button class="button button-small" type="submit">Publish</button></form>{% endif %}
   <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:view_draft' page.pk %}" target="_blank" rel="noopener">Preview</a>
-  <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:edit' page.pk %}">Title and introduction</a>
+  <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:edit' page.pk %}">Introduction</a>
 </p>
 
 {% if not frozen %}

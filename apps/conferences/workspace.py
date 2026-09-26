@@ -165,6 +165,8 @@ def conference_items(request, conference):
                      icon_name="calendar", order=3),
             MenuItem("Committees", reverse("conference:committees", args=[number]), name="conference-committees",
                      icon_name="group", order=4),
+            MenuItem("Speakers", reverse("conference:speakers", args=[number]), name="conference-speakers",
+                     icon_name="openquote", order=4.5),
             MenuItem("Branding", reverse("conference:branding", args=[number]), name="conference-branding",
                      icon_name="pick", order=5),
         ]

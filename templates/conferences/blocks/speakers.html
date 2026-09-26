@@ -1,0 +1,20 @@
+{% load wagtailcore_tags wagtailimages_tags %}{% if groups %}
+<div class="conf-speakers">
+{% for group, speakers in groups %}
+  {% if show_headings %}<h2>{{ group }}</h2>{% endif %}
+  <div class="conf-people">
+  {% for k in speakers %}
+    <section class="conf-person">
+      {% if k.photo %}{% image k.photo fill-240x240 alt="" class="conf-person-photo" %}{% else %}<span class="conf-person-photo conf-initials" aria-hidden="true">{{ k.initials }}</span>{% endif %}
+      <div>
+        <h3>{% if k.url %}<a href="{{ k.url }}">{{ k.name }}</a>{% else %}{{ k.name }}{% endif %}</h3>
+        {% if k.affiliation %}<p class="muted">{{ k.affiliation }}</p>{% endif %}
+        {% if k.talk_title %}<p class="conf-talk">{{ k.talk_title }}</p>{% endif %}
+        {% if k.biography %}<div class="prose">{{ k.biography|richtext }}</div>{% endif %}
+      </div>
+    </section>
+  {% endfor %}
+  </div>
+{% endfor %}
+</div>
+{% else %}<p class="muted">The speakers will be announced here.</p>{% endif %}

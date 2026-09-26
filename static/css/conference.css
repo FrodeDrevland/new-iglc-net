@@ -65,7 +65,10 @@
 .conf-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: .8rem 1.5rem; }
 .conf-people { display: grid; gap: 2rem; }
 .conf-person { display: grid; grid-template-columns: 8rem 1fr; gap: 1.2rem; align-items: start; }
-.conf-person h2 { margin-top: 0; }
+.conf-person h2, .conf-person h3 { margin-top: 0; }
+.conf-speakers > h2 { margin-top: 2rem; }
+.conf-person-photo.conf-initials { font-size: 2rem; }
+.conf-speakers + * { margin-top: 1.5rem; }
 .conf-person-photo { border-radius: 50%; width: 8rem; height: 8rem; object-fit: cover; }
 .conf-talk { font-style: italic; }
 @media (max-width: 36rem) { .conf-person { grid-template-columns: 1fr; } }

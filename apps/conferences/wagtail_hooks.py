@@ -94,7 +94,7 @@ def conference_organisers(request, page):
         organiser_group(page.specific)
         add_standard_pages(page.specific)
         messages.info(request, "The standard pages (Conferences → Website standard pages) were added below it "
-                               "as drafts. Delete the ones the conference does not need.")
+                               "as drafts.")
 
 
 def _frozen_home(page):
@@ -122,7 +122,13 @@ def frozen_delete(request, page):
 
 @hooks.register("before_move_page")
 def frozen_move(request, page, destination):
-    return _refuse(request, page) or _refuse(request, destination)
+    refused = _refuse(request, page) or _refuse(request, destination)
+    if refused is None and not request.user.is_superuser and ConferenceHomePage.objects.ancestor_of(
+            page, inclusive=True).exists():
+        messages.error(request, "The pages of a conference website follow the IGLC's standard: ask the webmaster "
+                                "to move one.")
+        return redirect("wagtailadmin_explore", (page.get_parent() or page).pk)
+    return refused
 
 
 @hooks.register("before_create_page")

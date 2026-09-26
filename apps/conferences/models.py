@@ -5,10 +5,11 @@ The pages live in their own Wagtail Site (the host name is the setting CONFERENC
     ConferenceIndexPage          conference.iglc.net/          serves the current conference
       ConferenceHomePage         conference.iglc.net/2027/     one per conference, slug = year
         ConferencePage           call for papers, venue, registration, programme, free pages
-        KeynotesPage, CommitteesPage, SponsorsPage, AcceptedPapersPage
+        CommitteesPage, SponsorsPage, AcceptedPapersPage
 
 The organisers of a conference edit and publish the pages below their home page (the site's
-settings, current and frozen, stay with the IGLC). Dates, tracks and accepted papers come from the platform.
+settings, current and frozen, stay with the IGLC). Which pages a site has, their titles, addresses and
+order are the IGLC's: the organisers only edit the content (PageStructureForm). Dates, tracks and accepted papers come from the platform.
 After the conference the site is frozen and linked from the archive.
 """
 
@@ -23,6 +24,7 @@ from django.http import HttpResponseRedirect
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from wagtail import blocks
+from wagtail.admin.forms import WagtailAdminPageForm
 from wagtail.admin.panels import (FieldPanel, HelpPanel, InlinePanel, ObjectList,
                                   TabbedInterface)
 from wagtail.embeds.blocks import EmbedBlock
@@ -136,6 +138,34 @@ class ProgrammeBlock(blocks.StructBlock):
         template = "conferences/blocks/programme.html"
 
 
+class SpeakersBlock(blocks.StructBlock):
+    """The conference's speakers, entered under Speakers in the conference's workspace (Speaker)."""
+
+    group = blocks.CharBlock(
+        required=False,
+        help_text="Which speakers, as grouped under Speakers (for example 'Keynote speakers'). Blank: all, "
+                  "under the names of their groups.")
+
+    class Meta:
+        icon = "user"
+        label = "Speakers"
+        template = "conferences/blocks/speakers.html"
+
+    def get_context(self, value, parent_context=None):
+        context = super().get_context(value, parent_context)
+        conference = (parent_context or {}).get("conference")
+        speakers = Speaker.objects.filter(conference=conference, hidden=False) if conference else Speaker.objects.none()
+        wanted = (value.get("group") or "").strip()
+        if wanted:
+            speakers = speakers.filter(group__iexact=wanted)
+        groups: dict[str, list] = {}
+        for speaker in speakers.select_related("photo"):
+            groups.setdefault(speaker.group or "Speakers", []).append(speaker)
+        context["groups"] = list(groups.items())
+        context["show_headings"] = not wanted and len(groups) > 1
+        return context
+
+
 BODY_BLOCKS = [
     ("text", blocks.RichTextBlock(features=RICH_TEXT_FEATURES)),
     ("image", ImageBlock()),
@@ -148,13 +178,32 @@ BODY_BLOCKS = [
         admin_text="The conference's tracks, from the IGLC's conference record.",
         template="conferences/blocks/tracks.html", icon="list-ul")),
     ("programme", ProgrammeBlock()),
+    ("speakers", SpeakersBlock()),
 ]
 
 
 # ---------------------------------------------------------------- shared behaviour
 
+class PageStructureForm(WagtailAdminPageForm):
+    """The pages of a conference site follow the IGLC's standard: only superusers change a page's title,
+    address or place in the menu. Everyone else edits the content."""
+
+    STRUCTURE = ("title", "slug", "show_in_menus")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        user = getattr(self, "for_user", None)
+        if self.instance.pk and user is not None and not user.is_superuser:
+            for name in self.STRUCTURE:
+                if name in self.fields:
+                    self.fields[name].disabled = True
+                    self.fields[name].help_text = "Set by the IGLC for every conference website."
+
+
 class ConferencePageMixin:
     """For every page of a conference site: its home page and the site's branding and menu."""
+
+    base_form_class = PageStructureForm
 
     # No approval workflow on the conference sites: the organisers publish their own pages.
     has_workflow = False
@@ -314,7 +363,7 @@ class ConferenceHomePage(ConferencePageMixin, Page):
     ])
 
     parent_page_types = ["conferences.ConferenceIndexPage"]
-    subpage_types = ["conferences.ConferencePage", "conferences.KeynotesPage", "conferences.CommitteesPage",
+    subpage_types = ["conferences.ConferencePage", "conferences.CommitteesPage",
                      "conferences.SponsorsPage", "conferences.AcceptedPapersPage"]
     template = "conferences/home_page.html"
 
@@ -419,26 +468,32 @@ class ConferencePage(ConferencePageMixin, Page):
         verbose_name = "conference page"
 
 
-class KeynotesPage(ConferencePageMixin, Page):
-    intro = models.TextField(blank=True)
+class Speaker(Orderable):
+    """A speaker of the conference (keynotes, industry day, panels...), entered once under Speakers in the
+    conference's workspace and shown by the Speakers block; programme sessions link to them."""
 
-    content_panels = Page.content_panels + [FieldPanel("intro"), InlinePanel("keynotes", label="Speaker")]
-    parent_page_types = ["conferences.ConferenceHomePage"]
-    subpage_types = []
-    template = "conferences/keynotes_page.html"
-
-    class Meta:
-        verbose_name = "keynotes page"
-
-
-class Keynote(Orderable):
-    page = ParentalKey(KeynotesPage, on_delete=models.CASCADE, related_name="keynotes")
+    conference = models.ForeignKey("archive.Conference", on_delete=models.CASCADE, related_name="speakers")
+    group = models.CharField(max_length=120, blank=True, default="Keynote speakers",
+                             help_text="For example 'Keynote speakers' or 'Industry day speakers'. A Speakers block "
+                                       "shows one group, or all of them.")
     name = models.CharField(max_length=200)
     affiliation = models.CharField(max_length=300, blank=True)
     photo = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     talk_title = models.CharField(max_length=300, blank=True)
     biography = RichTextField(features=["bold", "italic", "link"], blank=True)
     url = models.URLField("profile page", blank=True)
+    hidden = models.BooleanField("not yet announced", default=False,
+                                 help_text="Kept off the website until it is unticked.")
+
+    class Meta(Orderable.Meta):
+        verbose_name = "speaker"
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def initials(self):
+        return "".join(part[0] for part in self.name.split()[:3] if part).upper()
 
 
 class CommitteesPage(ConferencePageMixin, Page):
@@ -583,8 +638,7 @@ class StandardPageTemplate(models.Model):
     created afterwards, not to existing ones."""
 
     PAGE_TYPES = [
-        ("ConferencePage", "Ordinary page (text, pictures, buttons, dates, tracks)"),
-        ("KeynotesPage", "Keynotes (a list of speakers)"),
+        ("ConferencePage", "Ordinary page (text, pictures, buttons, dates, tracks, speakers, programme)"),
         ("CommitteesPage", "Committees (a list of members)"),
         ("SponsorsPage", "Sponsors (logos by level, and text)"),
         ("AcceptedPapersPage", "Accepted papers (listed automatically)"),

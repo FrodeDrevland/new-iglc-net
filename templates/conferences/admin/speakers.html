@@ -1,0 +1,52 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% load wagtailimages_tags %}
+{% block pagetitle %}Speakers{% endblock %}
+{% block extra_js %}{{ block.super }}{{ form.media.js }}{% endblock %}
+{% block heading %}Speakers{% endblock %}
+{% block lead %}<p class="lead">The keynote speakers and other speakers, each entered once, in groups. A <strong>Speakers</strong> block on a website page shows them (one group, or all), and programme sessions can link to them. Changes show on the published website at once; tick <strong>Not yet announced</strong> to keep someone off it until they may be named.</p>{% endblock %}
+{% block content_main %}
+{{ form.media.css }}
+{% if frozen %}<p class="upload-report">The website is frozen: only the IGLC can change it.</p>{% endif %}
+
+{% for group, rows in groups %}
+<section class="conf-committee-admin">
+  <div class="conf-committee-head">
+    <h2>{{ group|default:"(no group)" }} <span class="muted small">({{ rows|length }})</span></h2>
+    {% if not frozen and groups|length > 1 %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="group" value="{{ group }}">
+      {% if not forloop.first %}<button class="button button-small button-secondary" name="action" value="group-up">↑ Move up</button>{% endif %}
+      {% if not forloop.last %}<button class="button button-small button-secondary" name="action" value="group-down">↓ Move down</button>{% endif %}</form>{% endif %}
+  </div>
+  <table class="listing prod-table conf-members-admin">
+    <tbody>{% for s in rows %}
+      <tr>
+        <td class="conf-thumb">{% if s.photo %}{% image s.photo fill-80x80 alt="" %}{% else %}<span class="conf-thumb-initials">{{ s.initials }}</span>{% endif %}</td>
+        <td><strong>{{ s.name }}</strong>{% if s.hidden %} <span class="badge state-draft">Not yet announced</span>{% endif %}
+          {% if s.affiliation %}<br><span class="small muted">{{ s.affiliation }}</span>{% endif %}
+          {% if s.talk_title %}<br><span class="small"><em>{{ s.talk_title }}</em></span>{% endif %}</td>
+        <td class="conf-row-actions">{% if not frozen %}
+          <a class="button button-small" href="{% url 'conference:speaker' conference.number s.pk %}">Edit</a>
+          <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="speaker" value="{{ s.pk }}">
+            {% if not forloop.first %}<button class="button button-small button-secondary" name="action" value="up" aria-label="Move {{ s.name }} up">↑</button>{% else %}<span class="button button-small button-secondary spacer" aria-hidden="true">↑</span>{% endif %}
+            {% if not forloop.last %}<button class="button button-small button-secondary" name="action" value="down" aria-label="Move {{ s.name }} down">↓</button>{% else %}<span class="button button-small button-secondary spacer" aria-hidden="true">↓</span>{% endif %}
+            <button class="button button-small button-secondary" name="action" value="remove" onclick="return confirm('Remove {{ s.name|escapejs }}?')">Remove</button></form>
+        {% endif %}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% empty %}
+<p class="muted">No speakers yet. Add them below.</p>
+{% endfor %}
+
+{% if not frozen %}
+<datalist id="speaker-groups">{% for name in group_names %}<option value="{{ name }}">{% endfor %}<option value="Keynote speakers"><option value="Industry day speakers"></datalist>
+<section class="panel conf-speaker-add">
+  <h2>Add a speaker</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="add">
+    {% include "conferences/admin/_member_fields.html" %}
+    <p><button class="button" type="submit">Add</button></p>
+  </form>
+</section>
+<p class="small muted">To show the speakers on the website, add a <strong>Speakers</strong> block to a page under <a href="{% url 'conference:website' conference.number %}">Website</a>, with the group to show (or blank for all).</p>
+{% endif %}
+{% endblock %}

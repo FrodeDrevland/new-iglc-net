@@ -64,19 +64,13 @@ class SessionForm(forms.ModelForm):
         self.fields["part"].empty_label = None
         self.fields["location"].queryset = programme.locations.all()
         self.fields["track"].queryset = programme.conference.tracks.all()
-        from apps.conferences.models import Keynote
+        from apps.conferences.models import Speaker
 
-        self.fields["keynote"].queryset = Keynote.objects.filter(
-            page__in=_keynote_pages(programme)).order_by("sort_order")
+        self.fields["keynote"].queryset = Speaker.objects.filter(conference=programme.conference).order_by(
+            "sort_order")
+        self.fields["keynote"].label = "Speaker"
         days = [(d.isoformat(), f"{d:%A %d %B %Y}") for d in programme.days()]
         self.fields["date"].widget = forms.Select(choices=days)
-
-
-def _keynote_pages(programme):
-    from apps.conferences.models import ConferenceHomePage, KeynotesPage
-
-    home = ConferenceHomePage.objects.filter(conference=programme.conference).first()
-    return KeynotesPage.objects.descendant_of(home) if home else KeynotesPage.objects.none()
 
 
 class PersonForm(forms.ModelForm):

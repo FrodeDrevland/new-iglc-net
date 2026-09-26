@@ -16,6 +16,7 @@ Log in at `/manage/` with your e-mail address and password. You land on your con
 - **Website**: the website's pages, each with an **Edit** button, and **Publish changes…**.
 - **Dates and links**: the important dates, the registration link and the contact e-mail.
 - **Committees**: the people on the website's committees page, with their portraits.
+- **Speakers**: the keynote speakers and other speakers, shown with the Speakers block.
 - **Branding**: the logo, photograph, colours and heading font.
 - **People**: who has which role, and (for conference chairs) adding and removing people.
 - **Tracks** (scientific chairs): the conference's tracks.
@@ -51,9 +52,9 @@ The roles are about access only. The titles on the website's committees page ("S
 ## Editing a page
 
 1. Under **Website**, click **Edit** next to the page.
-2. Change the title, the introduction and the content. The content is made of blocks: text,
-   picture, button, video or map, important dates, tracks and programme. Add a block with **+**,
-   move it with the arrows, remove it with the bin.
+2. Change the introduction and the content. The content is made of blocks: text, picture, button,
+   video or map, important dates, tracks, speakers and programme. Add a block with **+**, move it
+   with the arrows, remove it with the bin.
 3. The eye icon in the panel on the right shows the page as it will look, and follows what you type;
    you can switch between phone, tablet and desktop sizes there, or open the preview in a new tab.
    **Save draft** keeps your changes without showing them to anyone.
@@ -67,11 +68,13 @@ the draft pages in the menu, and the menu's links lead to the other pages' draft
 A published page that you change again shows "published" and "changes" until you publish the
 changes. **Publish changes…** under Website publishes several pages in one go.
 
-A page that is not needed: open it and choose **Unpublish** (under the arrow next to Save draft).
-It stays as a draft; ask the webmaster if it should be deleted.
+**The pages themselves are the IGLC's standard.** Every conference website has the same pages, with
+the same titles and addresses, in the same order in the menu; the Standardisation Committee decides
+them. You edit what is on them, but you cannot add, remove, rename or move pages. If the conference
+needs something different, ask the webmaster.
 
-**Add a page** adds a new page to the website. Tick "Show in menus" on its Promote tab to put it in
-the website's menu.
+A page that is not needed yet: open it and choose **Unpublish** (under the arrow next to Save draft).
+It stays as a draft.
 
 ## The home page
 
@@ -163,6 +166,22 @@ The order is the order in the proceedings. The website's "tracks" block, the pro
 and the proceedings all use the same tracks, so a change shows at once. A track that papers,
 sessions or editors already use cannot be removed, only renamed. Once the proceedings are in the
 archive, only the IGLC can change the tracks.
+
+## Speakers
+
+**Speakers** in the menu holds the keynote speakers and any other speakers (for the industry day or a
+panel, say), each entered once: name, affiliation, portrait (at least 400 × 400 pixels, shown round),
+the title of the talk, a short biography and a profile page. Each speaker is in a **group**, such as
+"Keynote speakers" or "Industry day speakers"; move speakers and whole groups up and down with the
+arrows.
+
+A **Speakers** block on a page shows them: give it the name of a group to show only that group, or
+leave it blank to show all, under the names of their groups. The keynotes page has one already.
+Programme sessions link to the speakers too, so a keynote session shows the speaker's portrait and
+talk.
+
+Unlike the pages, the speakers are not drafts: a change shows on the published website at once. Tick
+**Not yet announced** to keep someone off the website until they may be named.
 
 ## Pictures and documents
 

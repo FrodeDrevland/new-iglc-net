@@ -183,8 +183,8 @@ class Session(models.Model):
     plenary = models.BooleanField(default=False, help_text="For everyone in the part: nothing runs in parallel.")
     track = models.ForeignKey("archive.ConferenceTrack", null=True, blank=True, on_delete=models.SET_NULL,
                               related_name="+")
-    keynote = models.ForeignKey("conferences.Keynote", null=True, blank=True, on_delete=models.SET_NULL,
-                                related_name="+", help_text="A speaker from the keynotes page.")
+    keynote = models.ForeignKey("conferences.Speaker", null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name="+", help_text="A speaker from Speakers in the conference's menu.")
     notes = models.TextField(blank=True, help_text="Shown with the session.")
     cancelled = models.BooleanField(default=False, help_text="Shown struck through, and cancelled in calendars.")
     change_note = models.CharField(
