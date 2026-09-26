@@ -30,11 +30,5 @@ a compact list for one where nobody has (e.g. a long scientific committee).{% en
     {% endif %}
   </section>
   {% endfor %}
-  {% if page.show_editors and conference.editors.all %}
-  <section class="conf-committee">
-    <h2>Proceedings editors</h2>
-    <ul class="conf-members">{% for e in conference.editors.all %}<li><strong>{{ e }}</strong></li>{% endfor %}</ul>
-  </section>
-  {% endif %}
 </article>
 {% endblock %}

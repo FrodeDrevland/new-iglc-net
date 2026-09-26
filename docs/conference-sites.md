@@ -116,7 +116,6 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
 - Conference number, city and dates, and the tracks: the conference record in the archive.
 - Accepted papers: the papers the IGLC has from ConfTool for the proceedings (withdrawn papers left
   out, no e-mail addresses); after publication, the published papers with links.
-- The proceedings editors, on the committees page (can be switched off).
 
 ## After the conference
 

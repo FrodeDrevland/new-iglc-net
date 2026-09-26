@@ -153,7 +153,6 @@ You do not need to type these in; the website shows them from the IGLC's records
 
 - the conference's number, city, dates and tracks (the "tracks" block);
 - the accepted papers (the accepted papers page), from the papers sent to the proceedings editors;
-- the proceedings editors, on the committees page;
 - the programme (the "programme" block), from the programme editors' work (see the
   [programme guide](programme.md)).
 

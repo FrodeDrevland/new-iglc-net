@@ -443,15 +443,12 @@ class Keynote(Orderable):
 
 class CommitteesPage(ConferencePageMixin, Page):
     intro = models.TextField(blank=True)
-    show_editors = models.BooleanField(
-        "show the proceedings editors", default=True,
-        help_text="List the editors from the IGLC's conference record as 'Proceedings editors'.")
 
     # The members are edited under Committees in the conference's menu (apps/conferences/committee_views.py).
     content_panels = Page.content_panels + [
         HelpPanel("<p>The members are added, ordered and given portraits under <strong>Committees</strong> in the "
                   "menu.</p>"),
-        FieldPanel("intro"), FieldPanel("show_editors"),
+        FieldPanel("intro"),
     ]
     parent_page_types = ["conferences.ConferenceHomePage"]
     subpage_types = []
