@@ -397,7 +397,7 @@
           <label>From <input type="time" step="900" name="start" value="${s.start}"${ro}></label>
           <label>To <input type="time" step="900" name="end" value="${s.end}"${ro}></label>
           <label>Room <select name="location"${ro}><option value="">none</option>${options(S.rooms.map(r => [r.id, r.name]), s.location)}</select></label>
-          <label class="check"><input type="checkbox" name="plenary"${s.plenary ? " checked" : ""}${ro}> Plenary (across all rooms)</label>
+          <label class="check"><input type="checkbox" name="plenary"${s.plenary ? " checked" : ""}${ro}> Plenary (across all parallels)</label>
           <label>Track <select name="track"${ro}><option value="">none</option>${options(S.tracks.map(t => [t.id, t.title]), s.track)}</select></label>
           <label class="wide">Notes <textarea name="notes" rows="2"${ro}>${esc(s.notes)}</textarea></label>
           <label class="check"><input type="checkbox" name="cancelled"${s.cancelled ? " checked" : ""}${ro}> Cancelled</label>

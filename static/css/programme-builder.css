@@ -95,9 +95,10 @@
 .bp-add .button { justify-self: start; }
 .b-side .b-form { grid-template-columns: 1fr 1fr; }
 .b-side .b-form label { min-width: 0; }
-.b-side .b-form label > input, .b-side .b-form label > select, .b-side .b-form label > textarea { width: 100%; box-sizing: border-box; }
+.b-side .b-form label > input:not([type=checkbox]), .b-side .b-form label > select, .b-side .b-form label > textarea { width: 100%; box-sizing: border-box; }
 .b-side .b-form label.check, .b-side .b-form label.wide { grid-column: 1 / -1; }
-.b-side .b-form label.check > input { width: auto; }
+.b-side .b-form label.check { display: flex; align-items: center; gap: .5rem; }
+.b-side .b-form label.check > input { flex: none; }
 .bpanel-people td { padding: 0 .15rem .25rem 0; }
 .bpanel-people input, .bpanel-people select { border: 1px solid var(--w-color-border-field-default, #999); }
 .b-side input:not([type=checkbox]):not([type=radio]), .b-side textarea, .b-toolbar input[type=text],
@@ -119,3 +120,8 @@
 .bg-lane-room { display: block; width: 100%; margin-top: .2rem; font-size: .8rem !important; font-weight: 400; padding: .1rem .3rem !important; }
 .bb-noroom { font-style: italic; color: var(--w-color-critical-200, #cd4444); }
 .bg-room { white-space: normal; }
+/* Wagtail draws a select's arrow in its right padding: the compact padding keeps room for it */
+.b-toolbar select, .b-side select, .b-dialog select, .bg-lane-room { padding-right: 1.9rem; background-position-x: calc(100% - .9rem), calc(100% - .55rem); }
+.b-toolbar input[type=text] { width: auto; }
+.b-inline { flex-wrap: nowrap; }
+.b-inline label { display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap; }
