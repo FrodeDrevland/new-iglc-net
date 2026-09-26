@@ -447,10 +447,11 @@ class CommitteesPage(ConferencePageMixin, Page):
         "show the proceedings editors", default=True,
         help_text="List the editors from the IGLC's conference record as 'Proceedings editors'.")
 
+    # The members are edited under Committees in the conference's menu (apps/conferences/committee_views.py).
     content_panels = Page.content_panels + [
+        HelpPanel("<p>The members are added, ordered and given portraits under <strong>Committees</strong> in the "
+                  "menu.</p>"),
         FieldPanel("intro"), FieldPanel("show_editors"),
-        InlinePanel("members", label="Member",
-                    help_text="Members are listed under their committee's name, in the order given here."),
     ]
     parent_page_types = ["conferences.ConferenceHomePage"]
     subpage_types = []
@@ -463,7 +464,7 @@ class CommitteesPage(ConferencePageMixin, Page):
         """[(committee, members, with_photos)]: a committee where nobody has a photograph is shown as a
         compact list rather than cards with initials."""
         grouped: dict[str, list] = {}
-        for member in self.members.select_related("photo", "person"):
+        for member in self.members.all():
             grouped.setdefault(member.committee, []).append(member)
         return [(name, members, any(m.photo_id for m in members)) for name, members in grouped.items()]
 

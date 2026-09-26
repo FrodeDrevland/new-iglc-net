@@ -51,7 +51,8 @@ Each conference has its own part of the back office at `/manage/<number>/` (code
 `apps/conferences/workspace.py` and `workspace_views.py`). Inside it the sidebar shows only that
 conference: **Overview**, **Website** (its pages with Edit buttons, publishing), **Dates and links** (the
 important dates, the registration link and the contact e-mail, saved as a draft of the home page or
-published), **Branding** (the
+published), **Committees** (the members of the committees page, with portraits, one table per committee;
+add one or paste many; saved as drafts of that page), **Branding** (the
 home page's logo, photograph, colours and font, saved as a draft or published), **People**,
 **Programme**, **Proceedings**, Images, Documents and Help (Submission and review joins them in
 phase 5). The first item switches to another conference or, for the IGLC's own people, back to

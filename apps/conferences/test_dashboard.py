@@ -247,7 +247,7 @@ class DashboardTests(TestCase):
         organiser = self._person("org", "organisers")
         self.client.force_login(organiser)
         page = self.client.get(self.url()).content.decode()
-        for label in ("Overview", "Website", "Branding", "People", "IGLC 99: Sandbox"):
+        for label in ("Overview", "Website", "Dates and links", "Committees", "Branding", "People", "IGLC 99: Sandbox"):
             self.assertIn(label, page)
         for label in ('"Reports"', '"Settings"', "IGLC admin", "All conferences"):
             self.assertNotIn(label, page)
@@ -429,6 +429,57 @@ class DashboardTests(TestCase):
         self.assertIn('href="https://example.org/jw"', html)
         self.assertIn('class="conf-members"', html)             # nobody with a photograph: a compact list
         self.assertLess(html.index("Organising committee"), html.index("Scientific committee"))
+
+    def test_committees_in_the_workspace(self):
+        home = seed(self.conference, publish=True)
+        page = home.get_children().get(slug="committees").specific
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        url = self.url() + "committees/"
+        self.assertContains(self.client.get(url), "No members yet")
+        self.client.post(url, {"action": "add", "add-committee": "Organising committee", "add-name": "Anna Müller",
+                               "add-role": "Conference chair", "add-affiliation": "TUM", "add-country": "Germany"})
+        self.client.post(url, {"action": "bulk", "bulk-committee": "Scientific committee",
+                               "bulk-lines": "Lauri Koskela; University of Huddersfield; UK\n"
+                                             "Glenn Ballard\tUC Berkeley\tUSA\n\nIris Tommelein"})
+        self.client.post(url, {"action": "add", "add-committee": "Organising committee", "add-name": "Jonas Weber"})
+        from .models import CommitteesPage
+
+        def draft():
+            return CommitteesPage.objects.get(pk=page.pk).get_latest_revision_as_object()
+
+        names = lambda: [m.name for m in draft().members.all()]  # noqa: E731
+        # Jonas goes to the end of his committee, before the scientific committee
+        self.assertEqual(names(), ["Anna Müller", "Jonas Weber", "Lauri Koskela", "Glenn Ballard", "Iris Tommelein"])
+        members = draft().members.all()
+        self.assertEqual((members[3].affiliation, members[3].country), ("UC Berkeley", "USA"))
+        self.client.post(url, {"action": "up", "index": 1, "name_was": "Jonas Weber"})
+        self.assertEqual(names()[:2], ["Jonas Weber", "Anna Müller"])
+        self.client.post(url, {"action": "remove", "index": 4, "name_was": "Someone else"})  # stale: nothing
+        self.assertEqual(len(names()), 5)
+        self.client.post(url, {"action": "remove", "index": 4, "name_was": "Iris Tommelein"})
+        self.client.post(url, {"action": "committee-up", "committee": "Scientific committee"})
+        self.assertEqual(names(), ["Lauri Koskela", "Glenn Ballard", "Jonas Weber", "Anna Müller"])
+        self.client.post(url + "1/", {"name_was": "Glenn Ballard", "committee": "Scientific committee",
+                                      "name": "Glenn Ballard", "role": "Honorary member", "affiliation": "UC Berkeley"})
+        self.assertEqual(draft().members.all()[1].role, "Honorary member")
+        # all drafts until published
+        live = self.client.get("/2099/committees/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertNotIn("Glenn Ballard", live)
+        overview = self.client.get(url).content.decode()
+        self.assertIn("Changes not yet published", overview)
+        self.client.post(url, {"action": "publish"})
+        live = self.client.get("/2099/committees/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("Honorary member", live)
+        self.assertLess(live.index("Scientific committee"), live.index("Organising committee"))
+        # the page editor no longer has the long list
+        self.assertNotIn("members-TOTAL_FORMS", self.client.get(f"/manage/pages/{page.pk}/edit/").content.decode())
+        # part chairs do not edit the website
+        from . import roles as conference_roles
+
+        conference_roles.group(self.conference, conference_roles.SCIENTIFIC, create=True)
+        self.client.force_login(self._person("sci", "scientific chairs"))
+        self.assertNotEqual(self.client.get(url).status_code, 200)
 
     def test_scientific_chairs_edit_the_proceedings(self):
         from apps.production.access import productions_for, role

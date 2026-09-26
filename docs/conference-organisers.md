@@ -14,6 +14,7 @@ Log in at `/manage/` with your e-mail address and password. You land on your con
   proceedings, and what has happened lately.
 - **Website**: the website's pages, each with an **Edit** button, and **Publish changes…**.
 - **Dates and links**: the important dates, the registration link and the contact e-mail.
+- **Committees**: the people on the website's committees page, with their portraits.
 - **Branding**: the logo, photograph, colours and heading font.
 - **People**: who has which role, and (for conference chairs) adding and removing people.
 - **Programme** and **Proceedings**: when your role includes them.
@@ -126,12 +127,19 @@ unpublished changes to the home page).
 
 ## Committees
 
-The committees page lists the members by committee, in the order you enter them. Give each member a
-**portrait** (at least 400 × 400 pixels; it is shown round, cut to a square around the picture's
-focal point), a **role** (such as "Conference chair", shown as a label) and a **profile page** if
-you like. A committee where someone has a portrait is shown as cards, with the initials for those
-without one; a committee where nobody has one (a long scientific committee, say) is shown as a
-compact list.
+**Committees** in the menu lists everyone on the website's committees page, committee by committee,
+with their portraits: **Edit** a member, move them up or down, or remove them, and move whole
+committees up or down. **Add a member** adds one at a time, with a portrait; **Add many at once**
+takes a pasted list (one per line: Name; Affiliation; Country, or three columns copied from a
+spreadsheet), for a long scientific committee, say.
+
+Give members a **portrait** (at least 400 × 400 pixels; it is shown round, cut to a square around the
+picture's focal point), a **role** (such as "Conference chair", shown as a label) and a **profile
+page** if you like. A committee where someone has a portrait is shown as cards, with the initials
+for those without one; a committee where nobody has one is shown as a compact list.
+
+Changes are saved as a draft of the committees page: **Preview** shows it, **Publish** puts it on
+the website. The page's title and introduction are edited with "Title and introduction".
 
 ## Pictures and documents
 

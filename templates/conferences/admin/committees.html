@@ -1,0 +1,72 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% load wagtailimages_tags %}
+{% block pagetitle %}Committees{% endblock %}
+{% block extra_js %}{{ block.super }}{{ add_form.media.js }}{% endblock %}
+{% block heading %}Committees{% endblock %}
+{% block lead %}<p class="lead">Who is shown on the website's committees page, by committee and in this order. Changes are saved as a draft of that page; <strong>Publish</strong> puts them on the website. (Who may edit the website is under <a href="{% url 'conference:people' conference.number %}">People</a>.)</p>{% endblock %}
+{% block content_main %}
+{{ add_form.media.css }}
+{% if not page %}
+  <p class="upload-report">The website has no committees page. Add one under <a href="{% url 'conference:website' conference.number %}">Website</a> (Add a page), or ask the webmaster.</p>
+{% else %}
+{% if frozen %}<p class="upload-report">The website is frozen: only the IGLC can change it.</p>{% endif %}
+<p class="conf-actions">
+  <span class="badge {% if unpublished %}state-draft{% else %}state-published{% endif %}">{% if not page.live %}Draft{% elif unpublished %}Changes not yet published{% else %}Published{% endif %}</span>
+  <span class="muted">{{ count }} member{{ count|pluralize }}</span>
+  {% if unpublished and can_publish and not frozen %}<form class="inline" method="post">{% csrf_token %}<input type="hidden" name="action" value="publish"><button class="button button-small" type="submit">Publish</button></form>{% endif %}
+  <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:view_draft' page.pk %}" target="_blank" rel="noopener">Preview</a>
+  <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:edit' page.pk %}">Title and introduction</a>
+</p>
+
+{% for committee, rows in groups %}
+<section class="conf-committee-admin">
+  <div class="conf-committee-head">
+    <h2>{{ committee }} <span class="muted small">({{ rows|length }})</span></h2>
+    {% if not frozen and groups|length > 1 %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="committee" value="{{ committee }}">
+      {% if not forloop.first %}<button class="button button-small button-secondary" name="action" value="committee-up" title="Move the committee up">↑ Move up</button>{% endif %}
+      {% if not forloop.last %}<button class="button button-small button-secondary" name="action" value="committee-down" title="Move the committee down">↓ Move down</button>{% endif %}</form>{% endif %}
+  </div>
+  <table class="listing prod-table conf-members-admin">
+    <tbody>{% for index, m in rows %}
+      <tr>
+        <td class="conf-thumb">{% if m.photo %}{% image m.photo fill-80x80 alt="" %}{% else %}<span class="conf-thumb-initials">{{ m.initials }}</span>{% endif %}</td>
+        <td><strong>{{ m.name }}</strong>{% if m.role %} <span class="badge">{{ m.role }}</span>{% endif %}
+          <br><span class="small muted">{{ m.affiliation }}{% if m.affiliation and m.country %}, {% endif %}{{ m.country }}</span>
+          {% if m.url %}<br><a class="small" href="{{ m.url }}" target="_blank" rel="noopener">{{ m.url|truncatechars:50 }}</a>{% endif %}</td>
+        <td class="conf-row-actions">{% if not frozen %}
+          <a class="button button-small" href="{% url 'conference:committee_member' conference.number index %}">Edit</a>
+          <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="index" value="{{ index }}"><input type="hidden" name="name_was" value="{{ m.name }}">
+            {% if not forloop.first %}<button class="button button-small button-secondary" name="action" value="up" title="Move up" aria-label="Move {{ m.name }} up">↑</button>{% else %}<span class="button button-small button-secondary spacer" aria-hidden="true">↑</span>{% endif %}
+            {% if not forloop.last %}<button class="button button-small button-secondary" name="action" value="down" title="Move down" aria-label="Move {{ m.name }} down">↓</button>{% else %}<span class="button button-small button-secondary spacer" aria-hidden="true">↓</span>{% endif %}
+            <button class="button button-small button-secondary" name="action" value="remove" onclick="return confirm('Remove {{ m.name|escapejs }}?')">Remove</button></form>
+        {% endif %}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% empty %}
+<p class="muted">No members yet. Add them below: one at a time with a portrait, or many at once by pasting a list.</p>
+{% endfor %}
+
+{% if not frozen %}
+<datalist id="committee-names">{% for name in committee_names %}<option value="{{ name }}">{% endfor %}<option value="Organising committee"><option value="Scientific committee"></datalist>
+<div class="conf-grid">
+  <section class="panel">
+    <h2>Add a member</h2>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="add">
+      {% include "conferences/admin/_member_fields.html" with form=add_form %}
+      <p><button class="button" type="submit">Add</button></p>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>Add many at once</h2>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="bulk">
+      {% for field in bulk_form %}<div class="conf-field"><label for="{{ field.id_for_label }}"><strong>{% if field.name == "committee" %}Committee{% else %}{{ field.label }}{% endif %}</strong></label>{{ field }}{% if field.help_text %}<p class="small muted">{{ field.help_text }}</p>{% endif %}{% for e in field.errors %}<p class="fail small">{{ e }}</p>{% endfor %}</div>{% endfor %}
+      <p class="small muted">For a long list such as the scientific committee. Portraits, roles and profile pages can be added afterwards with Edit.</p>
+      <p><button class="button" type="submit">Add them</button></p>
+    </form>
+  </section>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

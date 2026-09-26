@@ -1,0 +1,14 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% block pagetitle %}{{ member.name }}{% endblock %}
+{% block extra_js %}{{ block.super }}{{ form.media.js }}{% endblock %}
+{% block heading %}{{ member.name }}{% endblock %}
+{% block lead %}<p class="lead"><a href="{% url 'conference:committees' conference.number %}">Committees</a> · {{ member.committee }}. Saved as a draft of the committees page.</p>{% endblock %}
+{% block content_main %}
+{{ form.media.css }}
+<datalist id="committee-names">{% for name in committee_names %}<option value="{{ name }}">{% endfor %}</datalist>
+<form method="post" class="conf-member-form">{% csrf_token %}<input type="hidden" name="name_was" value="{{ member.name }}">
+  {% include "conferences/admin/_member_fields.html" %}
+  {% if not frozen %}<p class="conf-actions"><button class="button" type="submit">Save</button>
+    <a class="button button-secondary" href="{% url 'conference:committees' conference.number %}">Cancel</a></p>{% endif %}
+</form>
+{% endblock %}

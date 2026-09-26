@@ -61,3 +61,15 @@
 .iglc-prod .conf-branding-preview { position: relative; z-index: 0; }
 .iglc-prod .conf-branding-form .chooser, .iglc-prod .conf-branding-form .chooser .chosen { max-width: 100%; min-width: 0; }
 .iglc-prod .conf-branding-form .chooser__title { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
+/* Committees (committees.html) */
+.iglc-prod .conf-committee-admin { margin: 1.5rem 0 2rem; }
+.iglc-prod .conf-committee-head { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.iglc-prod .conf-committee-head h2 { margin: 0; }
+.iglc-prod .conf-members-admin td { vertical-align: middle; }
+.iglc-prod .conf-thumb { width: 3.5rem; }
+.iglc-prod .conf-thumb img, .iglc-prod .conf-thumb-initials { width: 2.75rem; height: 2.75rem; border-radius: 50%; object-fit: cover; display: block; }
+.iglc-prod .conf-thumb-initials { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem;
+  background: #e3e6ee; color: #2e1f5e; }
+.iglc-prod .conf-members-admin .spacer { visibility: hidden; }
+.iglc-prod .conf-member-form { max-width: 36rem; }
+.iglc-prod .conf-field textarea { width: 100%; }

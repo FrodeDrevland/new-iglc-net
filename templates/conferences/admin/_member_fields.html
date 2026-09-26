@@ -1,0 +1,8 @@
+{% for field in form %}
+<div class="conf-field">
+  <label for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
+  {{ field }}
+  {% if field.help_text %}<p class="small muted">{{ field.help_text }}</p>{% endif %}
+  {% for e in field.errors %}<p class="fail small">{{ e }}</p>{% endfor %}
+</div>
+{% endfor %}
