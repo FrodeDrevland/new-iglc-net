@@ -161,18 +161,20 @@ def conference_items(request, conference):
         items += [
             MenuItem("Website", reverse("conference:website", args=[number]), name="conference-website",
                      icon_name="doc-full", order=2),
+            MenuItem("Dates and links", reverse("conference:dates", args=[number]), name="conference-dates",
+                     icon_name="calendar", order=3),
             MenuItem("Branding", reverse("conference:branding", args=[number]), name="conference-branding",
-                     icon_name="pick", order=3),
+                     icon_name="pick", order=4),
         ]
     items.append(MenuItem("People", reverse("conference:people", args=[number]), name="conference-people",
-                          icon_name="group", order=4))
+                          icon_name="group", order=5))
     if programmes_for(user).filter(conference=conference).exists():
         items.append(MenuItem("Programme", reverse("programme:overview", args=[number]),
-                              name="conference-programme", icon_name="time", order=5))
+                              name="conference-programme", icon_name="time", order=6))
     if productions_for(user).filter(conference=conference).exists():
         items.append(MenuItem("Proceedings", reverse("proceedings:production", args=[number]),
-                              name="conference-proceedings", icon_name="doc-full-inverse", order=6))
-    # Submission and review (phase 5) goes here, order 7.
+                              name="conference-proceedings", icon_name="doc-full-inverse", order=7))
+    # Submission and review (phase 5) goes here, order 8.
     return items
 
 

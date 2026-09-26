@@ -23,7 +23,7 @@ from django.http import HttpResponseRedirect
 from django.utils.functional import cached_property
 from modelcluster.fields import ParentalKey
 from wagtail import blocks
-from wagtail.admin.panels import (FieldPanel, HelpPanel, InlinePanel, MultiFieldPanel, ObjectList,
+from wagtail.admin.panels import (FieldPanel, HelpPanel, InlinePanel, ObjectList,
                                   TabbedInterface)
 from wagtail.embeds.blocks import EmbedBlock
 from wagtail.fields import RichTextField, StreamField
@@ -248,10 +248,6 @@ class ConferenceHomePage(ConferencePageMixin, Page):
         FieldPanel("tagline"),
         FieldPanel("intro"),
         FieldPanel("body"),
-        InlinePanel("important_dates", label="Important dates", heading="Important dates",
-                    help_text="Deadlines and the conference days. Shown on the home page and wherever a page "
-                              "has an 'important dates' block."),
-        MultiFieldPanel([FieldPanel("registration_url"), FieldPanel("contact_email")], heading="Links"),
     ]
     branding_panels = [
         HelpPanel("<p>The site keeps the IGLC layout; these set its logo, picture, colours and heading font. "
@@ -271,8 +267,10 @@ class ConferenceHomePage(ConferencePageMixin, Page):
     # The branding fields are edited on the conference's Branding page in the back office
     # (/manage/<number>/branding/, apps/conferences/workspace_views.py), not in the page editor.
     edit_handler = TabbedInterface([
-        ObjectList([HelpPanel("<p>The logo, colours, photograph and heading font are under <strong>Branding</strong> "
-                              "in the menu.</p>")] + content_panels, heading="Content"),
+        ObjectList([HelpPanel("<p>The important dates, the registration link and the contact address are under "
+                              "<strong>Dates and links</strong> in the menu; the logo, colours, photograph and "
+                              "heading font under <strong>Branding</strong>.</p>")] + content_panels,
+                   heading="Content"),
         ObjectList(Page.promote_panels, heading="Promote"),
         ObjectList(settings_panels, heading="Settings"),
     ])

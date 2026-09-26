@@ -68,6 +68,10 @@
 .conf-figure { margin: 1.5rem 0; }
 .conf-figure figcaption { font-size: .95rem; color: var(--muted); margin-top: .3rem; }
 
+/* the conference's own contact, above the IGLC's footer */
+.conf-contact { background: var(--conf-primary); color: #fff; padding: 1.1rem 0; margin-top: 2.5rem; font-size: 1.05rem; }
+.conf-contact a { color: #fff; font-weight: 600; text-decoration: underline; }
+.conf-contact + .conf-footer { margin-top: 0; }
 .conf-footer { background: var(--soft); border-top: 1px solid var(--line); padding: 2rem 0; font-size: 1rem; margin-top: 2rem; }
 .conf-footer p { max-width: 44rem; }
 .conf-footer-links { color: var(--muted); }

@@ -34,7 +34,7 @@
       {{ d.label }}{% if d.note %} <span class="muted small">({{ d.note }})</span>{% endif %}</li>{% endfor %}
   </ul>
   {% else %}<p class="muted">None yet.</p>{% endif %}
-  {% if can_publish and not home.frozen or is_iglc %}<p class="small"><a href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit them on the home page</a>, then publish it to show them.</p>{% endif %}
+  {% if can_publish and not home.frozen or is_iglc %}<p class="small"><a href="{% url 'conference:dates' conference.number %}">Dates and links</a></p>{% endif %}
 </section>
 {% endif %}
 

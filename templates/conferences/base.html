@@ -49,11 +49,15 @@
     {% block hero %}{% endblock %}
     <div class="wrap">{% block content %}{% endblock %}</div>
   </main>
+  {% if home.contact_email %}
+  <aside class="conf-contact" aria-label="Contact {{ home.short_name }}"><div class="wrap">
+    Questions about {{ home.short_name }}? Write to the organisers: <a href="mailto:{{ home.contact_email }}">{{ home.contact_email }}</a>
+  </div></aside>
+  {% endif %}
   <footer class="conf-footer">
     <div class="wrap">
       <a href="{{ main_site_url }}/"><img src="{% static 'img/iglc-logo-horizontal.svg' %}" alt="IGLC – International Group for Lean Construction" width="184" height="44"></a>
       <p>{% if home %}{{ home.short_name }} is{% else %}The IGLC conferences are{% endif %} organised for the <a href="{{ main_site_url }}/">International Group for Lean Construction</a>. Papers from all conferences are in the <a href="{{ main_site_url }}/papers">IGLC proceedings</a>.</p>
-      {% if home.contact_email %}<p>Contact: <a href="mailto:{{ home.contact_email }}">{{ home.contact_email }}</a></p>{% endif %}
       <p class="conf-footer-links"><a href="{{ main_site_url }}/copyright/">Copyright</a> &middot; <a href="{{ main_site_url }}/contact/">Contact the IGLC</a></p>
     </div>
   </footer>

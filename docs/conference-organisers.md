@@ -13,6 +13,7 @@ Log in at `/manage/` with your e-mail address and password. You land on your con
 - **Overview**: the state of the website, the important dates, the people, the programme and the
   proceedings, and what has happened lately.
 - **Website**: the website's pages, each with an **Edit** button, and **Publish changes…**.
+- **Dates and links**: the important dates, the registration link and the contact e-mail.
 - **Branding**: the logo, photograph, colours and heading font.
 - **People**: who has which role, and (for conference chairs) adding and removing people.
 - **Programme** and **Proceedings**: when your role includes them.
@@ -53,8 +54,8 @@ address, and freezes it after the conference. Ask the webmaster if any of these 
    needs to approve it, and you come back to Website.
 
 To look through the whole website before it is published, use **Preview** next to a page under
-Website: it shows the page's latest draft, with the draft pages in the menu, and the menu's links
-lead to the other pages' drafts.
+Website (it is there for pages with unpublished changes): it shows the page's latest draft, with
+the draft pages in the menu, and the menu's links lead to the other pages' drafts.
 
 A published page that you change again shows "published" and "changes" until you publish the
 changes. **Publish changes…** under Website publishes several pages in one go.
@@ -67,13 +68,24 @@ the website's menu.
 
 ## The home page
 
-The home page carries what the whole website uses: the theme (tagline), a short introduction, the
-content blocks, the **important dates** (deadlines and the conference days; an extended deadline
-keeps the old date, struck through), the registration link (a button in the website's header) and
-the contact address.
+The home page has the theme (tagline), a short introduction and the content blocks. Nothing shows
+on the public website until the **home page is published**. Agree with the chairs before you
+publish it the first time.
 
-Nothing shows on the public website until the **home page is published**. Agree with the chairs
-before you publish it the first time.
+## Dates and links
+
+**Dates and links** in the menu holds what the whole website uses:
+
+- the **important dates**: deadlines and the conference days, kept in date order. An extended
+  deadline: put the new date under Date and the old one under "Before extension"; the website shows
+  the old one struck through. They appear on the home page and wherever a page has an "important
+  dates" block.
+- the **registration** link: a Register button in the website's header and on the home page;
+- the **contact e-mail**: shown at the bottom of every page, as the address for questions about
+  the conference.
+
+Like Branding, they belong to the home page: **Save draft** keeps them for later, **Save and
+publish** shows them at once.
 
 ## Branding
 

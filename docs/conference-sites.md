@@ -49,7 +49,9 @@ frozen website (unpublish or unfreeze it first).
 
 Each conference has its own part of the back office at `/manage/<number>/` (code:
 `apps/conferences/workspace.py` and `workspace_views.py`). Inside it the sidebar shows only that
-conference: **Overview**, **Website** (its pages with Edit buttons, publishing), **Branding** (the
+conference: **Overview**, **Website** (its pages with Edit buttons, publishing), **Dates and links** (the
+important dates, the registration link and the contact e-mail, saved as a draft of the home page or
+published), **Branding** (the
 home page's logo, photograph, colours and font, saved as a draft or published), **People**,
 **Programme**, **Proceedings**, Images, Documents and Help (Submission and review joins them in
 phase 5). The first item switches to another conference or, for the IGLC's own people, back to
@@ -105,7 +107,7 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
   stays the IGLC's (responsive and accessible); a primary colour too light for white text is refused.
   Fonts are served by the site itself, not by a font service.
 - Preview: the eye icon in the page editor, or Preview next to a page under Website (the latest draft; in a preview the website's menu has the draft pages too, linking to their drafts).
-- Important dates are entered once, on the home page, and shown wherever a page has an
+- Important dates are entered once, under Dates and links (kept in date order), and shown wherever a page has an
   "important dates" block. An extended deadline keeps the old date, struck through.
 
 ## From the platform

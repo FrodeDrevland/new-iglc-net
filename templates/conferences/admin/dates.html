@@ -1,0 +1,39 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% block pagetitle %}Dates and links{% endblock %}
+{% block heading %}Dates and links{% endblock %}
+{% block lead %}<p class="lead">The important dates are shown on the home page and wherever a page has an "important dates" block; they are kept in date order. The links are used across the website.</p>{% endblock %}
+{% block content_main %}
+{% if frozen %}<p class="upload-report">The website is frozen: only the IGLC can change it.</p>{% endif %}
+<form method="post">{% csrf_token %}
+  {{ formset.management_form }}
+  {% if formset.non_form_errors %}<div class="upload-report">{{ formset.non_form_errors }}</div>{% endif %}
+  <h2>Important dates</h2>
+  <div class="conf-dates-wrap"><table class="listing prod-table conf-dates-form">
+    <thead><tr><th>What</th><th>Date</th><th>To (for a period)</th><th>Before extension</th><th>Note</th><th>Remove</th></tr></thead>
+    <tbody>{% for form in formset %}
+      <tr>{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+        <td>{{ form.label }}{% for e in form.label.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ form.date }}{% for e in form.date.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ form.end_date }}</td>
+        <td>{{ form.original_date }}</td>
+        <td>{{ form.note }}</td>
+        <td>{% if form.instance.pk or form.initial %}{{ form.DELETE }}{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  <p class="small muted">For example "Abstracts due" or "Full papers due". Fill in an empty row to add a date; save to get more empty rows. An extended deadline: put the new date under Date and the old one under Before extension, and the website shows the old one struck through.</p>
+
+  <h2>Links</h2>
+  {% for field in links %}
+    <div class="conf-field">
+      <label for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
+      {{ field }}
+      <p class="small muted">{{ field.help_text }}</p>
+      {% for e in field.errors %}<p class="fail small">{{ e }}</p>{% endfor %}
+    </div>
+  {% endfor %}
+
+  {% if other_changes %}<p class="small">The home page also has other changes that are not yet published; "Save and publish" publishes them too.</p>{% endif %}
+  {% if not frozen %}<p class="conf-actions"><button class="button" type="submit" name="publish" value="1">Save and publish</button>
+    <button class="button button-secondary" type="submit">Save draft</button></p>{% endif %}
+</form>
+{% endblock %}

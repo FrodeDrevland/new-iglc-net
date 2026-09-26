@@ -325,6 +325,49 @@ class DashboardTests(TestCase):
         page = self.client.get("/2099/", HTTP_HOST="conference.localhost").content.decode()
         self.assertIn("object-position: 25% 50%", page)
 
+    def test_dates_and_links(self):
+        home = seed(self.conference, publish=True)
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        page = self.client.get(self.url() + "dates/")
+        self.assertContains(page, "Conference")
+        existing = home.important_dates.get()
+        data = {"dates-TOTAL_FORMS": "4", "dates-INITIAL_FORMS": "1", "dates-MIN_NUM_FORMS": "0",
+                "dates-MAX_NUM_FORMS": "1000",
+                "dates-0-id": existing.pk, "dates-0-label": "Conference", "dates-0-date": "2099-06-22",
+                "dates-0-end_date": "2099-06-26",
+                "dates-1-label": "Full papers due", "dates-1-date": "2099-02-01", "dates-1-original_date": "2099-01-15",
+                "dates-2-label": "", "dates-3-label": "",
+                "registration_url": "https://example.org/register", "contact_email": "iglc99@example.org"}
+        self.client.post(self.url() + "dates/", data)  # a draft
+        home.refresh_from_db()
+        self.assertEqual(home.registration_url, "")
+        draft = home.get_latest_revision_as_object()
+        self.assertEqual([d.label for d in draft.important_dates.all()], ["Full papers due", "Conference"])
+        self.client.post(self.url() + "dates/", dict(data, publish="1"))
+        site = self.client.get("/2099/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("Full papers due", site)
+        self.assertIn("https://example.org/register", site)
+        # the contact is the conference's, above the IGLC's footer
+        self.assertIn("Write to the organisers", site)
+        self.assertLess(site.index("iglc99@example.org"), site.index('class="conf-footer"'))
+        # and no longer in the home page's editor
+        editor = self.client.get(f"/manage/pages/{home.pk}/edit/").content.decode()
+        self.assertNotIn('name="registration_url"', editor)
+        self.assertNotIn("important_dates-TOTAL_FORMS", editor)
+        self.assertIn("Dates and links", editor)
+
+    def test_preview_buttons_only_for_unpublished_changes(self):
+        home = seed(self.conference)
+        cfp = home.get_children().get(slug="call-for-papers")
+        home.save_revision().publish()
+        cfp.specific.save_revision().publish()
+        page = self.client.get(self.url() + "website/").content.decode()
+        self.assertNotIn(f"/manage/pages/{cfp.pk}/view_draft/", page)
+        self.assertNotIn(f"/manage/pages/{home.pk}/view_draft/", page)
+        sponsors = home.get_children().get(slug="sponsors")
+        self.assertIn(f"/manage/pages/{sponsors.pk}/view_draft/", page)
+
     def test_scientific_chairs_edit_the_proceedings(self):
         from apps.production.access import productions_for, role
         from apps.production.models import Production

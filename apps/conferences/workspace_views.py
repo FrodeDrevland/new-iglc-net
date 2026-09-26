@@ -150,6 +150,71 @@ def branding(request, number):
     return render(request, "conferences/admin/branding.html", context)
 
 
+# ---------------------------------------------------------------- dates and links
+
+class DateForm(forms.ModelForm):
+    class Meta:
+        from .models import ImportantDate
+
+        model = ImportantDate
+        fields = ["label", "date", "end_date", "original_date", "note"]
+        widgets = {name: forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
+                   for name in ("date", "end_date", "original_date")}
+        labels = {"label": "What", "end_date": "To (for a period)", "original_date": "Before extension"}
+
+
+class LinksForm(forms.Form):
+    registration_url = forms.URLField(required=False, label="Registration",
+                                      help_text="The registration system. Shown as a Register button in the "
+                                                "website's header and on the home page.")
+    contact_email = forms.EmailField(required=False, label="Contact e-mail",
+                                     help_text="Where visitors write with questions about the conference. Shown "
+                                               "at the bottom of every page of the website.")
+
+
+def _date_formset():
+    from modelcluster.forms import childformset_factory
+
+    from .models import ImportantDate
+
+    return childformset_factory(ConferenceHomePage, ImportantDate, form=DateForm, extra=3, can_delete=True)
+
+
+def dates_links(request, number):
+    """The important dates and the website's links, kept on the home page (so they have drafts and are
+    published with it) but edited here. The dates are kept in date order."""
+    conference, context = _context(request, number, need="website")
+    home = context["home"]
+    if home is None:
+        messages.info(request, "The conference has no website yet.")
+        return redirect("conference:website", number)
+    draft = home.get_latest_revision_as_object()
+    frozen = home.frozen and not request.user.is_superuser
+    other_changes = home.has_unpublished_changes and home.live
+    Formset = _date_formset()
+    data = request.POST if request.method == "POST" else None
+    formset = Formset(data, instance=draft, prefix="dates")
+    links = LinksForm(data, initial={"registration_url": draft.registration_url,
+                                     "contact_email": draft.contact_email})
+    if data is not None and not frozen and formset.is_valid() and links.is_valid():
+        formset.save(commit=False)
+        draft.registration_url = links.cleaned_data["registration_url"]
+        draft.contact_email = links.cleaned_data["contact_email"]
+        for order, item in enumerate(sorted(draft.important_dates.all(), key=lambda d: (d.date, d.end_date or d.date))):
+            item.sort_order = order
+        revision = draft.save_revision(user=request.user, log_action=True)
+        if "publish" in request.POST and roles.can_publish(request.user, conference):
+            revision.publish(user=request.user)
+            messages.success(request, "The dates and links are saved and published.")
+        else:
+            messages.success(request, "The dates and links are saved as a draft of the home page. Publish it to "
+                                      "show them on the website.")
+        return redirect("conference:dates", number)
+    context.update({"tab": "dates", "formset": formset, "links": links, "frozen": frozen,
+                    "other_changes": other_changes})
+    return render(request, "conferences/admin/dates.html", context)
+
+
 def branding_preview(request, number):
     """The home page as it would look with the branding in the form (not saved), in a new tab."""
     from django.http import HttpResponse
@@ -422,6 +487,7 @@ def _person_action(request, conference, action):
 urlpatterns = [
     path("", overview, name="overview"),
     path("website/", website, name="website"),
+    path("dates/", dates_links, name="dates"),
     path("branding/", branding, name="branding"),
     path("branding/preview/", branding_preview, name="branding_preview"),
     path("people/", people, name="people"),
