@@ -1,11 +1,13 @@
 {% extends "conferences/base.html" %}
 {% load wagtailimages_tags %}
-{% comment %}Committees: cards with portraits (or initials) for a committee where anyone has a photograph,
-a compact list for one where nobody has (e.g. a long scientific committee).{% endcomment %}
+{% comment %}Committees, in the page's layout: "sections" (each committee below the previous one: cards with
+portraits, or a compact list where nobody has a portrait), "columns" (committees side by side, small
+portraits) or "compact" (side by side, names only).{% endcomment %}
 {% block content %}
 <article class="conf-page">
   <h1>{{ page.title }}</h1>
   {% if page.intro %}<p class="lead">{{ page.intro }}</p>{% endif %}
+  {% if page.layout == "sections" %}
   {% for committee, members, with_photos in page.groups %}
   <section class="conf-committee">
     <h2>{{ committee }}</h2>
@@ -30,5 +32,26 @@ a compact list for one where nobody has (e.g. a long scientific committee).{% en
     {% endif %}
   </section>
   {% endfor %}
+  {% else %}
+  <div class="conf-committee-columns">
+  {% for committee, members, with_photos in page.groups %}
+    <section class="conf-committee-column">
+      <h2>{{ committee }}</h2>
+      <ul class="conf-rows{% if page.layout == 'compact' %} compact{% endif %}">
+      {% for m in members %}
+        <li>
+          {% if page.layout == "columns" %}{% if m.photo %}{% image m.photo fill-120x120 alt="" class="conf-row-photo" %}{% else %}<span class="conf-row-photo conf-initials" aria-hidden="true">{{ m.initials }}</span>{% endif %}{% endif %}
+          <span class="conf-row-text">
+            <span class="conf-portrait-name">{% if m.url %}<a href="{{ m.url }}">{{ m.name }}</a>{% elif m.person %}<a href="{{ main_site_url }}{{ m.person.get_absolute_url }}">{{ m.name }}</a>{% else %}{{ m.name }}{% endif %}</span>
+            {% if m.role %}<span class="conf-portrait-role">{{ m.role }}</span>{% endif %}
+            {% if m.affiliation or m.country %}<span class="conf-portrait-where">{{ m.affiliation }}{% if m.affiliation and m.country %}, {% endif %}{{ m.country }}</span>{% endif %}
+          </span>
+        </li>
+      {% endfor %}
+      </ul>
+    </section>
+  {% endfor %}
+  </div>
+  {% endif %}
 </article>
 {% endblock %}

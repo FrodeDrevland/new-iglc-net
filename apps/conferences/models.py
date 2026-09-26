@@ -442,7 +442,16 @@ class Keynote(Orderable):
 
 
 class CommitteesPage(ConferencePageMixin, Page):
+    LAYOUTS = [
+        ("sections", "Each committee below the previous one, with large portraits"),
+        ("columns", "Committees side by side, with small portraits"),
+        ("compact", "Committees side by side, names only"),
+    ]
+
     intro = models.TextField(blank=True)
+    layout = models.CharField(max_length=20, choices=LAYOUTS, default="sections",
+                              help_text="Side by side suits several small committees; below each other suits a few "
+                                        "committees with portraits.")
 
     # The members are edited under Committees in the conference's menu (apps/conferences/committee_views.py).
     content_panels = Page.content_panels + [

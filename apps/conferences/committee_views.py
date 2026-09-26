@@ -146,6 +146,11 @@ def committees(request, number):
             members = _move_committee(members, request.POST.get("committee", ""), action == "committee-up")
             save_members(draft, members, request.user)
             return redirect("conference:committees", number)
+        elif action == "layout" and request.POST.get("layout") in dict(CommitteesPage.LAYOUTS):
+            draft.layout = request.POST["layout"]
+            draft.save_revision(user=request.user, log_action=True)
+            messages.success(request, "The layout is saved (as a draft). Preview shows it.")
+            return redirect("conference:committees", number)
         elif action == "publish" and roles.can_publish(request.user, conference):
             page.get_latest_revision().publish(user=request.user)
             messages.success(request, "The committees page is published.")
@@ -157,6 +162,7 @@ def committees(request, number):
         "count": len(members), "add_form": add_form, "bulk_form": bulk_form,
         "committee_names": list(dict.fromkeys(m.committee for m in members)),
         "unpublished": not page.live or page.has_unpublished_changes,
+        "layouts": CommitteesPage.LAYOUTS, "layout": draft.layout,
     })
     return render(request, "conferences/admin/committees.html", context)
 

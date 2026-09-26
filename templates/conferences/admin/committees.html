@@ -18,6 +18,15 @@
   <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:edit' page.pk %}">Title and introduction</a>
 </p>
 
+{% if not frozen %}
+<form method="post" class="conf-layout-form">{% csrf_token %}<input type="hidden" name="action" value="layout">
+  <fieldset><legend><strong>Layout on the website</strong></legend>
+  {% for value, label in layouts %}<label class="conf-layout-choice"><input type="radio" name="layout" value="{{ value }}"{% if value == layout %} checked{% endif %} onchange="this.form.submit()"> {{ label }}</label>{% endfor %}
+  </fieldset>
+  <noscript><button class="button button-small" type="submit">Save the layout</button></noscript>
+</form>
+{% endif %}
+
 {% for committee, rows in groups %}
 <section class="conf-committee-admin">
   <div class="conf-committee-head">

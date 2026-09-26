@@ -472,6 +472,18 @@ class DashboardTests(TestCase):
         live = self.client.get("/2099/committees/", HTTP_HOST="conference.localhost").content.decode()
         self.assertIn("Honorary member", live)
         self.assertLess(live.index("Scientific committee"), live.index("Organising committee"))
+        # layouts
+        self.assertNotIn("conf-committee-columns", live)
+        self.client.post(url, {"action": "layout", "layout": "columns"})
+        self.client.post(url, {"action": "publish"})
+        live = self.client.get("/2099/committees/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("conf-committee-columns", live)
+        self.assertIn("conf-row-photo", live)
+        self.client.post(url, {"action": "layout", "layout": "compact"})
+        self.client.post(url, {"action": "publish"})
+        live = self.client.get("/2099/committees/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertNotIn("conf-row-photo", live)
+        self.assertIn("Honorary member", live)
         # the page editor no longer has the long list
         self.assertNotIn("members-TOTAL_FORMS", self.client.get(f"/manage/pages/{page.pk}/edit/").content.decode())
         # part chairs do not edit the website

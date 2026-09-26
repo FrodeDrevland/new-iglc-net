@@ -73,3 +73,5 @@
 .iglc-prod .conf-members-admin .spacer { visibility: hidden; }
 .iglc-prod .conf-member-form { max-width: 36rem; }
 .iglc-prod .conf-field textarea { width: 100%; }
+.iglc-prod .conf-layout-form fieldset { border: 0; padding: 0; margin: .5rem 0 1rem; }
+.iglc-prod .conf-layout-choice { display: inline-flex; gap: .4rem; align-items: center; margin: .3rem 1.5rem .3rem 0; }

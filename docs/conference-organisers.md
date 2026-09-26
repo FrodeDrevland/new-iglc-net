@@ -135,8 +135,16 @@ spreadsheet), for a long scientific committee, say.
 
 Give members a **portrait** (at least 400 × 400 pixels; it is shown round, cut to a square around the
 picture's focal point), a **role** (such as "Conference chair", shown as a label) and a **profile
-page** if you like. A committee where someone has a portrait is shown as cards, with the initials
-for those without one; a committee where nobody has one is shown as a compact list.
+page** if you like.
+
+**Layout on the website** chooses how the committees are shown:
+
+- **Each committee below the previous one**, with large portraits: suits a few committees with
+  portraits. A committee where someone has a portrait is shown as cards, with the initials for
+  those without one; a committee where nobody has one is shown as a compact list.
+- **Committees side by side**, with small portraits: suits several small committees (one or two
+  people each), which would otherwise make a long page. On a phone they come one after the other.
+- **Committees side by side, names only**: the shortest, for long lists without portraits.
 
 Changes are saved as a draft of the committees page: **Preview** shows it, **Publish** puts it on
 the website. The page's title and introduction are edited with "Title and introduction".
