@@ -246,3 +246,31 @@ class ContributionPageTests(BuilderTestCase):
         self.assertEqual(found, {"Prefabrication at scale": ("industry", "talk"), "Lean at 30": ("academic", "keynote"),
                                  "Ina Industry": ("industry", "talk")})
         self.assertContains(self.client.get(url), "Lean at 30")
+
+
+class DaysTests(BuilderTestCase):
+    def test_opens_on_the_conference_start(self):
+        self.programme.first_day = date(2027, 7, 17)
+        self.programme.save()
+        self.assertEqual(self.state()["day"], "2027-07-20")  # the ?day= of the test URL
+        response = self.client.get(reverse("programme:build", args=[35]) + "?format=json")
+        self.assertEqual(response.json()["day"], "2027-07-19")
+
+    def test_days_follow_the_conference(self):
+        from .models import Programme
+
+        self.session(part=self.phd, day=date(2027, 7, 20))
+        self.conference.start_date, self.conference.end_date = date(2027, 7, 12), date(2027, 7, 16)
+        self.conference.save()
+        programme = Programme.objects.get()
+        self.assertEqual((programme.first_day, programme.last_day), (date(2027, 7, 12), date(2027, 7, 20)))
+        self.conference.city = "München"
+        self.conference.save()  # dates unchanged: nothing happens
+        self.assertEqual(Programme.objects.get().last_day, date(2027, 7, 20))
+
+    def test_days_far_from_the_conference_are_refused(self):
+        from django.core.exceptions import ValidationError
+
+        self.programme.first_day = date(2026, 9, 26)
+        with self.assertRaises(ValidationError):
+            self.programme.full_clean()

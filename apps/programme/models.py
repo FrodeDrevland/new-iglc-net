@@ -79,8 +79,23 @@ class Programme(models.Model):
         return f"Programme IGLC {self.conference.number}"
 
     def clean(self):
+        errors = {}
         if self.first_day and self.last_day and self.last_day < self.first_day:
-            raise ValidationError({"last_day": "The last day is before the first."})
+            errors["last_day"] = "The last day is before the first."
+        conference = self.conference if self.conference_id else None
+        if conference and conference.start_date:
+            end = conference.end_date or conference.start_date
+            if self.first_day and (conference.start_date - self.first_day).days > self.MARGIN_DAYS:
+                errors["first_day"] = (f"More than {self.MARGIN_DAYS} days before the conference "
+                                       f"({conference.start_date:%d %B %Y}).")
+            if self.first_day and self.first_day > end:
+                errors["first_day"] = "After the conference's last day."
+            if self.last_day and (self.last_day - end).days > self.MARGIN_DAYS:
+                errors["last_day"] = f"More than {self.MARGIN_DAYS} days after the conference ({end:%d %B %Y})."
+            if self.last_day and self.last_day < conference.start_date:
+                errors["last_day"] = "Before the conference's first day."
+        if errors:
+            raise ValidationError(errors)
 
     @property
     def number(self):
@@ -100,6 +115,21 @@ class Programme(models.Model):
             days.append(day)
             day += timedelta(days=1)
         return days
+
+    MARGIN_DAYS = 31  # how far the programme's days may reach beyond the conference's own
+
+    def sync_days(self, save=True):
+        """The programme's days follow the conference's dates, widened only to keep days that
+        already have sessions (e.g. a PhD summer school before the conference)."""
+        conference = self.conference
+        if not conference.start_date:
+            return
+        end = conference.end_date or conference.start_date
+        dates = list(self.sessions.values_list("date", flat=True)) if self.pk else []
+        self.first_day = min([conference.start_date] + dates)
+        self.last_day = max([end] + dates)
+        if save:
+            Programme.objects.filter(pk=self.pk).update(first_day=self.first_day, last_day=self.last_day)
 
     def organiser_group_name(self):
         return f"IGLC {self.conference.number} organisers"

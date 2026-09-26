@@ -488,9 +488,11 @@ def build(request, number):
     days = programme.days()
     wanted = request.GET.get("day", "")
     day = next((d for d in days if d.isoformat() == wanted), None)
-    if day is None:
+    if day is None:  # the conference's first day, else the first day with sessions
         with_sessions = sorted(set(programme.sessions.values_list("date", flat=True)))
-        day = with_sessions[0] if with_sessions and with_sessions[0] in days else days[0]
+        start = programme.conference.start_date
+        day = (start if start in days else
+               with_sessions[0] if with_sessions and with_sessions[0] in days else days[0])
     if request.method == "POST":
         try:
             data = json.loads(request.body.decode("utf-8"))
