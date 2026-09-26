@@ -361,6 +361,31 @@ class DashboardTests(TestCase):
         self.assertNotIn("important_dates-TOTAL_FORMS", editor)
         self.assertIn("Dates and links", editor)
 
+    def test_main_events(self):
+        home = seed(self.conference, publish=True)
+        existing = home.important_dates.get()
+        data = {"dates-TOTAL_FORMS": "4", "dates-INITIAL_FORMS": "1", "dates-MIN_NUM_FORMS": "0",
+                "dates-MAX_NUM_FORMS": "1000",
+                "dates-0-id": existing.pk, "dates-0-label": "Academic conference", "dates-0-date": "2099-06-24",
+                "dates-0-end_date": "2099-06-26", "dates-0-main_event": "on", "dates-0-icon": "conference",
+                "dates-0-description": "Three days of keynotes and paper sessions.",
+                "dates-1-label": "Welcome reception", "dates-1-date": "2099-06-21", "dates-1-main_event": "on",
+                "dates-1-icon": "reception",
+                "dates-2-label": "Full papers due", "dates-2-date": "2099-02-01", "dates-2-icon": "calendar",
+                "dates-3-label": "", "dates-3-icon": "calendar",
+                "registration_url": "", "contact_email": "", "publish": "1"}
+        self.client.post(self.url() + "dates/", data)
+        self.assertEqual([d.label for d in home.main_events()], ["Welcome reception", "Academic conference"])
+        card = home.important_dates.get(label="Academic conference").card
+        self.assertEqual(card, {"weekdays": "Wed–Fri", "days": "24–26", "month": "June 2099"})
+
+        # the programme page shows them until the programme is published
+        page = self.client.get("/2099/programme/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn('class="conf-events"', page)
+        self.assertIn("Three days of keynotes and paper sessions.", page)
+        self.assertNotIn("Full papers due</h3>", page)
+        self.assertIn("The detailed programme will be published here.", page)
+
     def test_preview_buttons_only_for_unpublished_changes(self):
         home = seed(self.conference)
         cfp = home.get_children().get(slug="call-for-papers")

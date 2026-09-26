@@ -212,3 +212,21 @@
 .conf-placeholder-when { font-size: 1.15rem; font-weight: 700; margin: 0 0 1.5rem; }
 .conf-placeholder-soon { color: #555; }
 .conf-placeholder-iglc { margin-top: 2rem; font-size: .92rem; }
+
+/* main events: a card per event, dates on the main colour */
+.conf-events { list-style: none; padding: 0; margin: 1.5rem 0; display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(10.25rem, 1fr)); }
+.conf-event { display: flex; flex-direction: column; border-radius: 10px; overflow: hidden; background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 6px 18px rgba(0, 0, 0, .06); border: 1px solid var(--line, #e3e6ee); }
+.conf-event-when { display: flex; flex-direction: column; align-items: center; padding: 1rem .5rem .9rem;
+  background: var(--conf-primary); color: var(--conf-on-primary); text-align: center; line-height: 1.15; }
+.conf-event:nth-child(even) .conf-event-when { background: color-mix(in srgb, var(--conf-primary) 82%, #000); }
+.conf-event-weekdays, .conf-event-month { text-transform: uppercase; letter-spacing: .04em; font-size: .9rem; }
+.conf-event-days { font-family: var(--conf-heading); font-weight: 800; font-size: 2.3rem; margin: .15rem 0; white-space: nowrap; }
+.conf-event-body { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 1.2rem 1rem 1.3rem; flex: 1; }
+.conf-event-icon-wrap { display: flex; align-items: center; justify-content: center; width: 5.5rem; height: 5.5rem; border-radius: 50%;
+  background: color-mix(in srgb, var(--conf-primary-text) 10%, #fff); color: var(--conf-primary-text); margin-bottom: .9rem; }
+.conf-event-icon { width: 3rem; height: 3rem; }
+.conf-event-body h3 { margin: 0 0 .6rem; font-size: 1.15rem; color: var(--conf-primary-text); }
+.conf-event-body p { margin: .6rem 0 0; padding-top: .6rem; border-top: 1px solid var(--line, #e3e6ee); text-align: left; font-size: .97rem; }
+.conf-event-body .conf-date-note { border-top: 0; padding-top: 0; }

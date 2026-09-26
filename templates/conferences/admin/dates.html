@@ -9,28 +9,42 @@
   {% if formset.non_form_errors %}<div class="upload-report">{{ formset.non_form_errors }}</div>{% endif %}
   <h2>Important dates</h2>
   <p class="small muted">As many as the conference needs: <strong>Add a date</strong> gives another empty row, and saving always leaves a few empty rows at the end. Empty rows are ignored.</p>
-  <div class="conf-dates-wrap"><table class="listing prod-table conf-dates-form">
-    <thead><tr><th>What</th><th>Date</th><th>To (for a period)</th><th>Before extension</th><th>Note</th><th>Remove</th></tr></thead>
-    <tbody id="date-rows">{% for form in formset %}
-      <tr>{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
-        <td>{{ form.label }}{% for e in form.label.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
-        <td>{{ form.date }}{% for e in form.date.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
-        <td>{{ form.end_date }}</td>
-        <td>{{ form.original_date }}</td>
-        <td>{{ form.note }}</td>
-        <td>{% if form.instance.pk or form.initial %}{{ form.DELETE }}{% endif %}</td></tr>
-    {% endfor %}</tbody>
+  <div class="conf-dates-wrap"><table class="listing prod-table conf-dates-form" id="date-rows">
+    <thead><tr><th>What</th><th>Date</th><th>To (for a period)</th><th>Before extension</th><th>Note</th><th>Main event</th><th>Remove</th></tr></thead>
+    {% for form in formset %}{% with f=form existing=form.instance.pk %}
+    <tbody class="conf-date-row">
+      <tr>{% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+        <td>{{ f.label }}{% for e in f.label.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ f.date }}{% for e in f.date.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ f.end_date }}</td>
+        <td>{{ f.original_date }}</td>
+        <td>{{ f.note }}</td>
+        <td class="conf-center">{{ f.main_event }}</td>
+        <td class="conf-center">{% if existing %}{{ f.DELETE }}{% endif %}</td></tr>
+      <tr class="conf-event-extra"><td colspan="7">
+        <label>Description <span class="muted small">(on the card)</span> {{ f.description }}</label>
+        <label>Icon {{ f.icon }}</label></td></tr>
+    </tbody>
+    {% endwith %}{% endfor %}
   </table></div>
-  <template id="date-row-template">      <tr>{% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
-        <td>{{ formset.empty_form.label }}{% for e in formset.empty_form.label.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
-        <td>{{ formset.empty_form.date }}{% for e in formset.empty_form.date.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
-        <td>{{ formset.empty_form.end_date }}</td>
-        <td>{{ formset.empty_form.original_date }}</td>
-        <td>{{ formset.empty_form.note }}</td>
-        <td></td></tr>
-</template>
+  <template id="date-row-template">{% with f=formset.empty_form existing=False %}
+    <tbody class="conf-date-row">
+      <tr>{% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+        <td>{{ f.label }}{% for e in f.label.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ f.date }}{% for e in f.date.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ f.end_date }}</td>
+        <td>{{ f.original_date }}</td>
+        <td>{{ f.note }}</td>
+        <td class="conf-center">{{ f.main_event }}</td>
+        <td class="conf-center">{% if existing %}{{ f.DELETE }}{% endif %}</td></tr>
+      <tr class="conf-event-extra"><td colspan="7">
+        <label>Description <span class="muted small">(on the card)</span> {{ f.description }}</label>
+        <label>Icon {{ f.icon }}</label></td></tr>
+    </tbody>
+  {% endwith %}</template>
   <p><button type="button" class="button button-small button-secondary" id="add-date">Add a date</button></p>
   <p class="small muted">For example "Abstracts due" or "Full papers due". An extended deadline: put the new date under Date and the old one under Before extension, and the website shows the old one struck through.</p>
+  <p class="small muted">Tick <strong>Main event</strong> for the parts of the conference itself (the welcome reception, the industry day, the conference days, the dinner, the PhD summer school...): they get a description and an icon, and the <strong>Main events</strong> block shows them as cards. The programme page shows them until the detailed programme is published.</p>
 
   <h2>Links</h2>
   {% for field in links %}

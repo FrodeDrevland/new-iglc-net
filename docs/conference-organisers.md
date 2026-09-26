@@ -53,8 +53,8 @@ The roles are about access only. The titles on the website's committees page ("S
 
 1. Under **Website**, click **Edit** next to the page.
 2. Change the introduction and the content. The content is made of blocks: text, picture, button,
-   video or map, important dates, tracks, speakers and programme. Add a block with **+**, move it
-   with the arrows, remove it with the bin.
+   video or map, important dates, main events, tracks, speakers and programme. Add a block with
+   **+**, move it with the arrows, remove it with the bin.
 3. The eye icon in the panel on the right shows the page as it will look, and follows what you type;
    you can switch between phone, tablet and desktop sizes there, or open the preview in a new tab.
    **Save draft** keeps your changes without showing them to anyone.
@@ -91,6 +91,11 @@ publish it the first time.
   deadline: put the new date under Date and the old one under "Before extension"; the website shows
   the old one struck through. They appear on the home page and wherever a page has an "important
   dates" block.
+- **main events**: tick **Main event** for a date that is part of the conference itself (the welcome
+  reception, the industry day, the workshop day, the conference days, the dinner, the business
+  meeting, the PhD summer school). It then gets a short description and an icon, and the **Main
+  events** block shows the main events as cards, with the day of the week and the dates on the main
+  colour. The programme page shows these cards until the detailed programme is published.
 - the **registration** link: a Register button in the website's header and on the home page;
 - the **contact e-mail**: shown at the bottom of every page, as the address for questions about
   the conference.

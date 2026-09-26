@@ -82,3 +82,11 @@
 .iglc-prod .conf-tracks-form { table-layout: fixed; width: 100%; }
 .iglc-prod .conf-tracks-form th:nth-child(3) { width: 7rem; }
 .iglc-prod .conf-tracks-form th:nth-child(4) { width: 5.5rem; }
+.iglc-prod .conf-dates-form .conf-center { text-align: center; }
+.iglc-prod .conf-dates-form .conf-event-extra { display: none; }
+.iglc-prod .conf-dates-form tbody:has(input[name$="main_event"]:checked) .conf-event-extra { display: table-row; }
+.iglc-prod .conf-dates-form tbody:has(input[name$="main_event"]:checked) > tr:first-child td { border-bottom: 0; }
+.iglc-prod .conf-event-extra td { padding-top: 0; }
+.iglc-prod .conf-event-extra label { display: inline-flex; gap: .5rem; align-items: center; margin-right: 1.5rem; }
+.iglc-prod .conf-event-extra input[type=text] { width: 32rem; max-width: 60vw; }
+.iglc-prod .conf-event-extra select { width: auto; }

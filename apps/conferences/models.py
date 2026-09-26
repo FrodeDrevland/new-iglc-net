@@ -179,6 +179,10 @@ BODY_BLOCKS = [
         template="conferences/blocks/tracks.html", icon="list-ul")),
     ("programme", ProgrammeBlock()),
     ("speakers", SpeakersBlock()),
+    ("main_events", blocks.StaticBlock(
+        admin_text="The main events (under Dates and links, ticked as main events), as cards with their dates. "
+                   "The programme block shows them too until the detailed programme is published.",
+        template="conferences/blocks/main_events.html", icon="date", label="Main events")),
 ]
 
 
@@ -443,6 +447,10 @@ class ConferenceHomePage(ConferencePageMixin, Page):
     def short_name(self):
         return f"IGLC {self.conference.number}"
 
+    def main_events(self):
+        return sorted((d for d in self.important_dates.all() if d.main_event),
+                      key=lambda d: (d.date, d.end_date or d.date))
+
     @property
     def ordinal(self):
         return ordinal(self.conference.number)
@@ -476,6 +484,13 @@ class ConferenceHomePage(ConferencePageMixin, Page):
         return f"{100 * image.focal_point_x / image.width:.0f}% {100 * image.focal_point_y / image.height:.0f}%"
 
 
+EVENT_ICONS = [
+    ("calendar", "Calendar"), ("reception", "Reception (glasses)"), ("industry", "Industry (buildings)"),
+    ("workshop", "Workshop (board)"), ("conference", "Conference (people)"), ("dinner", "Dinner (fork and knife)"),
+    ("meeting", "Meeting (briefcase)"), ("school", "School (graduation cap)"), ("excursion", "Excursion (map pin)"),
+]
+
+
 class ImportantDate(Orderable):
     page = ParentalKey(ConferenceHomePage, on_delete=models.CASCADE, related_name="important_dates")
     label = models.CharField(max_length=200, help_text="For example 'Full papers due'.")
@@ -484,9 +499,14 @@ class ImportantDate(Orderable):
     original_date = models.DateField(
         null=True, blank=True, help_text="If the deadline was extended: the old date, shown struck through.")
     note = models.CharField(max_length=200, blank=True)
+    main_event = models.BooleanField(
+        default=False, help_text="A part of the conference itself (the reception, the industry day, the "
+                                 "conference days, the dinner...), shown as a card by the Main events block.")
+    description = models.CharField(max_length=300, blank=True, help_text="For a main event: a sentence or two.")
+    icon = models.CharField(max_length=20, choices=EVENT_ICONS, default="calendar", blank=True)
 
     panels = [FieldPanel("label"), FieldPanel("date"), FieldPanel("end_date"), FieldPanel("original_date"),
-              FieldPanel("note")]
+              FieldPanel("note"), FieldPanel("main_event"), FieldPanel("description"), FieldPanel("icon")]
 
     class Meta(Orderable.Meta):
         verbose_name = "important date"
@@ -496,6 +516,21 @@ class ImportantDate(Orderable):
         from datetime import date
 
         return (self.end_date or self.date) < date.today()
+
+    @property
+    def card(self) -> dict:
+        """The top of a main event's card: weekday(s), day(s), month and year."""
+        start, end = self.date, self.end_date if self.end_date and self.end_date != self.date else None
+        if end is None:
+            return {"weekdays": f"{start:%A}", "days": f"{start.day}", "month": f"{start:%B %Y}"}
+        weekdays = f"{start:%a}–{end:%a}"
+        if (start.year, start.month) == (end.year, end.month):
+            month = f"{start:%B %Y}"
+        elif start.year == end.year:
+            month = f"{start:%B}–{end:%B %Y}"
+        else:
+            month = f"{start:%B %Y}–{end:%B %Y}"
+        return {"weekdays": weekdays, "days": f"{start.day}–{end.day}", "month": month}
 
 
 class ConferencePage(ConferencePageMixin, Page):

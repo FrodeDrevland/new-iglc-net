@@ -1,0 +1,19 @@
+{% with events=home.main_events %}{% if events %}
+<ol class="conf-events">
+{% for e in events %}{% with c=e.card %}
+  <li class="conf-event{% if e.is_past %} past{% endif %}">
+    <div class="conf-event-when">
+      <span class="conf-event-weekdays">{{ c.weekdays }}</span>
+      <time class="conf-event-days" datetime="{{ e.date|date:'Y-m-d' }}">{{ c.days }}</time>
+      <span class="conf-event-month">{{ c.month }}</span>
+    </div>
+    <div class="conf-event-body">
+      <span class="conf-event-icon-wrap">{% include "conferences/blocks/_event_icon.html" with icon=e.icon %}</span>
+      <h3>{{ e.label }}</h3>
+      {% if e.description %}<p>{{ e.description }}</p>{% endif %}
+      {% if e.note %}<p class="conf-date-note">{{ e.note }}</p>{% endif %}
+    </div>
+  </li>
+{% endwith %}{% endfor %}
+</ol>
+{% endif %}{% endwith %}

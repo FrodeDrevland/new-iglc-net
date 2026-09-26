@@ -10,5 +10,6 @@
   {% endfor %}
 </div>
 {% else %}
-<p class="muted">The programme will be published here.</p>
+{% include "conferences/blocks/main_events.html" %}
+<p class="muted">The {% if home.main_events %}detailed {% endif %}programme will be published here.</p>
 {% endif %}
