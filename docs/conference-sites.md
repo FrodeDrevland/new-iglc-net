@@ -103,8 +103,8 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
 - Edit and **publish** the pages themselves (Publish in the menu under Save draft), no IGLC approval
   needed; they can also unpublish. They cannot change the current/frozen settings,
   delete the site, or touch other conferences' pages.
-- Branding (in the conference's menu, `/manage/<number>/branding/`, with a preview of the home page): the photograph (and whether to darken it), a logo on the photograph (instead of the title), a logo in the header (without one: the white IGLC symbol and the name), two colours, the heading font, a logo on light backgrounds (the archive's conference page, link previews) and a square icon (browser tab, home screen). The platform says where each logo is shown; the organisers choose a version that reads well there. The layout
-  stays the IGLC's (responsive and accessible); a primary colour too light for white text is refused.
+- Branding (in the conference's menu, `/manage/<number>/branding/`, with a preview of the home page): the photograph (and whether to darken it), a logo on the photograph (instead of the title), a logo in the header (without one: the IGLC symbol, white or black to suit the main colour, and the name), two colours, the heading font, a logo on light backgrounds (the archive's conference page, link previews) and a square icon (browser tab, home screen). The platform says where each logo is shown; the organisers choose a version that reads well there. The layout
+  stays the IGLC's (responsive and accessible); the text on the main colour is white or black, whichever reads better, and links and headings use a darker shade of a light main colour.
   Fonts are served by the site itself, not by a font service.
 - Preview: the eye icon in the page editor, or Preview next to a page under Website (the latest draft; in a preview the website's menu has the draft pages too, linking to their drafts).
 - Important dates are entered once, under Dates and links (kept in date order), and shown wherever a page has an

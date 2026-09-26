@@ -87,14 +87,23 @@ class ConferenceSiteTests(TestCase):
         main = self.client.get("/sitemap-pages.xml")
         self.assertNotContains(main, "call-for-papers")
 
-    def test_colours_must_be_readable(self):
-        self.home.primary_colour = "#f0e060"
-        with self.assertRaises(ValidationError):
-            self.home.full_clean()
+    def test_colours_stay_readable(self):
+        from .models import readable_on_white
+
         self.home.primary_colour = "blue"
         with self.assertRaises(ValidationError):
             self.home.full_clean()
-        self.assertGreater(contrast("#365a91", "#ffffff"), 4.5)
+        # a light main colour is allowed: black text on it, a darker shade of it for links on white
+        self.home.primary_colour = "#f0e060"
+        self.home.full_clean()
+        colours = self.home.colours
+        self.assertEqual(colours["on_primary"], "#000000")
+        self.assertGreaterEqual(contrast(colours["primary_text"], "#ffffff"), 4.5)
+        self.assertEqual(readable_on_white("#365a91"), "#365a91")
+        for colour in ("#ffff00", "#f0e060", "#9fd3ff", "#ffffff", "#777777"):
+            self.assertGreaterEqual(contrast(readable_on_white(colour), "#ffffff"), 4.5, colour)
+            on = "#000000" if contrast(colour, "#000000") > contrast(colour, "#ffffff") else "#ffffff"
+            self.assertGreaterEqual(contrast(colour, on), 4.5, colour)
 
     def test_home_needs_the_conference_dates(self):
         undated = Conference.objects.create(number=36, city="Santiago")

@@ -36,6 +36,9 @@ from apps.pages.models import RICH_TEXT_FEATURES
 
 IMAGE = get_image_model_string()
 HERO_SIZE = (1600, 600)  # the home page's photograph: shown 8:3 on wide screens (see conference.css)
+PRIMARY_HELP = ("The header, the top of the home page and the contact band. The text on it is white or black, "
+                "whichever reads better. Links and headings use it too, or a darker shade of it if it is too light "
+                "for text on white.")
 LOGO_HELP = ("Shown in the header of every page, on the conference's main colour, about 60 pixels high, "
              "with the place and dates next to it. Choose a version of the logo that reads well on that colour; a "
              "wide one suits the header best.")
@@ -79,7 +82,21 @@ def contrast(a: str, b: str) -> float:
 
 def text_on(background: str) -> str:
     """Black or white, whichever reads better on the background."""
-    return "#ffffff" if contrast(background, "#ffffff") >= contrast(background, "#111111") else "#111111"
+    # pure black: every colour then has at least 4.5:1 with one of the two
+    return "#ffffff" if contrast(background, "#ffffff") >= contrast(background, "#000000") else "#000000"
+
+
+def readable_on_white(colour: str, minimum: float = 4.5) -> str:
+    """The colour itself if text in it is readable on white, else a darker shade of it that is."""
+    if contrast(colour, "#ffffff") >= minimum:
+        return colour
+    red, green, blue = (int(colour[i:i + 2], 16) for i in (1, 3, 5))
+    for step in range(1, 21):
+        factor = 1 - step * 0.05
+        shade = "#{:02x}{:02x}{:02x}".format(round(red * factor), round(green * factor), round(blue * factor))
+        if contrast(shade, "#ffffff") >= minimum:
+            return shade
+    return "#000000"
 
 
 # ---------------------------------------------------------------- content blocks
@@ -256,7 +273,7 @@ class ConferenceHomePage(ConferencePageMixin, Page):
                                    help_text=HERO_HELP)
     primary_colour = models.CharField(
         max_length=7, default="#365a91",
-        help_text="Header, links and headings, as #rrggbb. White text must be readable on it.")
+        help_text=PRIMARY_HELP)
     accent_colour = models.CharField(max_length=7, default="#d4772a",
                                      help_text="Buttons and highlights, as #rrggbb.")
     heading_font = models.CharField(max_length=20, default="serif",
@@ -311,10 +328,6 @@ class ConferenceHomePage(ConferencePageMixin, Page):
             value = getattr(self, field)
             if not HEX.match(value or ""):
                 errors[field] = "Give the colour as # and six hexadecimal digits, e.g. #365a91."
-        if "primary_colour" not in errors and contrast(self.primary_colour, "#ffffff") < 4.5:
-            errors["primary_colour"] = (f"White text on this colour is hard to read (contrast "
-                                        f"{contrast(self.primary_colour, '#ffffff'):.1f}:1; at least 4.5:1 is "
-                                        f"needed). Choose a darker colour.")
         if self.conference_id:
             if not self.conference.start_date:
                 errors["conference"] = "The conference needs its dates first (its year is the site's address)."
@@ -344,10 +357,16 @@ class ConferenceHomePage(ConferencePageMixin, Page):
     def colours(self) -> dict:
         return {
             "primary": self.primary_colour,
+            # text on the main colour (header, top of the home page, contact band): white or black
+            "on_primary": text_on(self.primary_colour),
+            "light_primary": text_on(self.primary_colour) == "#000000",
+            # links and headings on white: the main colour, or a darker shade of it if it is too light
+            "primary_text": readable_on_white(self.primary_colour),
             "accent": self.accent_colour,
             "on_accent": text_on(self.accent_colour),
-            # the accent as a text colour on white only when it is readable, else the primary
-            "accent_text": self.accent_colour if contrast(self.accent_colour, "#ffffff") >= 4.5 else self.primary_colour,
+            # the accent as a text colour on white only when it is readable, else the main colour's
+            "accent_text": (self.accent_colour if contrast(self.accent_colour, "#ffffff") >= 4.5
+                            else readable_on_white(self.primary_colour)),
             "heading_font": HEADING_FONTS.get(self.heading_font, HEADING_FONTS["serif"])[0],
         }
 

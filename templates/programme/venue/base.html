@@ -8,7 +8,7 @@
   <link rel="icon" href="{% static 'img/iglc-logo-symbol.svg' %}" type="image/svg+xml">
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
   <link rel="stylesheet" href="{% static 'css/conference.css' %}">
-  {% with c=home.colours %}<style>:root { --conf-primary: {{ c.primary }}; --conf-accent: {{ c.accent }}; --conf-on-accent: {{ c.on_accent }}; --conf-accent-text: {{ c.accent_text }}; --conf-heading: {{ c.heading_font|safe }}; }</style>{% endwith %}
+  {% with c=home.colours %}<style>:root { --conf-primary: {{ c.primary }}; --conf-on-primary: {{ c.on_primary }}; --conf-primary-text: {{ c.primary_text }}; --conf-accent: {{ c.accent }}; --conf-on-accent: {{ c.on_accent }}; --conf-accent-text: {{ c.accent_text }}; --conf-heading: {{ c.heading_font|safe }}; }</style>{% endwith %}
   <script src="{% static 'js/programme.js' %}" defer></script>
 </head>
 <body class="conference-site venue" data-sw="{{ worker }}" data-sw-scope="{{ worker_scope }}">

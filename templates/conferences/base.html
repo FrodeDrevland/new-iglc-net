@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="{% static 'css/conference.css' %}">
   <script src="{% static 'js/programme.js' %}" defer></script>
   {% if home %}{% with c=home.colours %}
-  <style>:root { --conf-primary: {{ c.primary }}; --conf-accent: {{ c.accent }}; --conf-on-accent: {{ c.on_accent }}; --conf-accent-text: {{ c.accent_text }}; --conf-heading: {{ c.heading_font|safe }}; }</style>
+  <style>:root { --conf-primary: {{ c.primary }}; --conf-on-primary: {{ c.on_primary }}; --conf-primary-text: {{ c.primary_text }}; --conf-accent: {{ c.accent }}; --conf-on-accent: {{ c.on_accent }}; --conf-accent-text: {{ c.accent_text }}; --conf-heading: {{ c.heading_font|safe }}; }</style>
   {% endwith %}{% endif %}
 </head>
 <body class="conference-site">
@@ -28,7 +28,7 @@
   <header class="conf-header">
     <div class="wrap conf-header-top">
       <a class="conf-brand" href="{% pageurl home %}">
-        {% if home.logo %}{% image home.logo height-60 alt=home.short_name class="conf-brand-logo" %}{% else %}<img class="conf-brand-iglc" src="{% static 'img/iglc-logo-symbol-white.svg' %}" alt="" width="43" height="48">{% endif %}
+        {% if home.logo %}{% image home.logo height-60 alt=home.short_name class="conf-brand-logo" %}{% else %}<img class="conf-brand-iglc" src="{% if home.colours.light_primary %}{% static 'img/iglc-logo-symbol-black.svg' %}{% else %}{% static 'img/iglc-logo-symbol-white.svg' %}{% endif %}" alt="" width="43" height="48">{% endif %}
         <span class="conf-brand-text">
           {% if not home.logo %}<span class="conf-name">{{ home.short_name }}</span>{% endif %}
           <span class="conf-where">{% if conference.city %}{{ conference.location }}{% endif %}{% if conference.start_date %} &middot; {% date_range conference.start_date conference.end_date %}{% endif %}</span>
@@ -36,7 +36,7 @@
       </a>
       {% if home.registration_url and not home.frozen %}<a class="conf-register" href="{{ home.registration_url }}">Register</a>{% endif %}
     </div>
-    <nav class="conf-nav" aria-label="{{ home.short_name }}">
+    <nav class="conf-nav{% if home.colours.light_primary %} on-light{% endif %}" aria-label="{{ home.short_name }}">
       <div class="wrap">
         {% include "conferences/_menu.html" with class="conf-menu-desktop" %}
         <details class="conf-menu-mobile">

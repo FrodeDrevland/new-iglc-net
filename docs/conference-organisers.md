@@ -110,8 +110,9 @@ version of your logo that reads well there (a white one, a colour one, with or w
 - **Logo in the header**: on the conference's main colour, about 60 pixels high, with the place and
   dates next to it (a wide version suits best). Without it, the header shows the IGLC symbol in
   white and the conference's name.
-- Two colours and the heading font. A main colour too light for white text is refused, with the
-  reason.
+- Two colours and the heading font. The text on the main colour is white or black, whichever reads
+  better, so a light main colour works too (for a logo in colour, say); links and headings then use
+  a darker shade of it, and the IGLC symbol in the header turns black.
 
 **Elsewhere**
 

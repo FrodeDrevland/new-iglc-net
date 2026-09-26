@@ -17,7 +17,7 @@ from apps.archive.models import Conference
 
 from . import dashboard, roles
 from .models import (DARKEN_HELP, HEADING_FONTS, HERO_HELP, HERO_LOGO_HELP, HERO_SIZE, ICON_HELP,
-                     LIGHT_LOGO_HELP, LOGO_HELP, ConferenceHomePage)
+                     LIGHT_LOGO_HELP, LOGO_HELP, PRIMARY_HELP, ConferenceHomePage)
 
 app_name = "conference"
 
@@ -79,8 +79,8 @@ class BrandingForm(forms.Form):
     hero_logo = forms.ModelChoiceField(queryset=None, required=False, label="Logo on the photograph",
                                        help_text=HERO_LOGO_HELP)
     logo = forms.ModelChoiceField(queryset=None, required=False, label="Logo in the header", help_text=LOGO_HELP)
-    primary_colour = forms.CharField(max_length=7, widget=forms.TextInput(attrs={"type": "color"}),
-                                     help_text="Header, links and headings. White text must be readable on it.")
+    primary_colour = forms.CharField(max_length=7, label="Main colour", widget=forms.TextInput(attrs={"type": "color"}),
+                                     help_text=PRIMARY_HELP)
     accent_colour = forms.CharField(max_length=7, widget=forms.TextInput(attrs={"type": "color"}),
                                     help_text="Buttons and highlights.")
     heading_font = forms.ChoiceField(choices=[(key, value[1]) for key, value in HEADING_FONTS.items()])

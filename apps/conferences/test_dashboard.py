@@ -263,8 +263,8 @@ class DashboardTests(TestCase):
         organiser = self._person("org", "organisers")
         self.client.force_login(organiser)
         self.assertContains(self.client.get(self.url() + "branding/"), "Save and publish")
-        data = {"primary_colour": "#ffff00", "accent_colour": "#d4772a", "heading_font": "sans"}
-        self.assertContains(self.client.post(self.url() + "branding/", data), "hard to read")
+        data = {"primary_colour": "#12345g", "accent_colour": "#d4772a", "heading_font": "sans"}
+        self.assertContains(self.client.post(self.url() + "branding/", data), "six hexadecimal digits")
         data["primary_colour"] = "#204060"
         self.client.post(self.url() + "branding/", data)  # a draft
         home.refresh_from_db()
@@ -289,8 +289,12 @@ class DashboardTests(TestCase):
         data = {"primary_colour": "#204060", "accent_colour": "#d4772a", "heading_font": "sans"}
         self.assertContains(self.client.post(self.url() + "branding/preview/", data), "#204060")
         self.assertEqual(home.get_latest_revision_as_object().primary_colour, "#365a91")  # nothing saved
-        self.assertContains(self.client.post(self.url() + "branding/preview/", dict(data, primary_colour="#ffff00")),
+        self.assertContains(self.client.post(self.url() + "branding/preview/", dict(data, primary_colour="#1234")),
                             "cannot be shown")
+        # a light main colour: black text and the black IGLC symbol in the header
+        light = self.client.post(self.url() + "branding/preview/", dict(data, primary_colour="#f0e060")).content.decode()
+        self.assertIn("--conf-on-primary: #000000", light)
+        self.assertIn("iglc-logo-symbol-black.svg", light)
 
     def test_the_live_menu_has_only_published_pages(self):
         home = seed(self.conference)
