@@ -8,9 +8,10 @@
   {{ formset.management_form }}
   {% if formset.non_form_errors %}<div class="upload-report">{{ formset.non_form_errors }}</div>{% endif %}
   <h2>Important dates</h2>
+  <p class="small muted">As many as the conference needs: <strong>Add a date</strong> gives another empty row, and saving always leaves a few empty rows at the end. Empty rows are ignored.</p>
   <div class="conf-dates-wrap"><table class="listing prod-table conf-dates-form">
     <thead><tr><th>What</th><th>Date</th><th>To (for a period)</th><th>Before extension</th><th>Note</th><th>Remove</th></tr></thead>
-    <tbody>{% for form in formset %}
+    <tbody id="date-rows">{% for form in formset %}
       <tr>{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
         <td>{{ form.label }}{% for e in form.label.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
         <td>{{ form.date }}{% for e in form.date.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
@@ -20,7 +21,16 @@
         <td>{% if form.instance.pk or form.initial %}{{ form.DELETE }}{% endif %}</td></tr>
     {% endfor %}</tbody>
   </table></div>
-  <p class="small muted">For example "Abstracts due" or "Full papers due". Fill in an empty row to add a date; save to get more empty rows. An extended deadline: put the new date under Date and the old one under Before extension, and the website shows the old one struck through.</p>
+  <template id="date-row-template">      <tr>{% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+        <td>{{ formset.empty_form.label }}{% for e in formset.empty_form.label.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ formset.empty_form.date }}{% for e in formset.empty_form.date.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ formset.empty_form.end_date }}</td>
+        <td>{{ formset.empty_form.original_date }}</td>
+        <td>{{ formset.empty_form.note }}</td>
+        <td></td></tr>
+</template>
+  <p><button type="button" class="button button-small button-secondary" id="add-date">Add a date</button></p>
+  <p class="small muted">For example "Abstracts due" or "Full papers due". An extended deadline: put the new date under Date and the old one under Before extension, and the website shows the old one struck through.</p>
 
   <h2>Links</h2>
   {% for field in links %}
@@ -36,4 +46,19 @@
   {% if not frozen %}<p class="conf-actions"><button class="button" type="submit" name="publish" value="1">Save and publish</button>
     <button class="button button-secondary" type="submit">Save draft</button></p>{% endif %}
 </form>
+<script>
+(function () {
+  var button = document.getElementById("add-date");
+  if (!button) return;
+  var total = document.getElementById("id_dates-TOTAL_FORMS");
+  var template = document.getElementById("date-row-template").innerHTML;
+  button.addEventListener("click", function () {
+    var index = parseInt(total.value, 10);
+    document.getElementById("date-rows").insertAdjacentHTML("beforeend", template.replace(/__prefix__/g, index));
+    total.value = index + 1;
+    var added = document.getElementById("date-rows").lastElementChild.querySelector("input[type=text]");
+    if (added) added.focus();
+  });
+})();
+</script>
 {% endblock %}

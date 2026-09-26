@@ -76,7 +76,8 @@ publish it the first time.
 
 **Dates and links** in the menu holds what the whole website uses:
 
-- the **important dates**: deadlines and the conference days, kept in date order. An extended
+- the **important dates**: deadlines and the conference days, as many as needed (**Add a date**
+  gives another row), kept in date order. An extended
   deadline: put the new date under Date and the old one under "Before extension"; the website shows
   the old one struck through. They appear on the home page and wherever a page has an "important
   dates" block.
