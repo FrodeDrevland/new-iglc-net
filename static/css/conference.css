@@ -57,6 +57,8 @@
 .conf-dates td { white-space: nowrap; color: var(--conf-accent-text); font-weight: 700; }
 .conf-dates tr.past th, .conf-dates tr.past td { color: var(--muted); font-weight: normal; }
 .conf-dates del { color: var(--muted); font-weight: normal; margin-right: .3rem; }
+.conf-date-note { display: block; font-weight: 700; font-size: .92em; color: var(--conf-accent-text); margin-top: .15rem; }  /* e.g. "Extended" */
+.conf-dates tr.past .conf-date-note { color: var(--muted); }
 
 .conf-tracks, .conf-members, .conf-papers { list-style: none; padding: 0; margin: 0 0 1.5rem; }
 .conf-tracks li, .conf-papers li { padding: .55rem 0; border-bottom: 1px solid var(--line); }

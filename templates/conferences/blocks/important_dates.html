@@ -4,7 +4,7 @@
   <tbody>
   {% for d in dates %}
     <tr{% if d.is_past %} class="past"{% endif %}>
-      <th scope="row">{{ d.label }}{% if d.note %}<br><span class="muted">{{ d.note }}</span>{% endif %}</th>
+      <th scope="row">{{ d.label }}{% if d.note %}<span class="conf-date-note">{{ d.note }}</span>{% endif %}</th>
       <td>{% if d.original_date %}<del>{{ d.original_date|date:"j F Y" }}</del> {% endif %}<time datetime="{{ d.date|date:'Y-m-d' }}">{% date_range d.date d.end_date %}</time></td>
     </tr>
   {% endfor %}
