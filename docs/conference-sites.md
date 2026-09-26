@@ -17,14 +17,14 @@ Everything about a conference is under **Conferences** in the back office menu:
 
 - **All conferences**: the list, with the dates, whether the conference is upcoming or past, the
   state of its website, programme and proceedings, and whether it is in the archive. Clicking a
-  conference opens its **dashboard**.
+  conference opens its workspace.
 - **Programmes** and **Proceedings production**: the programme and the proceedings of each conference
   (docs/programme.md, docs/production-process.md).
 - **Website standard pages**: the pages every new conference website starts with (superusers).
 
-The dashboard shows the conference record and its tracks, the website and its pages, the important
+The Overview shows the conference record and its tracks, the website and its pages, the important
 dates, the people (website organisers, programme chairs and editors, proceedings editors), the
-programme, the proceedings (production, archive, DOIs) and recent activity. Its actions are for
+programme, the proceedings (production, archive, DOIs) and recent activity. Its actions are, unless said otherwise, for
 superusers, each with a confirmation page:
 
 | Action | What it does |
@@ -45,20 +45,37 @@ through Wagtail so that the page tree stays consistent. It is refused while the 
 papers or Crossref deposits (DOIs must keep working), a production with papers, or a published or
 frozen website (unpublish or unfreeze it first).
 
+## The conference workspace
+
+Each conference has its own part of the back office at `/manage/<number>/` (code:
+`apps/conferences/workspace.py` and `workspace_views.py`). Inside it the sidebar shows only that
+conference: **Overview**, **Website** (its pages with Edit buttons, publishing), **Branding** (the
+home page's logo, photograph, colours and font, saved as a draft or published), **People**,
+**Programme**, **Proceedings**, Images, Documents and Help (Submission and review joins them in
+phase 5). The first item switches to another conference or, for the IGLC's own people, back to
+**IGLC admin** (the full menu, with the same switcher on top). The conference's programme
+and production pages, and the page editor of one of its pages, count as inside it; Images,
+Documents and Help belong to the conference last visited.
+
+People whose only roles are in conferences never see the IGLC administration: `/manage/` takes
+them to their conference. For everyone but superusers, Wagtail's page tree of a conference page
+leads to its Website page, and publishing, unpublishing or deleting a page in the editor comes back
+to it.
+
 ## Roles
 
-Each conference has its people, managed under People on its dashboard (code: `apps/conferences/roles.py`):
+Each conference has its people, managed under People in its workspace (code: `apps/conferences/roles.py`):
 
 | Role | Group | May |
 | --- | --- | --- |
 | Conference chairs | IGLC nn conference chairs | Edit and publish the website, the whole programme, add and remove organisers and part chairs |
+| Scientific chairs | IGLC nn scientific chairs | The proceedings as chief editors (apps/production/access.py), and the academic conference's sessions |
 | Website organisers | IGLC nn organisers | Edit and publish the website, upload pictures and documents, the programme's locations |
-| Part chairs | IGLC nn scientific chairs, industry day chairs, workshop day chairs, PhD summer school deans | Their part of the programme (made when the programme is started) |
+| Other part chairs | IGLC nn industry day chairs, workshop day chairs, PhD summer school deans | Their part of the programme (made when the programme is started) |
 | Proceedings editors | the production's editor list | The proceedings |
 
-Everyone with a role sees the conference's dashboard, gets a "Your conference" panel on the back
-office's front page and a "Your conference" menu item, and is sent from the empty subpage list of a
-conference page to its editor. Adding someone is by e-mail address: an existing account gets the role,
+Everyone with a role sees the conference's Overview and People. Only the IGLC appoints conference
+chairs and scientific chairs. Adding someone is by e-mail address: an existing account gets the role,
 someone new gets an account and a link to choose a password. Superusers can do everything; only they
 create and delete the website, mark it as current, freeze it, or change the archive. The guide for
 the people themselves is docs/conference-organisers.md (Help → Site documentation).
@@ -67,7 +84,7 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
 
 1. Conferences → All conferences → Add conference, with its number, city, country and dates, and the
    tracks. It stays out of the public archive until its proceedings are published.
-2. On its dashboard: **Create the website**. The standard pages come from Conferences → Website
+2. In its workspace (All conferences → the conference): Website → **Create the website**. The standard pages come from Conferences → Website
    standard pages; changes there apply to sites created afterwards. Delete the ones that are not
    needed (All pages → the page → Delete).
 
@@ -84,7 +101,7 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
 - Edit and **publish** the pages themselves (Publish in the menu under Save draft), no IGLC approval
   needed; they can also unpublish. They cannot change the current/frozen settings,
   delete the site, or touch other conferences' pages.
-- Branding tab of the home page: logo, a wide photograph, two colours and the heading font. The layout
+- Branding (in the conference's menu, `/manage/<number>/branding/`): logo, a wide photograph, two colours and the heading font. The layout
   stays the IGLC's (responsive and accessible); a primary colour too light for white text is refused.
   Fonts are served by the site itself, not by a font service.
 - Important dates are entered once, on the home page, and shown wherever a page has an
@@ -99,7 +116,7 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
 
 ## After the conference
 
-**Freeze…** the website on the dashboard: organisers can no longer change anything, and the site says that the
+**Freeze…** the website (Website in its workspace): organisers can no longer change anything, and the site says that the
 conference has taken place and links to its proceedings. The archive's conference page links to the
 website ("Conference website") as long as it is published.
 

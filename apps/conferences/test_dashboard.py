@@ -23,7 +23,7 @@ class DashboardTests(TestCase):
         ConferenceTrack.objects.create(conference=self.conference, title="Production planning", order=1)
 
     def url(self, action=None):
-        base = f"/manage/conferences/{self.conference.pk}/"
+        base = f"/manage/{self.conference.number}/"
         return f"{base}do/{action}/" if action else base
 
     # --- menu and list
@@ -36,7 +36,7 @@ class DashboardTests(TestCase):
 
     def test_list_links_rows_to_the_dashboard(self):
         page = self.client.get("/manage/conferences/").content.decode()
-        self.assertIn(f'href="/manage/conferences/{self.conference.pk}/"', page)
+        self.assertIn('href="/manage/99/"', page)
         self.assertIn("22–26 Jun 2099", page)
         self.assertIn("No website", page)
 
@@ -44,11 +44,11 @@ class DashboardTests(TestCase):
         seed(self.conference)
         other = Conference.objects.create(number=98, start_date=date(2001, 1, 1))
         page = self.client.get("/manage/conferences/?website=draft").content.decode()
-        self.assertIn("IGLC 99", page)
-        self.assertNotIn("IGLC 98", page)
+        self.assertIn('href="/manage/99/"', page)
+        self.assertNotIn('href="/manage/98/"', page)
         page = self.client.get("/manage/conferences/?when=past").content.decode()
-        self.assertIn(f"/manage/conferences/{other.pk}/", page)
-        self.assertNotIn(f"/manage/conferences/{self.conference.pk}/", page)
+        self.assertIn('href="/manage/98/"', page)
+        self.assertNotIn('href="/manage/99/"', page)
 
     def test_old_archive_urls_redirect(self):
         response = self.client.get(f"/manage/archive/conference/edit/{self.conference.pk}/")
@@ -118,7 +118,7 @@ class DashboardTests(TestCase):
 
     def test_create_website_needs_dates(self):
         undated = Conference.objects.create(number=97)
-        self.client.post(f"/manage/conferences/{undated.pk}/do/create-website/")
+        self.client.post("/manage/97/do/create-website/")
         self.assertFalse(ConferenceHomePage.objects.filter(conference=undated).exists())
 
     def test_archive_toggle(self):
@@ -176,16 +176,16 @@ class DashboardTests(TestCase):
             page = self.client.get(self.url())
             self.assertEqual(page.status_code, 200, user)
             self.assertNotContains(page, "Delete IGLC 99")
-            self.assertNotContains(page, "Mark as current")
-            # the front page and the menu lead to the conference
-            self.assertContains(self.client.get("/manage/"), "Open the conference")
-            self.assertRedirects(self.client.get("/manage/conferences/mine/"), self.url())
+            self.assertNotContains(self.client.get(self.url() + "people/"), "Mark as current")
+            # /manage/ leads to the conference
+            self.assertRedirects(self.client.get("/manage/"), self.url())
             # never the IGLC's own actions
             self.client.post(self.url("freeze"))
             self.assertFalse(ConferenceHomePage.objects.get(pk=home.pk).frozen)
 
         self.client.force_login(organiser)
-        self.assertContains(self.client.get(self.url()), "Editing the website")
+        self.assertContains(self.client.get(self.url() + "website/"), "Save draft")
+        self.assertNotContains(self.client.get(self.url() + "website/"), "Mark as current")
         self.client.post(self.url("add-person"), {"role": "organisers", "email": "x@example.com"})
         self.assertFalse(User.objects.filter(email="x@example.com").exists())  # organisers do not add people
         self.client.post(self.url("publish-website"), {"page": [cfp.pk]})
@@ -212,18 +212,83 @@ class DashboardTests(TestCase):
         seed(other)
         organiser = self._person("org", "organisers")
         self.client.force_login(organiser)
-        self.assertNotEqual(self.client.get(f"/manage/conferences/{other.pk}/").status_code, 200)
+        self.assertNotEqual(self.client.get("/manage/98/").status_code, 200)
         self.assertNotEqual(self.client.get("/manage/conferences/").status_code, 200)
 
-    def test_empty_subpage_list_leads_to_the_editor(self):
+    def test_the_page_tree_leads_to_the_website_page(self):
         home = seed(self.conference)
         cfp = home.get_children().get(slug="call-for-papers")
         organiser = self._person("org", "organisers")
         self.client.force_login(organiser)
-        self.assertRedirects(self.client.get(f"/manage/pages/{cfp.pk}/"), f"/manage/pages/{cfp.pk}/edit/")
-        self.assertEqual(self.client.get(f"/manage/pages/{home.pk}/").status_code, 200)  # it has subpages
+        for page in (cfp, home):
+            self.assertRedirects(self.client.get(f"/manage/pages/{page.pk}/"), "/manage/99/website/")
         self.client.force_login(self.admin)
-        self.assertEqual(self.client.get(f"/manage/pages/{cfp.pk}/").status_code, 200)  # superusers: the list
+        self.assertEqual(self.client.get(f"/manage/pages/{cfp.pk}/").status_code, 200)  # superusers: the tree
+
+    def test_publishing_in_the_editor_comes_back_to_the_website_page(self):
+        home = seed(self.conference)
+        cfp = home.get_children().get(slug="call-for-papers").specific
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        form = self.client.get(f"/manage/pages/{cfp.pk}/edit/")
+        self.assertEqual(form.status_code, 200)
+        from wagtail.test.utils.form_data import inline_formset, nested_form_data, rich_text, streamfield
+
+        data = nested_form_data({"title": "Call for papers", "slug": "call-for-papers", "intro": "Topics.",
+                                 "body": streamfield([("text", rich_text("<p>Send us papers.</p>"))]),
+                                 "comments": inline_formset([]), "action-publish": "action-publish"})
+        response = self.client.post(f"/manage/pages/{cfp.pk}/edit/", data)
+        self.assertRedirects(response, "/manage/99/website/", fetch_redirect_response=False)
+        cfp.refresh_from_db()
+        self.assertTrue(cfp.live)
+
+    def test_the_sidebar_inside_a_conference(self):
+        seed(self.conference)
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        page = self.client.get(self.url()).content.decode()
+        for label in ("Overview", "Website", "Branding", "People", "IGLC 99: Sandbox"):
+            self.assertIn(label, page)
+        for label in ('"Reports"', '"Settings"', "IGLC admin", "All conferences"):
+            self.assertNotIn(label, page)
+        self.client.force_login(self.admin)
+        page = self.client.get(self.url()).content.decode()
+        self.assertIn("IGLC admin", page)  # the way back to the full menu
+        page = self.client.get("/manage/").content.decode()
+        self.assertIn("All conferences", page)
+        self.assertLess(page.index('"Pages"'), page.index('"Images"'))  # the full menu in its own order
+
+    def test_branding(self):
+        home = seed(self.conference, publish=True)
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        self.assertContains(self.client.get(self.url() + "branding/"), "Save and publish")
+        data = {"primary_colour": "#ffff00", "accent_colour": "#d4772a", "heading_font": "sans"}
+        self.assertContains(self.client.post(self.url() + "branding/", data), "hard to read")
+        data["primary_colour"] = "#204060"
+        self.client.post(self.url() + "branding/", data)  # a draft
+        home.refresh_from_db()
+        self.assertEqual(home.primary_colour, "#365a91")
+        self.assertEqual(home.get_latest_revision_as_object().primary_colour, "#204060")
+        self.client.post(self.url() + "branding/", dict(data, publish="1"))
+        home.refresh_from_db()
+        self.assertEqual((home.primary_colour, home.heading_font), ("#204060", "sans"))
+
+    def test_scientific_chairs_edit_the_proceedings(self):
+        from apps.production.access import productions_for, role
+        from apps.production.models import Production
+
+        production = Production.objects.create(conference=self.conference)
+        other = Production.objects.create(conference=Conference.objects.create(number=98, start_date=date(2098, 1, 1)))
+        self.client.post(self.url("add-person"), {"role": "scientific", "email": "sci@example.com"})
+        sci = User.objects.get(email="sci@example.com")
+        self.assertEqual(role(sci, production), "chief")
+        self.assertIsNone(role(sci, other))
+        self.assertEqual(list(productions_for(sci)), [production])
+        self.client.force_login(sci)
+        self.assertEqual(self.client.get("/manage/production/99/").status_code, 200)
+        self.assertNotEqual(self.client.get("/manage/production/98/").status_code, 200)
+        self.assertIn("Proceedings", self.client.get(self.url()).content.decode())
 
     def test_existing_sites_get_chairs_with_website_rights(self):
         """What migration 0007 does, through the setup code: both groups edit the website."""

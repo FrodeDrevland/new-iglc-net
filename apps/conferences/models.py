@@ -247,9 +247,11 @@ class ConferenceHomePage(ConferencePageMixin, Page):
         FieldPanel("frozen", permission="superuser"),
     ] + Page.settings_panels
 
+    # The branding fields are edited on the conference's Branding page in the back office
+    # (/manage/<number>/branding/, apps/conferences/workspace_views.py), not in the page editor.
     edit_handler = TabbedInterface([
-        ObjectList(content_panels, heading="Content"),
-        ObjectList(branding_panels, heading="Branding"),
+        ObjectList([HelpPanel("<p>The logo, colours, photograph and heading font are under <strong>Branding</strong> "
+                              "in the menu.</p>")] + content_panels, heading="Content"),
         ObjectList(Page.promote_panels, heading="Promote"),
         ObjectList(settings_panels, heading="Settings"),
     ])

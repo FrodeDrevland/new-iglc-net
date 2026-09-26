@@ -7,48 +7,52 @@ webmaster gives you your role; you receive an e-mail with a link to choose a pas
 
 ## Logging in
 
-Log in at `/manage/` with your e-mail address and password. The front page shows **Your
-conference**:
+Log in at `/manage/` with your e-mail address and password. You land on your conference's
+**Overview**, and the menu on the left is your conference's:
 
-- **Open the conference**: the conference's page, with everything in one place (below).
-- **Edit the website**: straight to the website's pages.
-- **The programme**: once the programme has been started.
-- **Guide**: this page.
+- **Overview**: the state of the website, the important dates, the people, the programme and the
+  proceedings, and what has happened lately.
+- **Website**: the website's pages, each with an **Edit** button, and **Publish changes…**.
+- **Branding**: the logo, photograph, colours and heading font.
+- **People**: who has which role, and (for conference chairs) adding and removing people.
+- **Programme** and **Proceedings**: when your role includes them.
+- **Images** and **Documents**: the conference's pictures and files.
+- **Help**: this guide and the other documentation.
 
-The menu on the left has the same under **Conferences → Your conference**.
+If you have roles in more than one conference, the first item in the menu is the conference you
+are in; click it to switch to another.
 
 Forgotten your password? Use "Forgotten password?" on the login page.
 
-## Your conference's page
+## Who does what
 
-It shows the website and its pages, the people and their roles, the important dates, the
-programme and the proceedings. What you can do depends on your role:
+| | Conference chairs | Scientific chairs | Website organisers | Other part chairs |
+| --- | --- | --- | --- | --- |
+| Edit and publish the website, branding | Yes | No | Yes | No |
+| Upload pictures and documents | Yes | No | Yes | No |
+| Add and remove organisers and part chairs | Yes | No | No | No |
+| The programme | All of it, and its settings | The academic conference's sessions | The locations | Their own part's sessions |
+| The proceedings | No | Yes, as chief editors | No | No |
+| See the Overview and People | Yes | Yes | Yes | Yes |
 
-| | Conference chairs | Website organisers | Part chairs |
-| --- | --- | --- | --- |
-| Edit and publish the website | Yes | Yes | No |
-| Upload pictures and documents | Yes | Yes | No |
-| Add and remove organisers and part chairs | Yes | No | No |
-| The programme | All of it, and its settings | The locations | Their own part's sessions |
-| See the conference's page | Yes | Yes | Yes |
-
-The IGLC keeps the conference's number, dates, place and tracks, decides when the website becomes
-the conference shown at the conference address, and freezes it after the conference. Ask the
-webmaster if any of these should change.
+The industry day and workshop day chairs and the PhD summer school deans come with the programme.
+The IGLC appoints the conference chairs and the scientific chairs, keeps the conference's number,
+dates, place and tracks, decides when the website becomes the conference shown at the conference
+address, and freezes it after the conference. Ask the webmaster if any of these should change.
 
 ## Editing a page
 
-1. On the conference's page, click **Edit** next to the page.
+1. Under **Website**, click **Edit** next to the page.
 2. Change the title, the introduction and the content. The content is made of blocks: text,
    picture, button, video or map, important dates, tracks and programme. Add a block with **+**,
    move it with the arrows, remove it with the bin.
 3. **Save draft** keeps your changes without showing them to anyone. **Preview** shows how the page
    will look.
-4. When it is ready: the arrow next to Save draft, then **Publish**. It is public at once. No one
-   needs to approve it.
+4. When it is ready: the arrow next to Save draft, then **Publish**. It is public at once, no one
+   needs to approve it, and you come back to Website.
 
 A published page that you change again shows "published" and "changes" until you publish the
-changes. **Publish changes…** on the conference's page publishes several pages in one go.
+changes. **Publish changes…** under Website publishes several pages in one go.
 
 A page that is not needed: open it and choose **Unpublish** (under the arrow next to Save draft).
 It stays as a draft; ask the webmaster if it should be deleted.
@@ -58,18 +62,22 @@ the website's menu.
 
 ## The home page
 
-The home page carries what the whole website uses:
-
-- **Content tab**: the theme (tagline), a short introduction, the content blocks, the **important
-  dates** (deadlines and the conference days; an extended deadline keeps the old date, struck
-  through), the registration link (a button in the website's header) and the contact address.
-- **Branding tab**: the conference logo (about 60 pixels high in the header), a wide photograph for
-  the top of the home page (at least 1600 pixels wide), two colours and the heading font. The
-  layout stays the IGLC's, so the website works on phones and for screen readers. A main colour too
-  light for white text is refused, with the reason.
+The home page carries what the whole website uses: the theme (tagline), a short introduction, the
+content blocks, the **important dates** (deadlines and the conference days; an extended deadline
+keeps the old date, struck through), the registration link (a button in the website's header) and
+the contact address.
 
 Nothing shows on the public website until the **home page is published**. Agree with the chairs
 before you publish it the first time.
+
+## Branding
+
+**Branding** in the menu sets the conference logo (about 60 pixels high in the header), a wide
+photograph for the top of the home page (at least 1600 pixels wide), two colours and the heading
+font, with a preview of the colours. The layout stays the IGLC's, so the website works on phones and
+for screen readers. A main colour too light for white text is refused, with the reason. **Save
+draft** keeps the change for later; **Save and publish** shows it at once (together with any other
+unpublished changes to the home page).
 
 ## Pictures and documents
 

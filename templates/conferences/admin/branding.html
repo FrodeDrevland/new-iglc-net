@@ -1,0 +1,49 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% block pagetitle %}Branding{% endblock %}
+{% block extra_js %}{{ block.super }}{{ form.media.js }}{% endblock %}
+{% block heading %}Branding{% endblock %}
+{% block lead %}<p class="lead">The website keeps the IGLC's layout, so that it works on phones and for screen readers; these set its logo, photograph, colours and heading font.</p>{% endblock %}
+{% block content_main %}
+{{ form.media.css }}
+{% if frozen %}<p class="upload-report">The website is frozen: only the IGLC can change it.</p>{% endif %}
+<div class="conf-branding">
+  <form method="post" class="conf-branding-form">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="upload-report">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+      <div class="conf-field">
+        <label for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
+        {{ field }}
+        {% if field.help_text %}<p class="small muted">{{ field.help_text }}</p>{% endif %}
+        {% for e in field.errors %}<p class="fail small">{{ e }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    {% if other_changes %}<p class="small">The home page also has other changes that are not yet published; "Save and publish" publishes them too.</p>{% endif %}
+    {% if not frozen %}<p><button class="button" type="submit" name="publish" value="1">Save and publish</button>
+      <button class="button button-secondary" type="submit">Save draft</button></p>{% endif %}
+  </form>
+  <aside class="conf-branding-preview" aria-label="Preview">
+    <p class="small muted">Preview of the colours</p>
+    <div class="bp-header" id="bp-header"><span class="bp-name">IGLC {{ conference.number }}</span><span class="bp-button" id="bp-button">Register</span></div>
+    <div class="bp-body"><h3 id="bp-heading">Call for papers</h3><p>Body text, and <a id="bp-link">a link</a>.</p></div>
+  </aside>
+</div>
+<script>
+(function () {
+  var primary = document.getElementById("{{ form.primary_colour.id_for_label }}");
+  var accent = document.getElementById("{{ form.accent_colour.id_for_label }}");
+  var font = document.getElementById("{{ form.heading_font.id_for_label }}");
+  var fonts = {serif: 'Georgia, "Times New Roman", serif', sans: "system-ui, Arial, sans-serif", georgia: "Georgia, serif", system: "system-ui, sans-serif"};
+  function lum(hex) { var c = [1, 3, 5].map(function (i) { var v = parseInt(hex.substr(i, 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
+  function update() {
+    document.getElementById("bp-header").style.background = primary.value;
+    document.getElementById("bp-heading").style.color = primary.value;
+    document.getElementById("bp-link").style.color = primary.value;
+    var b = document.getElementById("bp-button"); b.style.background = accent.value;
+    b.style.color = lum(accent.value) > 0.18 ? "#111" : "#fff";
+    document.getElementById("bp-heading").style.fontFamily = fonts[font.value] || "";
+  }
+  [primary, accent, font].forEach(function (el) { el.addEventListener("input", update); el.addEventListener("change", update); });
+  update();
+})();
+</script>
+{% endblock %}

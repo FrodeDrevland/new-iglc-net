@@ -1,9 +1,10 @@
 from django.contrib import messages
 from django.shortcuts import redirect
-from django.urls import path, reverse
+from django.urls import include, path, reverse
 from wagtail import hooks
 
-from .admin_views import MENU_HOOK, ConferenceViewSet, conferences_menu_item, your_conference_menu_item
+from . import workspace
+from .admin_views import MENU_HOOK, ConferenceViewSet, conferences_menu_item
 from .models import ConferenceHomePage
 from .setup import add_standard_pages, organiser_group
 
@@ -15,19 +16,61 @@ def conferences_menu():
     return conferences_menu_item()
 
 
-@hooks.register(MENU_HOOK)
-def your_conference():
-    return your_conference_menu_item()
-
-
 @hooks.register("construct_homepage_panels")
 def your_conferences_panel(request, panels):
-    """On the back office's front page: the conferences this person has a role in, with what to do."""
+    """On the back office's front page, for people with a conference role and other work too (people
+    with only conference roles are taken to their conference instead)."""
     from .panels import YourConferencesPanel
 
     panel = YourConferencesPanel(request)
     if panel.conferences:
         panels.insert(0, panel)
+
+
+# ---------------------------------------------------------------- the conference workspace
+
+@hooks.register("register_admin_urls")
+def workspace_urls():
+    return [path("<int:number>/", include("apps.conferences.workspace_views"))]
+
+
+@hooks.register("construct_main_menu")
+def workspace_menu(request, menu_items):
+    workspace.construct_menu(request, menu_items)
+
+
+def _back_to_website(request, page, message):
+    """After publishing, unpublishing or deleting a conference's page: back to the conference's Website
+    page instead of Wagtail's page tree."""
+    conference = workspace.conference_of_page(page.pk)
+    if conference is None:
+        return None
+    if message:
+        messages.success(request, message)
+    return redirect("conference:website", conference.number)
+
+
+@hooks.register("after_publish_page")
+def published(request, page):
+    return _back_to_website(request, page, f"'{page.title}' is published.")
+
+
+@hooks.register("after_unpublish_page")
+def unpublished(request, page):
+    return _back_to_website(request, page, f"'{page.title}' is no longer public (it stays as a draft).")
+
+
+@hooks.register("before_delete_page")
+def remember_conference(request, page):
+    request._deleted_page_conference = workspace.conference_of_page(page.pk)
+
+
+@hooks.register("after_delete_page")
+def deleted(request, page):
+    conference = getattr(request, "_deleted_page_conference", None)
+    if conference is not None:
+        return redirect("conference:website", conference.number)
+    return None
 
 
 @hooks.register("register_admin_viewset")

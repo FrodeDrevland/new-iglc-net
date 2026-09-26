@@ -708,7 +708,7 @@ class BackOfficeTests(EditorPagesTests):
         User.objects.create_superuser("root", "r@example.org", "pw")
         self.client.login(username="root", password="pw")
         for url in ("/manage/", "/manage/conferences/", f"/manage/conferences/edit/{self.production.conference.pk}/",
-                    f"/manage/conferences/{self.production.conference.pk}/",
+                    f"/manage/{self.production.conference.number}/",
                     "/manage/archive/paper/", f"/manage/archive/paper/edit/{paper.pk}/", "/manage/archive/paper/?q=paper",
                     "/manage/archive/person/", f"/manage/archive/person/edit/{person.pk}/", "/manage/archive/links/",
                     "/manage/committees/", "/manage/production/", "/manage/production/35/",
@@ -724,7 +724,7 @@ class BackOfficeTests(EditorPagesTests):
 
     def test_editors_get_in_with_their_role_only(self):
         self.client.login(username="ed", password="pw")  # no group, only a production role
-        self.assertEqual(self.client.get("/manage/").status_code, 200)
+        self.assertRedirects(self.client.get("/manage/"), "/manage/35/")  # their conference's workspace
         self.assertEqual(self.client.get("/manage/production/35/").status_code, 200)
         self.assertNotEqual(self.client.get("/manage/archive/paper/").status_code, 200)
 

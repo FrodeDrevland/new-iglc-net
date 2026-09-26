@@ -1,7 +1,0 @@
-{% extends "production/editor/_base.html" %}
-{% block titletag %}Your conferences{% endblock %}
-{% block main %}
-<div class="page-head"><h1>Your conferences</h1></div>
-{% for c in conferences %}<p><a class="button" href="{% url 'conferences:dashboard' c.pk %}">IGLC {{ c.number }}{% if c.location %}: {{ c.location }}{% endif %}</a></p>
-{% empty %}<p>You have no role in a conference. Ask the IGLC's webmaster if you should have one.</p>{% endfor %}
-{% endblock %}

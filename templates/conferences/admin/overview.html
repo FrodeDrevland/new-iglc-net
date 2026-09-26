@@ -1,0 +1,107 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% block pagetitle %}Overview{% endblock %}
+{% block heading %}IGLC {{ conference.number }}{% if conference.location %}: {{ conference.location }}{% endif %}{% endblock %}
+{% block lead %}
+  <p class="lead">{% if when %}<span class="badge">{{ when|capfirst }}</span>{% endif %}
+    <span class="badge state-{{ website }}">Website: {{ website_label|lower }}</span>
+    <span class="badge{% if conference.is_published %} state-published{% endif %}">Proceedings {% if conference.is_published %}in the archive{% else %}not in the archive{% endif %}</span></p>
+  {% if can_edit %}<p><a class="button button-secondary" href="{% url 'conferences:edit' conference.pk %}">Edit details</a>
+    <a class="button button-secondary" href="{% url 'conferences:history' conference.pk %}">History</a></p>{% endif %}
+{% endblock %}
+{% block content_main %}
+<div class="conf-grid">
+
+<section class="panel">
+  <h2>Website</h2>
+  {% if home %}
+    <p><span class="badge state-{{ website }}">{{ website_label }}</span>
+      {% if home.live %}<a href="{{ home.full_url }}" target="_blank" rel="noopener">{{ home.full_url }}</a>{% else %}<span class="muted">not public yet</span>{% endif %}</p>
+    <p>{{ pages|length|add:1 }} pages{% if unpublished_pages %}, {{ unpublished_pages }} with something not yet published{% endif %}.</p>
+    {% if can_publish or can_edit %}<p><a class="button button-small" href="{% url 'conference:website' conference.number %}">Website</a>
+      <a class="button button-small button-secondary" href="{% url 'conference:branding' conference.number %}">Branding</a></p>{% endif %}
+  {% else %}
+    <p class="muted">No website yet.</p>
+    {% if is_iglc %}<p><a class="button button-small" href="{% url 'conference:action' conference.number 'create-website' %}">Create the website</a></p>{% endif %}
+  {% endif %}
+</section>
+
+{% if home %}
+<section class="panel">
+  <h2>Important dates</h2>
+  {% if important_dates %}
+  <ul class="conf-dates">{% for d in important_dates %}
+    <li class="{% if d.is_past %}past{% endif %}"><span class="when">{% if d.original_date %}<s>{{ d.original_date|date:"j M Y" }}</s> {% endif %}{{ d.date|date:"j M Y" }}{% if d.end_date %} to {{ d.end_date|date:"j M Y" }}{% endif %}</span>
+      {{ d.label }}{% if d.note %} <span class="muted small">({{ d.note }})</span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% else %}<p class="muted">None yet.</p>{% endif %}
+  {% if can_publish and not home.frozen or is_iglc %}<p class="small"><a href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit them on the home page</a>, then publish it to show them.</p>{% endif %}
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>People</h2>
+  <ul class="plain-list">{% for role in people %}
+    <li><strong>{{ role.label }}</strong>: {% for u in role.members %}{{ u.get_full_name|default:u.get_username }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="muted">nobody yet</span>{% endfor %}</li>{% endfor %}
+  </ul>
+  <p><a class="button button-small button-secondary" href="{% url 'conference:people' conference.number %}">People</a></p>
+</section>
+
+<section class="panel">
+  <h2>Programme</h2>
+  {% if programme %}
+    <p><span class="badge">{{ programme.get_status_display }}</span>
+      {{ programme_sessions }} session{{ programme_sessions|pluralize }}, {{ programme_registrations }} registration{{ programme_registrations|pluralize }}</p>
+    {% if can_programme %}<p><a class="button button-small" href="{% url 'programme:overview' conference.number %}">Programme</a></p>{% endif %}
+  {% else %}
+    <p class="muted">No programme yet.</p>
+    {% if can_start_programme %}<p><a class="button button-small" href="{% url 'conference:action' conference.number 'start-programme' %}">Start the programme…</a></p>{% endif %}
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Proceedings</h2>
+  <dl class="conf-facts">
+    <dt>Production</dt>
+    <dd>{% if production %}{{ production.get_status_display }}: {{ submissions }} paper{{ submissions|pluralize }}, {{ submissions_approved }} approved{% if submissions_withdrawn %}, {{ submissions_withdrawn }} withdrawn{% endif %}
+        {% if can_production %}<br><a href="{% url 'proceedings:production' conference.number %}">Proceedings</a>{% endif %}
+      {% else %}None{% if is_iglc %}. <a href="{% url 'proceedings:productions' %}">Start one</a> from ConfTool's export{% endif %}.{% endif %}</dd>
+    <dt>In the archive</dt>
+    <dd>{% if conference.is_published %}Yes: <a href="{{ conference.get_absolute_url }}" target="_blank" rel="noopener">the conference page</a>{% else %}No{% endif %},
+      {% if papers %}{% if is_iglc %}<a href="{% url 'archive_paper:index' %}?conference={{ conference.pk }}">{{ papers }} paper{{ papers|pluralize }}</a>{% else %}{{ papers }} paper{{ papers|pluralize }}{% endif %}{% else %}no papers{% endif %}
+      {% if is_iglc %}<br>{% if conference.is_published %}<a class="small" href="{% url 'conference:action' conference.number 'hide-in-archive' %}">Hide from the archive…</a>{% else %}<a class="small" href="{% url 'conference:action' conference.number 'show-in-archive' %}">Show in the archive…</a>{% endif %}{% endif %}</dd>
+    <dt>DOIs</dt>
+    <dd>{% if deposits %}{{ deposits }} deposit{{ deposits|pluralize }}, the last on {{ last_deposit.created|date:"j M Y" }} ({{ last_deposit.get_status_display|lower }}){% else %}None deposited{% endif %}</dd>
+  </dl>
+</section>
+
+<section class="panel">
+  <h2>Conference</h2>
+  <dl class="conf-facts">
+    <dt>Number</dt><dd>{{ conference.number }}</dd>
+    <dt>Place</dt><dd>{{ conference.location|default:"–" }}</dd>
+    {% if conference.conference_title %}<dt>Title</dt><dd>{{ conference.conference_title }}</dd>{% endif %}
+    <dt>Editors</dt><dd>{% for e in editors %}{{ e }}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</dd>
+    <dt>Tracks</dt><dd>{% for t in tracks %}{{ t.title }}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>
+  </dl>
+  {% if not can_edit %}<p class="small muted">The number, dates, place and tracks are kept by the IGLC: ask the webmaster to change them.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>Recent activity</h2>
+  {% if activity %}
+  <ul class="plain-list small conf-activity">{% for entry in activity %}
+    <li><span class="muted">{{ entry.timestamp|date:"j M Y H:i" }}</span> {{ entry.user_display_name|default:"The system" }}: {{ entry.message }}{% if entry.page %} <span class="muted">({{ entry.page.title }})</span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% else %}<p class="muted">Nothing logged yet.</p>{% endif %}
+</section>
+
+{% if is_iglc %}
+<section class="panel danger">
+  <h2>Delete</h2>
+  <p class="small">Deleting the conference also deletes its website, programme and an empty production, after showing what goes. A conference with papers, DOIs or a published or frozen website cannot be deleted here.</p>
+  <p><a class="button button-small serious button-secondary" href="{% url 'conferences:delete' conference.pk %}">Delete IGLC {{ conference.number }}…</a></p>
+</section>
+{% endif %}
+
+</div>
+{% endblock %}

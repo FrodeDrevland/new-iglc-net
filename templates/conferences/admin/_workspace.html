@@ -1,0 +1,15 @@
+{% extends "production/editor/_base.html" %}
+{% load static %}
+{% comment %}The conference workspace's pages (apps/conferences/workspace_views.py): Overview, Website,
+Branding and People. The sidebar for them comes from apps/conferences/workspace.py.{% endcomment %}
+{% block titletag %}{% block pagetitle %}{% endblock %}: IGLC {{ conference.number }}{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/conference-dashboard.css' %}">{% endblock %}
+{% block main %}
+<div class="page-head">
+  <p class="kicker">IGLC {{ conference.number }}{% if conference.location %}: {{ conference.location }}{% endif %}
+    {% if conference.start_date %} · {{ conference.start_date|date:"j M" }}{% if conference.end_date and conference.end_date != conference.start_date %}–{{ conference.end_date|date:"j M Y" }}{% else %} {{ conference.start_date|date:"Y" }}{% endif %}{% endif %}</p>
+  <h1>{% block heading %}{% endblock %}</h1>
+  {% block lead %}{% endblock %}
+</div>
+{% block content_main %}{% endblock %}
+{% endblock %}

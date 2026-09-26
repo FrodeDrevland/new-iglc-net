@@ -1,0 +1,61 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% block pagetitle %}Website{% endblock %}
+{% block heading %}Website{% endblock %}
+{% block lead %}
+  {% if home %}<p class="lead"><span class="badge state-{{ website }}">{{ website_label }}</span>
+    {% if home.live %}<a href="{{ home.full_url }}" target="_blank" rel="noopener">{{ home.full_url }}</a>{% else %}Not public yet: nothing is shown until the home page is published.{% endif %}</p>{% endif %}
+{% endblock %}
+{% block content_main %}
+{% if not home %}
+  <section class="panel">
+    <p>No website yet.{% if conference.start_date %} It would be at <strong>/{{ conference.year }}/</strong>.{% endif %}</p>
+    {% if is_iglc %}<p><a class="button" href="{% url 'conference:action' conference.number 'create-website' %}">Create the website</a></p>
+    <p class="muted small">It starts with the <a href="{% url 'conference_standard_pages:index' %}">website standard pages</a>, as drafts.</p>
+    {% else %}<p class="muted small">The IGLC creates it; ask the webmaster.</p>{% endif %}
+  </section>
+{% else %}
+  {% if home.frozen %}<p class="upload-report">The conference has taken place, so the website is frozen: only the IGLC can change it.</p>
+  {% elif can_publish %}
+  <div class="conf-howto">
+    <ol>
+      <li>Click <strong>Edit</strong> next to a page.</li>
+      <li>Change the text, pictures and links. <strong>Save draft</strong> keeps your changes without showing them.</li>
+      <li>When it is ready: the arrow next to Save draft, then <strong>Publish</strong>. It is public at once, and you come back here.</li>
+    </ol>
+    <p class="small">The important dates, registration link and contact address are on the home page; the logo, colours and photograph under <a href="{% url 'conference:branding' conference.number %}">Branding</a>. More in the <a href="{% url 'site_help:doc' 'conference-organisers' %}">guide</a>.</p>
+  </div>
+  {% endif %}
+  <p class="conf-actions">
+    {% if can_publish and not home.frozen %}
+      {% if unpublished_pages %}<a class="button" href="{% url 'conference:action' conference.number 'publish-website' %}">Publish changes…</a>{% endif %}
+      <a class="button button-secondary" href="{% url 'wagtailadmin_pages:add_subpage' home.pk %}">Add a page</a>
+      {% if home.live %}<a class="button button-secondary" href="{% url 'conference:action' conference.number 'unpublish-website' %}">Unpublish the website…</a>{% endif %}
+    {% endif %}
+    {% if is_iglc %}
+      {% if home.is_current %}<a class="button button-secondary" href="{% url 'conference:action' conference.number 'unmake-current' %}">Unmark as current…</a>
+      {% else %}<a class="button button-secondary" href="{% url 'conference:action' conference.number 'make-current' %}">Mark as current…</a>{% endif %}
+      {% if home.frozen %}<a class="button button-secondary" href="{% url 'conference:action' conference.number 'unfreeze' %}">Unfreeze…</a>
+      {% else %}<a class="button button-secondary" href="{% url 'conference:action' conference.number 'freeze' %}">Freeze…</a>{% endif %}
+      <a class="button button-secondary" href="{% url 'wagtailadmin_explore' home.pk %}">Page tree</a>
+    {% endif %}
+  </p>
+  {% if is_iglc and home.is_current and not home.live %}<p class="small muted">Marked as current, but it shows at the main address only once the website is published.</p>{% endif %}
+  <table class="listing prod-table conf-pages">
+    <thead><tr><th>Page</th><th>State</th><th>In the menu</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>{{ home.title }}</strong><br><span class="muted small">Home page: introduction, important dates, registration link, contact</span></td>
+        <td>{% include "conferences/admin/_page_state.html" with page=home %}</td><td>–</td>
+        <td class="conf-row-actions">{% if can_publish and not home.frozen or is_iglc %}<a class="button button-small" href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit</a>{% endif %}
+          {% if home.live %}<a class="button button-small button-secondary" href="{{ home.full_url }}" target="_blank" rel="noopener">View</a>{% endif %}</td></tr>
+      {% for row in pages %}
+      <tr><td class="depth-{{ row.depth }}">{{ row.page.title }}</td>
+        <td>{% include "conferences/admin/_page_state.html" with page=row.page %}</td>
+        <td>{% if row.page.show_in_menus %}Yes{% else %}No{% endif %}</td>
+        <td class="conf-row-actions">{% if can_publish and not home.frozen or is_iglc %}<a class="button button-small" href="{% url 'wagtailadmin_pages:edit' row.page.pk %}">Edit</a>{% endif %}
+          {% if row.page.live %}<a class="button button-small button-secondary" href="{{ row.page.full_url }}" target="_blank" rel="noopener">View</a>{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if can_publish and not home.frozen %}<p class="small muted">A page that is not needed: Edit, then Unpublish it under the arrow next to Save draft (it stays as a draft), or ask the IGLC to delete it.</p>{% endif %}
+{% endif %}
+{% endblock %}

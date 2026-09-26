@@ -1,9 +1,9 @@
 {% extends "production/editor/_base.html" %}
-{% comment %}Confirming an action on a conference (apps/conferences/admin_views.py, action_view).{% endcomment %}
+{% comment %}Confirming an action on a conference (apps/conferences/workspace_views.py, action_view).{% endcomment %}
 {% block titletag %}{{ title }}: IGLC {{ conference.number }}{% endblock %}
 {% block main %}
 <div class="page-head">
-  <p class="kicker"><a href="{% url 'conferences:index' %}">Conferences</a> · <a href="{% url 'conferences:dashboard' conference.pk %}">IGLC {{ conference.number }}</a></p>
+  <p class="kicker"><a href="{% url 'conference:overview' conference.number %}">IGLC {{ conference.number }}{% if conference.location %}: {{ conference.location }}{% endif %}</a></p>
   <h1>{{ title }}</h1>
   <p class="lead">{{ text }}</p>
 </div>
@@ -21,6 +21,6 @@
   {% endif %}
   {% if form %}{% for field in form %}<p><label>{{ field.label }}<br>{{ field }}</label>{% if field.help_text %}<br><span class="small muted">{{ field.help_text }}</span>{% endif %}{% for e in field.errors %}<br><span class="fail">{{ e }}</span>{% endfor %}</p>{% endfor %}{% endif %}
   <p><button class="button{% if danger %} serious{% endif %}" type="submit">{{ button }}</button>
-    <a class="button button-secondary" href="{% url 'conferences:dashboard' conference.pk %}">Cancel</a></p>
+    <a class="button button-secondary" href="{{ back_url }}">Cancel</a></p>
 </form>
 {% endblock %}

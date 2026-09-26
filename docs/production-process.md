@@ -160,6 +160,8 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
   Not the same as a *volume*, which in the archive is a published book (older proceedings
   were printed in several); when published, the papers go into the volume(s) by page.
 - *Production editors*: chief editors see and arrange everything; editors see the papers of their tracks, or all papers.
+  The conference's scientific chairs (People in the conference's workspace, group "IGLC nn scientific chairs")
+  are chief editors of its production without being listed.
 - *Submission*: an accepted paper (ConfTool ID, registered title, track, registered authors
   with email addresses, status, editor, position in its track, first page, DOI
   10.24928/year/ConfTool ID, and later the published archive paper).
