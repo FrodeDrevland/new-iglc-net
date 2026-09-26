@@ -78,12 +78,19 @@ before you publish it the first time.
 ## Branding
 
 **Branding** in the menu sets the conference logo (about 60 pixels high in the header), a wide
-photograph for the top of the home page (at least 1600 pixels wide), two colours and the heading
-font, with a preview of the colours. The layout stays the IGLC's, so the website works on phones and
-for screen readers. A main colour too light for white text is refused, with the reason. Without a
-conference logo, the header shows the IGLC symbol in white. **Save
-draft** keeps the change for later; **Preview** opens the home page with the new settings in a new tab
-without saving them; **Save and publish** shows it at once (together with any other
+photograph for the top of the home page, two colours and the heading font, with a preview of the
+colours. The layout stays the IGLC's, so the website works on phones and for screen readers. A main
+colour too light for white text is refused, with the reason. Without a conference logo, the header
+shows the IGLC symbol in white.
+
+The photograph should be **1600 × 600 pixels**, or larger in the same shape (8:3, for example
+2400 × 900). On wide screens it is shown whole; the title sits on its left side over a darkened
+band, and phones show only the middle, so keep what matters in the centre. The picture's focal
+point (open it under Images) decides what stays in view when it is cut. If the chosen photograph
+has another shape or is too small, Branding says how much will be cut off.
+
+**Save draft** keeps the change for later; **Preview** opens the home page with the new settings in
+a new tab without saving them; **Save and publish** shows it at once (together with any other
 unpublished changes to the home page).
 
 ## Pictures and documents

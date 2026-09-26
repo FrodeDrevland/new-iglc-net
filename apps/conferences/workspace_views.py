@@ -16,7 +16,7 @@ from django.urls import path
 from apps.archive.models import Conference
 
 from . import dashboard, roles
-from .models import HEADING_FONTS, ConferenceHomePage
+from .models import HEADING_FONTS, HERO_HELP, HERO_SIZE, ConferenceHomePage
 
 app_name = "conference"
 
@@ -75,9 +75,7 @@ def people(request, number):
 class BrandingForm(forms.Form):
     logo = forms.ModelChoiceField(queryset=None, required=False,
                                   help_text="The conference logo, shown in the header (about 60 pixels high).")
-    hero_image = forms.ModelChoiceField(queryset=None, required=False, label="Photograph",
-                                        help_text="A wide photograph for the top of the home page (at least 1600 "
-                                                  "pixels wide).")
+    hero_image = forms.ModelChoiceField(queryset=None, required=False, label="Photograph", help_text=HERO_HELP)
     primary_colour = forms.CharField(max_length=7, widget=forms.TextInput(attrs={"type": "color"}),
                                      help_text="Header, links and headings. White text must be readable on it.")
     accent_colour = forms.CharField(max_length=7, widget=forms.TextInput(attrs={"type": "color"}),
@@ -95,6 +93,26 @@ class BrandingForm(forms.Form):
 
 
 BRANDING_FIELDS = ("logo", "hero_image", "primary_colour", "accent_colour", "heading_font")
+
+
+def hero_note(image) -> str:
+    """What happens to this photograph at the top of the home page, if it is not the right size."""
+    if image is None or not image.width or not image.height:
+        return ""
+    width, height = HERO_SIZE
+    size = f"The chosen photograph is {image.width} × {image.height} pixels."
+    ratio = image.width / image.height
+    if ratio < width / height * 0.95:
+        cut = round(100 * (1 - (image.width * height / width) / image.height))
+        note = f"{size} It is taller than 8:3, so about {cut}% of its height will be cut off (top and bottom)."
+    elif ratio > width / height * 1.05:
+        cut = round(100 * (1 - (image.height * width / height) / image.width))
+        note = f"{size} It is wider than 8:3, so about {cut}% of its width will be cut off (left and right)."
+    else:
+        note = ""
+    if image.width < width:
+        note = (note or size) + f" It is narrower than {width} pixels and may look blurred on large screens."
+    return note
 
 
 def branding(request, number):
@@ -128,7 +146,7 @@ def branding(request, number):
                                           "it on the website.")
             return redirect("conference:branding", number)
     context.update({"tab": "branding", "form": form, "other_changes": other_changes, "frozen": frozen,
-                    "draft": draft})
+                    "draft": draft, "hero_note": hero_note(draft.hero_image)})
     return render(request, "conferences/admin/branding.html", context)
 
 

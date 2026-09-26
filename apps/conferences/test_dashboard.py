@@ -302,6 +302,29 @@ class DashboardTests(TestCase):
         self.assertNotIn("Sponsors", page)
         self.assertNotIn("view_draft", page)
 
+    def test_photograph_size(self):
+        from wagtail.images import get_image_model
+        from wagtail.images.tests.utils import get_test_image_file
+
+        from .workspace_views import hero_note
+
+        home = seed(self.conference, publish=True)
+        page = self.client.get(self.url() + "branding/").content.decode()
+        self.assertIn("1600 × 600 pixels", page)
+        Image = get_image_model()
+        tall = Image.objects.create(title="Tall", file=get_test_image_file(size=(800, 800)))
+        self.assertIn("taller than 8:3", hero_note(tall))
+        self.assertIn("narrower than 1600", hero_note(tall))
+        right = Image.objects.create(title="Right", file=get_test_image_file(size=(1600, 600)))
+        self.assertEqual(hero_note(right), "")
+        right.focal_point_x, right.focal_point_y, right.focal_point_width, right.focal_point_height = 400, 300, 10, 10
+        right.save()
+        self.client.post(self.url() + "branding/", {"hero_image": right.pk, "primary_colour": "#365a91",
+                                                     "accent_colour": "#d4772a", "heading_font": "serif",
+                                                     "publish": "1"})
+        page = self.client.get("/2099/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("object-position: 25% 50%", page)
+
     def test_scientific_chairs_edit_the_proceedings(self):
         from apps.production.access import productions_for, role
         from apps.production.models import Production

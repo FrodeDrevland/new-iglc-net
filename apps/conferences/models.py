@@ -35,6 +35,11 @@ from wagtail.url_routing import RouteResult
 from apps.pages.models import RICH_TEXT_FEATURES
 
 IMAGE = get_image_model_string()
+HERO_SIZE = (1600, 600)  # the home page's photograph: shown 8:3 on wide screens (see conference.css)
+HERO_HELP = ("A wide photograph for the top of the home page: 1600 × 600 pixels, or larger in the same shape "
+             "(8:3, e.g. 2400 × 900). The title sits on its left side over a darkened band, and phones show "
+             "only the middle, so keep what matters in the centre; the picture's focal point (under Images) "
+             "decides what stays in view.")
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 # Fonts are served from the site itself (no font services: visitors' addresses stay here).
@@ -227,8 +232,7 @@ class ConferenceHomePage(ConferencePageMixin, Page):
     logo = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
                              help_text="The conference logo, shown in the header (about 60 pixels high).")
     hero_image = models.ForeignKey(IMAGE, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
-                                   help_text="A wide photograph for the top of the home page (at least 1600 "
-                                             "pixels wide).")
+                                   help_text=HERO_HELP)
     primary_colour = models.CharField(
         max_length=7, default="#365a91",
         help_text="Header, links and headings, as #rrggbb. White text must be readable on it.")
@@ -330,6 +334,14 @@ class ConferenceHomePage(ConferencePageMixin, Page):
 
     def tracks(self):
         return self.conference.tracks.all()
+
+    @property
+    def hero_position(self) -> str:
+        """object-position for the photograph: its focal point, or the centre."""
+        image = self.hero_image
+        if image is None or image.focal_point_x is None or not image.width or not image.height:
+            return "50% 50%"
+        return f"{100 * image.focal_point_x / image.width:.0f}% {100 * image.focal_point_y / image.height:.0f}%"
 
 
 class ImportantDate(Orderable):

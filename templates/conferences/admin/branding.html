@@ -14,6 +14,7 @@
         <label for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
         {{ field }}
         {% if field.help_text %}<p class="small muted">{{ field.help_text }}</p>{% endif %}
+        {% if field.name == "hero_image" and hero_note %}<p class="small fail">{{ hero_note }} Use Preview to see how it looks.</p>{% endif %}
         {% for e in field.errors %}<p class="fail small">{{ e }}</p>{% endfor %}
       </div>
     {% endfor %}
