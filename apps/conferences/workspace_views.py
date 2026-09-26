@@ -17,7 +17,7 @@ from apps.archive.models import Conference
 
 from . import committee_views, dashboard, roles, speaker_views, track_views
 from .models import (DARKEN_HELP, HEADING_FONTS, HERO_HELP, HERO_LOGO_HELP, HERO_SIZE, ICON_HELP,
-                     LIGHT_LOGO_HELP, LOGO_HELP, PRIMARY_HELP, ConferenceHomePage)
+                     LIGHT_LOGO_HELP, LOGO_HELP, PRIMARY_HELP, ConferenceHomePage, ConferenceIndexPage)
 
 app_name = "conference"
 
@@ -65,6 +65,9 @@ def overview(request, number):
 def website(request, number):
     conference, context = _context(request, number, need="website")
     context["tab"] = "website"
+    index = ConferenceIndexPage.objects.first()
+    if conference.start_date and index is not None and index.get_url(request):
+        context["placeholder_url"] = index.get_full_url(request).rstrip("/") + f"/{conference.year}/"
     return render(request, "conferences/admin/website.html", context)
 
 
@@ -295,7 +298,7 @@ class TimeZoneForm(forms.Form):
 
 
 IGLC_ONLY = {"create-website", "make-current", "unmake-current", "freeze", "unfreeze", "show-in-archive",
-             "hide-in-archive"}
+             "hide-in-archive", "show-placeholder", "hide-placeholder"}
 
 
 def _allowed(user, conference, action) -> bool:
@@ -359,6 +362,15 @@ CONFIRM = {
         "Hide the proceedings from the archive",
         "Takes the conference out of the archive's lists, the search and the exports. Paper pages stay "
         "reachable, so that DOIs keep working.",
+        "Hide"),
+    "show-placeholder": (
+        "Show a placeholder page",
+        "Until the website is published, its address /{year}/ shows a simple page with the conference's name, "
+        "place, dates, logo (from Branding, if any) and contact address. It is public at once.",
+        "Show the placeholder"),
+    "hide-placeholder": (
+        "Hide the placeholder page",
+        "The address /{year}/ shows nothing until the website is published.",
         "Hide"),
     "start-programme": (
         "Start the programme",
@@ -435,7 +447,11 @@ def _precondition(conference, home, action) -> str:
         if not conference.start_date:
             return "The conference needs its dates first (Edit details)."
         return ""
-    if action in ("show-in-archive", "hide-in-archive"):
+    if action in ("show-in-archive", "hide-in-archive", "hide-placeholder"):
+        return ""
+    if action == "show-placeholder":
+        if not conference.start_date:
+            return "The conference needs its dates first (Edit details): the year is the page's address."
         return ""
     if home is None:
         return "The conference has no website yet."
@@ -480,6 +496,11 @@ def _do(request, conference, home, action, pages, form) -> str:
         conference.save(update_fields=["is_published"])
         return ("The proceedings are shown in the archive." if conference.is_published
                 else "The proceedings are hidden from the archive.")
+    if action in ("show-placeholder", "hide-placeholder"):
+        conference.website_placeholder = action == "show-placeholder"
+        conference.save(update_fields=["website_placeholder"])
+        return ("The placeholder page is shown until the website is published." if conference.website_placeholder
+                else "The placeholder page is hidden.")
     if action == "start-programme":
         from apps.programme import setup as programme_setup
 

@@ -249,6 +249,40 @@ class ConferencePageMixin:
         return context
 
 
+def placeholder_conference(year: int):
+    """The conference with a placeholder page at /<year>/: placeholder on, and no published website."""
+    from apps.archive.models import Conference
+
+    conference = (Conference.objects.filter(website_placeholder=True, start_date__year=year)
+                  .order_by("-number").first())
+    if conference is None:
+        return None
+    if ConferenceHomePage.objects.filter(conference=conference, live=True).exists():
+        return None
+    return conference
+
+
+def ordinal(number: int) -> str:
+    suffix = "th" if 10 <= number % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
+    return f"{number}{suffix}"
+
+
+def serve_placeholder(request, conference):
+    """A simple page for a conference whose website is not published yet. The logo and contact address
+    come from the website's latest draft, if it has one."""
+    from django.template.response import TemplateResponse
+
+    home = ConferenceHomePage.objects.filter(conference=conference).first()
+    draft = home.get_latest_revision_as_object() if home else None
+    email = (draft.contact_email if draft else "") or (
+        settings.CONFERENCE_CONTACT_EMAIL.format(number=conference.number) if settings.CONFERENCE_CONTACT_EMAIL else "")
+    return TemplateResponse(request, "conferences/placeholder.html", {
+        "conference": conference, "draft": draft, "email": email, "ordinal": ordinal(conference.number),
+        "name": f"IGLC {conference.number}",
+        "colours": draft.colours if draft else None, "main_site_url": settings.SITE_URL,
+    })
+
+
 class ConferenceIndexPage(Page):
     """The root of the conference sites. Its address serves the current conference."""
 
@@ -272,6 +306,11 @@ class ConferenceIndexPage(Page):
                 .select_related("conference").first())
 
     def route(self, request, path_components):
+        # /2027/ of a conference whose website is not published yet: its placeholder page, if it has one
+        if len(path_components) == 1 and path_components[0].isdigit():
+            placeholder = placeholder_conference(int(path_components[0]))
+            if placeholder is not None:
+                return RouteResult(self, kwargs={"placeholder": placeholder})
         # /call-for-papers/ -> /2027/call-for-papers/ for the current conference
         if path_components and not self.get_children().filter(slug=path_components[0]).exists():
             current = self.current_home()
@@ -279,12 +318,20 @@ class ConferenceIndexPage(Page):
                 return RouteResult(self, kwargs={"redirect_to": current.get_url(request) + "/".join(path_components) + "/"})
         return super().route(request, path_components)
 
-    def serve(self, request, *args, redirect_to=None, **kwargs):
+    def serve(self, request, *args, redirect_to=None, placeholder=None, **kwargs):
         if redirect_to:
             return HttpResponseRedirect(redirect_to)
+        if placeholder is not None:
+            return serve_placeholder(request, placeholder)
         current = self.current_home()
         if current:
             return current.serve(request)
+        # the current conference's website is not published yet: its placeholder, if it has one
+        waiting = (ConferenceHomePage.objects.child_of(self).filter(is_current=True, live=False,
+                                                                    conference__website_placeholder=True)
+                   .select_related("conference").first())
+        if waiting is not None:
+            return serve_placeholder(request, waiting.conference)
         return super().serve(request, *args, **kwargs)
 
     def get_context(self, request, *args, **kwargs):
@@ -398,9 +445,7 @@ class ConferenceHomePage(ConferencePageMixin, Page):
 
     @property
     def ordinal(self):
-        n = self.conference.number
-        suffix = "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
-        return f"{n}{suffix}"
+        return ordinal(self.conference.number)
 
     @property
     def colours(self) -> dict:

@@ -676,6 +676,37 @@ class DashboardTests(TestCase):
         self.assertNotRegex(edit, r'<input[^>]*name="title"[^>]*disabled')
         self.assertIn("Add a page", self.client.get(self.url() + "website/").content.decode())
 
+    def test_placeholder_page(self):
+        get = lambda path: self.client.get(path, HTTP_HOST="conference.localhost")  # noqa: E731
+        from .setup import sync_site
+
+        sync_site()
+        self.assertEqual(get("/2099/").status_code, 404)
+        website = self.client.get(self.url() + "website/").content.decode()
+        self.assertIn("Show a placeholder page", website)
+        self.client.post(self.url("show-placeholder"))
+        self.conference.refresh_from_db()
+        self.assertTrue(self.conference.website_placeholder)
+        page = get("/2099/").content.decode()
+        self.assertIn("IGLC 99", page)
+        self.assertIn("99th annual conference of the International Group for Lean Construction", page)
+        self.assertIn("Sandbox, Norway", page)
+        self.assertIn("22–26 June 2099", page)
+        self.assertIn("iglc99@iglc.net", page)
+
+        # with a draft website: its contact address; published, the website replaces the placeholder
+        home = seed(self.conference)
+        draft = home.get_latest_revision_as_object()
+        draft.contact_email = "hello@sandbox.example"
+        draft.save_revision()
+        self.assertIn("hello@sandbox.example", get("/2099/").content.decode())
+        home.get_latest_revision().publish()
+        self.assertNotIn("being prepared", get("/2099/").content.decode())
+
+        self.client.post(self.url("hide-placeholder"))
+        self.conference.refresh_from_db()
+        self.assertFalse(self.conference.website_placeholder)
+
     def test_existing_sites_get_chairs_with_website_rights(self):
         """What migration 0007 does, through the setup code: both groups edit the website."""
         home = seed(self.conference)

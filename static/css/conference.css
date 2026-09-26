@@ -199,3 +199,16 @@
 .conf-row-photo.conf-initials { font-size: 1.15rem; }
 .conf-row-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.3; }
 .conf-row-text .conf-portrait-role { margin: .2rem 0 .1rem; }
+
+/* the placeholder page of a conference whose website is not published yet */
+.conf-placeholder-body { background: var(--conf-primary); min-height: 100vh; }
+.conf-placeholder { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+.conf-placeholder-card { background: #fff; color: #1d1d1f; max-width: 40rem; width: 100%; padding: 3rem 2.5rem; border-radius: 12px;
+  text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, .18); border-top: 6px solid var(--conf-accent); }
+.conf-placeholder-card h1 { font-family: var(--conf-heading); font-size: clamp(2.2rem, 6vw, 3.2rem); margin: 1rem 0 .4rem; color: var(--conf-primary-text); }
+.conf-placeholder-logo { max-width: 100%; height: auto; }
+.conf-placeholder-logo-band { background: var(--conf-primary); border-radius: 8px; padding: 1rem; }
+.conf-placeholder-what { font-size: 1.2rem; margin: 0 0 1.2rem; }
+.conf-placeholder-when { font-size: 1.15rem; font-weight: 700; margin: 0 0 1.5rem; }
+.conf-placeholder-soon { color: #555; }
+.conf-placeholder-iglc { margin-top: 2rem; font-size: .92rem; }

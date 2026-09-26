@@ -1,0 +1,32 @@
+{% load static wagtailimages_tags conference_tags %}<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IGLC {{ conference.number }}{% if conference.city %}: {{ conference.location }}{% endif %}</title>
+  <meta name="description" content="The {{ ordinal }} annual conference of the International Group for Lean Construction{% if conference.city %}, {{ conference.location }}{% endif %}{% if conference.start_date %}, {% date_range conference.start_date conference.end_date %}{% endif %}.">
+  {% if draft.icon %}{% image draft.icon fill-64x64 format-png as icon_small %}<link rel="icon" href="{{ icon_small.url }}" type="image/png" sizes="64x64">
+  {% else %}<link rel="icon" href="{% static 'img/iglc-logo-symbol.svg' %}" type="image/svg+xml">{% endif %}
+  <link rel="preload" href="{% static 'fonts/source-sans-3-var.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/conference.css' %}">
+  {% if colours %}<style>:root { --conf-primary: {{ colours.primary }}; --conf-on-primary: {{ colours.on_primary }}; --conf-primary-text: {{ colours.primary_text }}; --conf-accent: {{ colours.accent }}; --conf-on-accent: {{ colours.on_accent }}; --conf-accent-text: {{ colours.accent_text }}; --conf-heading: {{ colours.heading_font|safe }}; }</style>{% endif %}
+</head>
+<body class="conference-site conf-placeholder-body">
+  <main id="main" class="conf-placeholder">
+    <div class="conf-placeholder-card">
+      {% if draft.logo_on_light %}{% image draft.logo_on_light max-480x200 alt=name class="conf-placeholder-logo" %}
+      {% elif draft.logo %}<div class="conf-placeholder-logo-band">{% image draft.logo max-480x120 alt="" class="conf-placeholder-logo" %}</div>
+      {% else %}<img class="conf-placeholder-symbol" src="{% static 'img/iglc-logo-symbol.svg' %}" alt="" width="86" height="96">{% endif %}
+      <h1>IGLC {{ conference.number }}</h1>
+      <p class="conf-placeholder-what">The {{ ordinal }} annual conference of the International Group for Lean Construction</p>
+      {% if conference.city or conference.start_date %}<p class="conf-placeholder-when">
+        {% if conference.city %}{{ conference.location }}{% endif %}{% if conference.city and conference.start_date %}<br>{% endif %}
+        {% if conference.start_date %}{% date_range conference.start_date conference.end_date %}{% endif %}</p>{% endif %}
+      <p class="conf-placeholder-soon">The conference website is being prepared.</p>
+      {% if email %}<p>Questions about the conference: <a href="mailto:{{ email }}">{{ email }}</a></p>{% endif %}
+      <p class="conf-placeholder-iglc"><a href="{{ main_site_url }}/">The International Group for Lean Construction</a> · <a href="{{ main_site_url }}/papers">IGLC proceedings</a></p>
+    </div>
+  </main>
+</body>
+</html>

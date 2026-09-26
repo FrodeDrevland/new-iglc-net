@@ -196,6 +196,7 @@ class ConferenceViewSet(ModelViewSet):
             FieldRowPanel([FieldPanel("number"), FieldPanel("start_date"), FieldPanel("end_date")]),
             FieldRowPanel([FieldPanel("city"), FieldPanel("country")]),
             FieldPanel("is_published"),
+            FieldPanel("website_placeholder"),
         ], heading="Conference"),
         MultiFieldPanel([
             FieldPanel("conference_title"), FieldPanel("proceedings_title"),

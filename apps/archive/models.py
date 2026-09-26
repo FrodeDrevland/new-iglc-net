@@ -40,6 +40,10 @@ class Conference(EditTracking, ClusterableModel):
         "proceedings in the archive", default=False,
         help_text="The conference and its papers are listed in the public archive, the search and the exports. "
                   "Publishing through Proceedings production ticks it. (Not the conference website.)")
+    website_placeholder = models.BooleanField(
+        "placeholder website", default=False,
+        help_text="Until the conference's website is published, its address (conference site /<year>/) shows a "
+                  "simple page: the conference's name, place, dates, logo and contact address.")
     papers_zip_url = models.URLField(
         "ZIP of all papers", max_length=1000, blank=True,
         help_text="Link to a ZIP file with every paper, shown on the conference page.",

@@ -50,6 +50,9 @@ SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000").rstrip("/")
 # developing. Added to ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
 _site_host = (urlsplit(SITE_URL).hostname or "localhost").removeprefix("www.")
 CONFERENCE_HOST = os.environ.get("CONFERENCE_HOST", f"conference.{_site_host}").strip().lower()
+# The contact address on a conference's placeholder page when its organisers have not given one under
+# Dates and links; {number} is the conference number. Empty: no address.
+CONFERENCE_CONTACT_EMAIL = os.environ.get("CONFERENCE_CONTACT_EMAIL", "iglc{number}@iglc.net")
 if CONFERENCE_HOST:
     ALLOWED_HOSTS.append(CONFERENCE_HOST)
     if SITE_URL.startswith("https://"):

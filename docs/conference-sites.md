@@ -99,6 +99,13 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
    From the command line instead: `python manage.py seed_conference_site 35 --current`.
    Creating the home page under Pages → IGLC conferences → Add child page also works, but does not
    add the conference days to the important dates.
+   **Placeholder page**: until the website is published, the IGLC can put up a simple page at
+   `/<year>/` (Website → **Show a placeholder page…**, or "Placeholder website" on the conference
+   record): IGLC nn, "the nnth annual conference of the International Group for Lean Construction",
+   the city and country, the dates, the logo from Branding (if the website has been created) and a
+   contact address: the one under Dates and links, otherwise `iglc<number>@iglc.net` (the setting
+   `CONFERENCE_CONTACT_EMAIL`, a pattern with `{number}`; empty for none). If the conference is marked
+   as current, the main address shows it too. Publishing the website replaces it.
 3. People → **Add someone** under Conference chairs and Website organisers. They log in at `/manage/`;
    point them to the guide for conference organisers.
 4. When the organisers and chairs are ready: **Publish…**, and **Mark as current…** when it should be

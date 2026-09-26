@@ -6,6 +6,18 @@
     {% if home.live %}<a href="{{ home.full_url }}" target="_blank" rel="noopener">{{ home.full_url }}</a>{% else %}Not public yet: nothing is shown until the home page is published.{% endif %}</p>{% endif %}
 {% endblock %}
 {% block content_main %}
+{% if not home.live and conference.start_date %}
+  <section class="panel conf-placeholder-admin">
+    <h2>Placeholder page</h2>
+    {% if conference.website_placeholder %}
+      <p>Until the website is published, <a href="{{ placeholder_url }}" target="_blank" rel="noopener">{{ placeholder_url|default:"its address" }}</a> shows a simple page: IGLC {{ conference.number }}, the place and dates{% if home %}, the logo from Branding{% endif %} and the contact address{% if home %} from Dates and links{% endif %}. Publishing the website replaces it.</p>
+      {% if is_iglc %}<p><a class="button button-secondary button-small" href="{% url 'conference:action' conference.number 'hide-placeholder' %}">Hide the placeholder…</a></p>{% endif %}
+    {% else %}
+      <p class="muted">Off: the website's address shows nothing until the website is published.{% if not is_iglc %} The IGLC can put up a simple page with the conference's name, place, dates, logo and contact address meanwhile.{% endif %}</p>
+      {% if is_iglc %}<p><a class="button button-secondary button-small" href="{% url 'conference:action' conference.number 'show-placeholder' %}">Show a placeholder page…</a></p>{% endif %}
+    {% endif %}
+  </section>
+{% endif %}
 {% if not home %}
   <section class="panel">
     <p>No website yet.{% if conference.start_date %} It would be at <strong>/{{ conference.year }}/</strong>.{% endif %}</p>
