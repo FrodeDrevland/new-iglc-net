@@ -27,3 +27,7 @@ inventory/*.zip
 _reports/
 # Licensed fonts for local layout tests. Never commit them.
 _fonts/
+# Local working folders (patches, Claude's outputs, example logos). Not part of the site.
+_patches/
+Claude outputs/
+IGLC134-example-logo/
