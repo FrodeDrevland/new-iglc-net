@@ -115,3 +115,7 @@
 .b-dayparts-label { font-weight: 600; }
 .b-daypart { display: inline-flex; align-items: center; gap: .25rem; }
 .b-form [hidden], .b-dialog [hidden] { display: none !important; }
+/* Lanes and rooms */
+.bg-lane-room { display: block; width: 100%; margin-top: .2rem; font-size: .8rem !important; font-weight: 400; padding: .1rem .3rem !important; }
+.bb-noroom { font-style: italic; color: var(--w-color-critical-200, #cd4444); }
+.bg-room { white-space: normal; }

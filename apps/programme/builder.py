@@ -16,7 +16,7 @@ from datetime import date as Date, datetime, time, timedelta
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from . import access, checks
+from . import access, checks, lanes
 from .models import Contribution, Location, Part, Session, SessionItem, SessionPerson
 
 STEP = 15  # minutes
@@ -89,13 +89,22 @@ def _pool(programme) -> dict:
     return {"papers": papers, "contributions": contributions}
 
 
-def spans(session, day_sessions) -> bool:
-    """Drawn across every room: plenary sessions, and breaks and meals without a room of their own."""
-    return session.plenary or (session.kind in SPANNING_KINDS and not session.location_id)
+def spans(session, day_sessions=None) -> bool:
+    """Drawn across every lane: plenary sessions, and breaks and meals without a room of their own."""
+    return lanes.spans(session)
+
+
+def _fill_lanes(programme, day):
+    """Sessions of the day without a lane (from the form, a spreadsheet, a copy) get one."""
+    sessions = list(programme.sessions.filter(date=day))
+    for session, lane in lanes.assign(sessions).items():
+        if session.lane != lane:
+            Session.objects.filter(pk=session.pk).update(lane=lane)
 
 
 def state(programme, user, day: Date) -> dict:
     editable = {p.pk for p in access.editable_parts(user, programme)}
+    _fill_lanes(programme, day)
     sessions = list(programme.sessions.filter(date=day).select_related("location", "part", "track")
                     .prefetch_related("people", "items__submission__paper__authors", "items__contribution"))
     flagged = {}
@@ -117,6 +126,7 @@ def state(programme, user, day: Date) -> dict:
         "can_days": access.can_edit_settings(user, programme),
         "range": {"start": f"{max(first - 1, 0):02d}:00", "end": f"{min(last + 1, 24):02d}:00"},
         "rooms": [{"id": loc.pk, "name": loc.name} for loc in programme.locations.all()],
+        "lanes": programme.day_lanes(day),
         "can_rooms": access.can_edit_locations(user, programme),
         "parts": [{"id": p.pk, "name": p.name, "colour": p.colour, "kind": p.kind, "editable": p.pk in editable}
                   for p in programme.parts.all()],
@@ -127,7 +137,8 @@ def state(programme, user, day: Date) -> dict:
         "sessions": [{
             "id": s.pk, "part": s.part_id, "kind": s.kind, "kind_label": s.get_kind_display(), "code": s.code,
             "title": s.title, "display": s.display_title, "start": _hm(s.start), "end": _hm(s.end),
-            "location": s.location_id, "plenary": s.plenary, "spans": spans(s, sessions),
+            "location": s.location_id, "room": s.location.name if s.location_id else "",
+            "lane": s.lane, "plenary": s.plenary, "spans": spans(s, sessions),
             "editable": s.part_id in editable, "cancelled": s.cancelled, "change_note": s.change_note,
             "notes": s.notes, "track": s.track_id or "",
             "people": [{"role": p.role, "name": p.name, "affiliation": p.affiliation} for p in s.people.all()],
@@ -197,23 +208,38 @@ def create(programme, user, day, data) -> list[Session]:
     if kind not in Session.Kind.values:
         raise BuildError("Unknown kind of session.")
     start, end = _time(data.get("start")), _time(data.get("end"))
-    mode = data.get("mode", "room")
+    mode = data.get("mode", "lane")
     base = dict(programme=programme, part=part, date=day, start=start, end=end, kind=kind,
                 title=(data.get("title") or "").strip()[:300])
-    if mode == "parallel":
-        rooms = list(programme.locations.all())
-        if not rooms:
-            raise BuildError("Add the rooms first.")
+    if mode == "parallel":  # one in every lane that is free at that time
+        probe = Session(date=day, start=start, end=end)
+        busy = {o.lane for o in programme.sessions.filter(date=day) if o.lane and o.overlaps(probe)}
         made = []
-        for room in rooms:
-            session = Session(location=room, **base)
+        for lane in range(1, programme.day_lanes(day) + 1):
+            if lane in busy:
+                continue
+            session = Session(lane=lane, **base)
             _save(session)
             made.append(session)
+        if not made:
+            raise BuildError("Every lane is taken at that time: add a lane first.")
         return made
     location = _location(programme, data.get("location"))
-    session = Session(location=location, plenary=(mode == "all" and kind not in SPANNING_KINDS), **base)
+    plenary = mode == "all" and kind not in SPANNING_KINDS
+    lane = None if mode == "all" else _lane(programme, day, data.get("lane"))
+    session = Session(location=location, plenary=plenary, lane=lane, **base)
     _save(session)
     return [session]
+
+
+def _lane(programme, day, value):
+    try:
+        lane = int(value)
+    except (TypeError, ValueError):
+        return None
+    if not 1 <= lane <= programme.day_lanes(day):
+        raise BuildError("No such lane.")
+    return lane
 
 
 FIELDS = {"title", "code", "kind", "notes", "change_note"}
@@ -234,6 +260,8 @@ def update(programme, user, data):
         session.date = _date(data["date"])
     if "location" in data:
         session.location = _location(programme, data["location"])
+    if "lane" in data:
+        session.lane = _lane(programme, session.date, data["lane"])
     if "plenary" in data:
         session.plenary = bool(data["plenary"])
     if "cancelled" in data:
@@ -355,7 +383,7 @@ def copy_day(programme, user, source: Date, target: Date, replace: bool = False)
             raise BuildError(f"{target:%A %d %B} belongs to {' and '.join(p.name for p in target_parts)}, "
                              f"which you do not edit.")
         copy = Session(programme=programme, part=part, date=target, start=s.start, end=s.end, location=s.location,
-                       kind=s.kind, title=s.title, plenary=s.plenary, track=s.track)
+                       kind=s.kind, title=s.title, plenary=s.plenary, track=s.track, lane=s.lane)
         _save(copy)
         count += 1
     return count
@@ -378,12 +406,48 @@ def set_day_parts(programme, user, day, part_ids) -> str:
     return f"{day:%A %d %B}: {' and '.join(p.name for p in parts)}."
 
 
+def set_lanes(programme, user, day, count) -> str:
+    """How many parallel lanes the day has (anyone who edits the day)."""
+    from .models import ProgrammeDay
+
+    if not any(access.can_edit_part(user, p) for p in programme.day_parts(day)):
+        raise BuildError("You do not edit this day.")
+    try:
+        count = int(count)
+    except (TypeError, ValueError):
+        raise BuildError("Not a number.")
+    used = max([s.lane or 0 for s in programme.sessions.filter(date=day)] + [0])
+    if count < max(used, 1):
+        raise BuildError(f"Lane {used} still has sessions: move them first.")
+    if count > 12:
+        raise BuildError("At most twelve lanes.")
+    row, _ = ProgrammeDay.objects.get_or_create(programme=programme, date=day)
+    row.lanes = count
+    row.save(update_fields=["lanes"])
+    return f"{count} parallel lanes on {day:%A %d %B}."
+
+
+def lane_room(programme, user, day, lane, location_id) -> str:
+    """Give a room to the sessions of a lane on the day that have none yet (and that one edits).
+    Sessions that already have a room keep it: rooms may change during the day."""
+    location = _location(programme, location_id)
+    if location is None:
+        raise BuildError("Choose a room.")
+    count = 0
+    for s in programme.sessions.filter(date=day, lane=lane, location__isnull=True).select_related("part"):
+        if access.can_edit_part(user, s.part):
+            s.location = location
+            _save(s)
+            count += 1
+    return f"{location} given to {count} session{'s' if count != 1 else ''} without a room."
+
+
 def renumber(programme, user) -> int:
-    """Codes by time slot, per part: 1A, 1B ... in room order; the industry day I1A, the workshop day
+    """Codes by time slot, per part: 1A, 1B ... in lane order; the industry day I1A, the workshop day
     W1A and so on. Only sessions that run beside others get a code; plenary sessions and breaks lose it."""
     changed = 0
     for part in access.editable_parts(user, programme):
-        sessions = list(part.sessions.select_related("location").order_by("date", "start", "location__sort_order"))
+        sessions = list(part.sessions.select_related("location").order_by("date", "start", "lane", "pk"))
         slots = []
         for s in sessions:
             parallel = (not s.plenary and s.kind not in SPANNING_KINDS
@@ -429,6 +493,10 @@ def apply(programme, user, day: Date, data: dict) -> dict:
     elif action == "copy_day":
         count = copy_day(programme, user, day, _date(data.get("to")), bool(data.get("replace")))
         note = f"{count} session{'s' if count != 1 else ''} copied to {_date(data.get('to')):%A %d %B}."
+    elif action == "lanes":
+        note = set_lanes(programme, user, day, data.get("count"))
+    elif action == "lane_room":
+        note = lane_room(programme, user, day, _lane(programme, day, data.get("lane")), data.get("location"))
     elif action == "day_parts":
         note = set_day_parts(programme, user, day, data.get("parts"))
     elif action == "renumber":

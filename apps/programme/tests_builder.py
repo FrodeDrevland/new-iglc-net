@@ -52,7 +52,9 @@ class DrawingTests(BuilderTestCase):
                 location=None)
         answer = self.ok(action="create", part=self.academic.pk, kind="papers", start="13:00", end="14:30",
                          mode="parallel")
-        self.assertEqual(answer["note"], "2 sessions added.")
+        self.assertEqual(answer["note"], "3 sessions added.")  # one in each of the day's three lanes
+        self.assertEqual(sorted(s["lane"] for s in answer["sessions"] if s["start"] == "13:00"), [1, 2, 3])
+        self.assertEqual({s["location"] for s in answer["sessions"] if s["start"] == "13:00"}, {None})
         sessions = {(s["start"], s["kind"], s["location"]): s for s in answer["sessions"]}
         self.assertTrue(sessions[("09:00", "keynote", self.room_a.pk)]["plenary"])
         self.assertTrue(sessions[("09:00", "keynote", self.room_a.pk)]["spans"])
@@ -64,9 +66,9 @@ class DrawingTests(BuilderTestCase):
                                    mode="room", location=self.room_a.pk)
         self.assertEqual(status, 400)
         self.assertIn("end after it starts", answer["error"])
-        status, answer = self.send(action="create", part=self.academic.pk, kind="keynote", start="09:00", end="10:00",
-                                   mode="all", location=None)
-        self.assertIn("plenary session needs a location", answer["error"])
+        status, answer = self.send(action="create", part=self.academic.pk, kind="papers", start="09:00", end="10:00",
+                                   mode="lane", lane=7)
+        self.assertEqual(answer["error"], "No such lane.")
 
     def test_move_resize_and_details(self):
         s = self.session(code="1A")
@@ -151,23 +153,22 @@ class DayTests(BuilderTestCase):
         self.ok(action="create", part=self.academic.pk, kind="keynote", start="09:00", end="10:00", mode="all",
                 location=self.room_a.pk)
         self.ok(action="create", part=self.academic.pk, kind="papers", start="10:30", end="12:00", mode="parallel")
-        a = Session.objects.get(start=time(10, 30), location=self.room_a)
+        a = Session.objects.get(start=time(10, 30), lane=1)
         SessionItem.objects.create(session=a, submission=self.p1)
         answer = self.ok(action="copy_day", to="2027-07-21")
-        self.assertEqual(answer["note"], "3 sessions copied to Wednesday 21 July.")
+        self.assertEqual(answer["note"], "4 sessions copied to Wednesday 21 July.")
         copied = Session.objects.filter(date=date(2027, 7, 21))
-        self.assertEqual(copied.count(), 3)
+        self.assertEqual(copied.count(), 4)
+        self.assertEqual(sorted(s.lane for s in copied if s.lane), [1, 2, 3])
         self.assertFalse(SessionItem.objects.filter(session__in=copied).exists())
-        self.session(part=self.industry, kind=Session.Kind.INDUSTRY, start_at=time(14), end_at=time(15))
-        self.session(part=self.industry, kind=Session.Kind.INDUSTRY, start_at=time(14), end_at=time(15), location="b")
+        self.ok(action="create", part=self.industry.pk, kind="industry", start="14:00", end="15:00", mode="parallel")
         self.ok(action="renumber")
-        codes = {(s.date.day, s.start.hour, s.location.name if s.location else "", s.part.kind): s.code
-                 for s in Session.objects.select_related("location", "part")}
-        self.assertEqual(codes[(20, 9, "Room A", "academic")], "")
-        self.assertEqual(codes[(20, 10, "Room A", "academic")], "1A")
-        self.assertEqual(codes[(20, 10, "Room B", "academic")], "1B")
-        self.assertEqual(codes[(21, 10, "Room B", "academic")], "2B")
-        self.assertEqual(codes[(20, 14, "Room A", "industry")], "I1A")
+        codes = {(s.date.day, s.start.hour, s.lane, s.part.kind): s.code for s in Session.objects.select_related("part")}
+        self.assertEqual(codes[(20, 9, None, "academic")], "")
+        self.assertEqual(codes[(20, 10, 1, "academic")], "1A")
+        self.assertEqual(codes[(20, 10, 3, "academic")], "1C")
+        self.assertEqual(codes[(21, 10, 2, "academic")], "2B")
+        self.assertEqual(codes[(20, 14, 1, "industry")], "I1A")
 
 
 class SpreadsheetTests(BuilderTestCase):
@@ -358,3 +359,40 @@ class SettingsDaysTests(BuilderTestCase):
                 data[f"parts-{i}-public"] = "on"
         self.assertRedirects(self.client.post(url, data), reverse("programme:overview", args=[35]))
         self.assertEqual([p.pk for p in self.programme.day_parts(date(2027, 7, 23))], [self.industry.pk])
+
+
+class LaneTests(BuilderTestCase):
+    def test_lanes_and_rooms(self):
+        answer = self.ok(action="lanes", count=2)
+        self.assertEqual((answer["lanes"], answer["note"]), (2, "2 parallel lanes on Tuesday 20 July."))
+        self.ok(action="create", part=self.academic.pk, kind="papers", start="10:00", end="11:00", mode="parallel")
+        self.ok(action="create", part=self.academic.pk, kind="papers", start="11:00", end="12:00", mode="lane", lane=2,
+                location=self.room_b.pk)
+        status, answer = self.send(action="lanes", count=1)
+        self.assertIn("Lane 2 still has sessions", answer["error"])
+        # a room for the sessions in lane 2 without one; the one with a room keeps it
+        answer = self.ok(action="lane_room", lane=2, location=self.room_a.pk)
+        self.assertEqual(answer["note"], "Room A given to 1 session without a room.")
+        rooms = {(s["start"], s["lane"]): s["room"] for s in answer["sessions"]}
+        self.assertEqual(rooms, {("10:00", 1): "", ("10:00", 2): "Room A", ("11:00", 2): "Room B"})
+
+    def test_drag_to_another_lane(self):
+        answer = self.ok(action="create", part=self.academic.pk, kind="papers", start="10:00", end="11:00", mode="lane",
+                         lane=1)
+        s = answer["sessions"][0]
+        self.ok(action="update", id=s["id"], lane=3)
+        self.assertEqual(Session.objects.get(pk=s["id"]).lane, 3)
+
+    def test_sessions_without_lane_get_one(self):
+        self.session(code="1A")
+        self.session(code="1B", location="b")
+        lanes = sorted(s["lane"] for s in self.state()["sessions"])
+        self.assertEqual(lanes, [1, 2])
+
+    def test_room_clash_is_still_an_error(self):
+        from . import checks
+
+        self.session(code="1A")
+        self.session(code="1B", start_at=time(10, 30), end_at=time(11, 30))
+        self.assertIn("Two sessions in Room A at the same time.",
+                      [p.text for p in checks.problems(self.programme) if p.level == checks.ERROR])

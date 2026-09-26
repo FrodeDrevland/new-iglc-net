@@ -98,24 +98,46 @@ class Day:
         return iter((self.date, self.sessions))
 
     def grid(self):
+        """Lanes as columns (not rooms: a room may change during the day). A lane whose sessions
+        are all in one room is headed by that room; otherwise each session names its own."""
+        from . import lanes as lane_rules
+
         sessions = self.sessions
-        columns = sorted({s.location for s in sessions if s.location_id and not self._spans(s)},
-                         key=lambda loc: (loc.sort_order, loc.name))
-        index = {loc.pk: n for n, loc in enumerate(columns)}
+        spanning = {s.pk for s in sessions if self._spans(s)}
+        others = [s for s in sessions if s.pk not in spanning]
+        placed_lanes = lane_rules.assign([_Unspanned(s) for s in others])
+        lane_of = {wrapped.session.pk: lane for wrapped, lane in placed_lanes.items()}
+        used = sorted(set(lane_of.values()))
+        column_of = {lane: n + 2 for n, lane in enumerate(used)}  # column 1 holds the times
+        headings = []
+        for lane in used:
+            rooms = {s.location_id for s in others if lane_of[s.pk] == lane}
+            first = next(s for s in others if lane_of[s.pk] == lane)
+            headings.append(first.location.name if len(rooms) == 1 and first.location_id else "")
         times = sorted({s.start for s in sessions} | {s.end for s in sessions})
-        row = {t: n + 2 for n, t in enumerate(times)}  # row 1 holds the locations' names
+        row = {t: n + 2 for n, t in enumerate(times)}  # row 1 holds the headings
         placed = []
         for s in sessions:
-            if self._spans(s) or s.location_id not in index:
-                column = "2 / -1"
-            else:
-                column = str(index[s.location_id] + 2)
+            column = "2 / -1" if s.pk in spanning or not used else str(column_of[lane_of[s.pk]])
             placed.append(Placed(s, f"{row[s.start]} / {row[s.end]}", column))
         labels = [(t, row[t]) for t in times if any(s.start == t for s in sessions)]
         parts = sorted({s.part for s in sessions}, key=lambda part: (part.sort_order, part.pk))
-        return {"columns": columns, "placed": placed, "labels": labels, "count": max(len(columns), 1), "parts": parts}
+        return {"columns": headings, "placed": placed, "labels": labels, "count": max(len(used), 1),
+                "parts": parts, "named": any(headings)}
 
     def _spans(self, session) -> bool:
-        if session.location_id and not (session.plenary or session.kind in (Session.Kind.BREAK, Session.Kind.MEAL)):
+        from . import lanes as lane_rules
+
+        if not lane_rules.spans(session):
             return False
         return not any(other is not session and other.overlaps(session) for other in self.sessions)
+
+
+class _Unspanned:
+    """A session as lanes.assign sees it, when it is drawn in a lane although it could span
+    (a plenary session beside a session of another part)."""
+
+    def __init__(self, session):
+        self.session = session
+        self.pk, self.date, self.start, self.end = session.pk, session.date, session.start, session.end
+        self.kind, self.location_id, self.lane, self.plenary = "papers", session.location_id, session.lane, False

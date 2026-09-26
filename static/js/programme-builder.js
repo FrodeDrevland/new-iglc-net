@@ -69,6 +69,14 @@
     const copyTo = $("b-copy-to");
     if (copyTo) copyTo.innerHTML = S.days.filter(d => d.date !== S.day).map(d => `<option value="${d.date}">${esc(d.label)}</option>`).join("");
   }
+  $("b-lanes").addEventListener("click", e => {
+    const b = e.target.closest("[data-lanes]");
+    if (b) send({action: "lanes", count: Number(b.dataset.lanes)});
+  });
+  grid.addEventListener("change", e => {
+    const select = e.target.closest("[data-lane-room]");
+    if (select && select.value) send({action: "lane_room", lane: Number(select.dataset.laneRoom), location: Number(select.value)});
+  });
   $("b-dayparts").addEventListener("change", e => {
     if (!e.target.matches("input[type=checkbox]")) return;
     const parts = [...$("b-dayparts").querySelectorAll("input:checked")].map(i => Number(i.value));
@@ -81,7 +89,7 @@
     // Blocks in the same room that overlap share the room's width.
     const placed = [];
     for (const s of S.sessions) {
-      const index = s.spans ? -1 : S.rooms.findIndex(r => r.id === s.location);
+      const index = s.spans || !s.lane ? -1 : s.lane - 1;
       placed.push({s, index: index, lane: 0, lanes: 1});
     }
     for (const a of placed) {
@@ -93,7 +101,7 @@
   }
 
   function renderGrid() {
-    const n = Math.max(S.rooms.length, 1);
+    const n = Math.max(S.lanes, 1);
     const start = mins(S.range.start), end = mins(S.range.end), height = (end - start) * PX;
     let hours = "", lines = "";
     for (let t = start; t <= end; t += 60) {
@@ -101,14 +109,14 @@
       lines += `<div class="bg-line" style="top:${(t - start) * PX}px"></div>`;
       if (t + 30 < end) lines += `<div class="bg-line half" style="top:${(t + 30 - start) * PX}px"></div>`;
     }
-    const cols = S.rooms.map((r, i) => `<div class="bg-col" data-room="${r.id}" style="left:${i * 100 / n}%;width:${100 / n}%"></div>`).join("");
+    const cols = Array.from({length: n}, (_, i) => `<div class="bg-col" data-lane="${i + 1}" style="left:${i * 100 / n}%;width:${100 / n}%"></div>`).join("");
     const blocks = layout().map(({s, index, lane, lanes}) => {
       const p = part(s.part);
+      const takes = s.kind !== "break" && s.kind !== "meal";
       const top = (mins(s.start) - start) * PX, h = Math.max((mins(s.end) - mins(s.start)) * PX, 18);
       const left = index < 0 ? 0 : (index + lane / lanes) * 100 / n, width = index < 0 ? 100 : 100 / n / lanes;
-      const where = s.spans && s.location ? ` · ${esc((room(s.location) || {}).name)}` : "";
+      const where = s.room ? ` · ${esc(s.room)}` : (takes || s.kind === "social" ? ' · <span class="bb-noroom">no room yet</span>' : "");
       const chairs = s.people.filter(x => x.role === "chair" || x.role === "co_chair").map(x => esc(x.name)).join(", ");
-      const takes = s.kind !== "break" && s.kind !== "meal";
       const items = s.items.map(i => `<li draggable="${s.editable}" data-entry="i${i.id}" data-item="${i.id}" title="${esc(i.sub)}"><span class="bi-label">${esc(i.label)}</span> ${esc(i.title)}</li>`).join("");
       return `<div class="bb kind-${s.kind}${s.editable ? "" : " locked"}${s.spans ? " spans" : ""}${s.problems.length ? " flagged" : ""}${s.cancelled ? " cancelled" : ""}${open === s.id ? " selected" : ""}"
           data-id="${s.id}" style="top:${top}px;height:${h}px;left:${left}%;width:${width}%;--part:${esc(p.colour || "#888")}">
@@ -120,12 +128,22 @@
       </div>`;
     }).join("");
     grid.style.setProperty("--rooms", n);
-    grid.innerHTML = S.rooms.length ? `
-      <div class="bg-head"><div class="bg-gutter"></div><div class="bg-rooms">${S.rooms.map(r => `<div class="bg-room">${esc(r.name)}</div>`).join("")}</div></div>
+    const canRoom = editableDayParts().length && S.rooms.length;
+    const heads = Array.from({length: n}, (_, i) => `<div class="bg-room">Parallel ${i + 1}
+      ${canRoom ? `<select class="bg-lane-room" data-lane-room="${i + 1}" aria-label="Give a room to the sessions in parallel ${i + 1} that have none">
+        <option value="">Give a room…</option>${S.rooms.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join("")}</select>` : ""}</div>`).join("");
+    grid.innerHTML = `
+      <div class="bg-head"><div class="bg-gutter"></div><div class="bg-rooms">${heads}</div></div>
       <div class="bg-body" style="height:${height}px">
         <div class="bg-times">${hours}</div>
         <div class="bg-cols" id="bg-cols" data-start="${start}">${lines}${cols}${blocks}</div>
-      </div>` : `<p class="b-empty">No rooms yet. ${S.can_rooms ? "Add the rooms above (Add room)." : "The organisers or the conference chairs add the rooms."}</p>`;
+      </div>`;
+    const lanes = $("b-lanes");
+    lanes.innerHTML = editableDayParts().length ? `<span class="b-dayparts-label">Parallel lanes</span>
+      <button type="button" class="button button-small button-secondary" data-lanes="${n - 1}" aria-label="One lane fewer"${n <= 1 ? " disabled" : ""}>−</button>
+      <strong>${n}</strong>
+      <button type="button" class="button button-small button-secondary" data-lanes="${n + 1}" aria-label="One lane more">+</button>
+      <span class="small muted">how many sessions can run at the same time; rooms are given to the sessions</span>` : "";
   }
 
   // Drawing a new session, and moving and resizing sessions, with the pointer.
@@ -151,7 +169,7 @@
       ghost.className = "bb ghost";
       ghost.style.cssText = `top:${(t - start) * PX}px;height:${STEP * PX}px;left:${col.style.left};width:${col.style.width}`;
       cols.appendChild(ghost);
-      gesture = {kind: "draw", room: Number(col.dataset.room), t0: t, t1: t + STEP, ghost, start, at, moved: false};
+      gesture = {kind: "draw", lane: Number(col.dataset.lane), t0: t, t1: t + STEP, ghost, start, at, moved: false};
     } else return;
     grid.setPointerCapture(e.pointerId);
     e.preventDefault();
@@ -180,10 +198,10 @@
     } else {
       g.delta = delta;
       g.block.style.top = g.top0 + delta * PX + "px";
-      if (!g.s.spans && S.rooms.length) {
-        const n = S.rooms.length;
+      if (!g.s.spans) {
+        const n = Math.max(S.lanes, 1);
         const index = Math.min(n - 1, Math.max(0, Math.floor((e.clientX - g.box.left) / (g.box.width / n))));
-        g.room = S.rooms[index].id;
+        g.lane = index + 1;
         g.block.style.left = index * 100 / n + "%";
         g.block.style.width = 100 / n + "%";
       }
@@ -196,14 +214,14 @@
     if (!g) return;
     if (g.kind === "draw") {
       g.ghost.remove();
-      openCreate(g.room, hm(g.t0), hm(g.moved ? g.t1 : g.t0 + 60));
+      openCreate(g.lane, hm(g.t0), hm(g.moved ? g.t1 : g.t0 + 60));
     } else if (!g.moved) {
       openPanel(g.s.id);
     } else if (g.kind === "resize") {
       send({action: "update", id: g.s.id, end: hm(g.newEnd)});
     } else if (g.kind === "move") {
       const data = {action: "update", id: g.s.id, start: hm(mins(g.s.start) + (g.delta || 0)), end: hm(mins(g.s.end) + (g.delta || 0))};
-      if (g.room && g.room !== g.s.location) data.location = g.room;
+      if (g.lane && g.lane !== g.s.lane) data.lane = g.lane;
       send(data);
     }
   });
@@ -211,19 +229,19 @@
 
   // ------------------------------------------------------------ a new session
   const dialog = $("b-create"), createForm = $("b-create-form");
-  function openCreate(roomId, from, to) {
+  function openCreate(lane, from, to) {
     const f = createForm.elements;
     f.kind.innerHTML = S.kinds.map(([k, label]) => `<option value="${k}">${esc(label)}</option>`).join("");
     const parts = editableDayParts();
     f.part.innerHTML = parts.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
     createForm.querySelector("[data-part-choice]").hidden = parts.length < 2;
-    f.location.innerHTML = '<option value="">no room (a break)</option>' + S.rooms.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join("");
-    f.location.value = roomId;
+    f.location.innerHTML = '<option value="">none yet</option>' + S.rooms.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join("");
+    f.location.value = "";
     f.start.value = from; f.end.value = to; f.title.value = "";
     f.kind.value = KIND_FOR_PART[(parts[0] || {}).kind] || "papers";
-    createForm.querySelector("[data-room-name]").textContent = (room(roomId) || {}).name || "";
-    createForm.dataset.room = roomId;
-    f.mode.value = "room";
+    createForm.querySelector("[data-room-name]").textContent = "parallel " + lane;
+    createForm.dataset.lane = lane;
+    f.mode.value = "lane";
     dialog.showModal();
     f.kind.focus();
   }
@@ -235,7 +253,7 @@
     if (dialog.returnValue !== "ok") return;
     const f = createForm.elements;
     send({action: "create", part: Number(f.part.value), kind: f.kind.value, title: f.title.value, start: f.start.value,
-          end: f.end.value, mode: f.mode.value, location: f.mode.value === "all" ? (f.location.value || null) : Number(createForm.dataset.room)});
+          end: f.end.value, mode: f.mode.value, location: f.location.value || null, lane: Number(createForm.dataset.lane)});
   });
 
   // ------------------------------------------------------------ papers and contributions: drag and drop

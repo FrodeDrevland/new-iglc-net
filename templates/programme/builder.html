@@ -5,11 +5,12 @@
 {% block main %}
 {% include "programme/_head.html" with title="Build the programme" %}
 <div class="b-help small muted">
-  <p>Each day belongs to a part of the conference (the academic conference, the industry day ...), and its sessions to that part. <strong>Draw</strong> a session by dragging down in a room's column (or click for an hour). <strong>Move</strong> it by dragging, change its length by dragging its lower edge, and <strong>click</strong> it for its details, chairs and papers. <strong>Drag papers and contributions</strong> from the list on the right into sessions, between them, or back to the list. Everything is saved at once.</p>
+  <p>Each day belongs to a part of the conference (the academic conference, the industry day ...), and its sessions to that part. <strong>Draw</strong> a session by dragging down in one of the parallel lanes (or click for an hour). <strong>Move</strong> it by dragging, change its length by dragging its lower edge, and <strong>click</strong> it for its details, chairs and papers. <strong>Drag papers and contributions</strong> from the list on the right into sessions, between them, or back to the list. Rooms are given to sessions (in their details, or for a whole lane with the list above it), and can change during the day. Everything is saved at once.</p>
 </div>
 <div class="b-toolbar">
   <nav class="b-days" id="b-days" aria-label="Days"></nav>
   <div class="b-dayparts" id="b-dayparts"></div>
+  <div class="b-dayparts" id="b-lanes"></div>
   <div class="b-tools">
     {% if can_edit %}
     <form class="b-inline" id="b-copy"><label>Copy this day's sessions to <select name="to" id="b-copy-to"></select></label>
@@ -52,10 +53,11 @@
       <label>From <input type="time" name="start" step="900" required></label>
       <label>To <input type="time" name="end" step="900" required></label>
       <fieldset><legend>Where</legend>
-        <label><input type="radio" name="mode" value="room" checked> In <span data-room-name></span></label>
-        <label><input type="radio" name="mode" value="all"> Across all rooms (plenary, break, meal), held in <select name="location" id="b-create-location"></select></label>
-        <label><input type="radio" name="mode" value="parallel"> Parallel sessions: one in every room</label>
+        <label><input type="radio" name="mode" value="lane" checked> In <span data-room-name></span></label>
+        <label><input type="radio" name="mode" value="all"> Across all lanes (a plenary session, a break, a meal)</label>
+        <label><input type="radio" name="mode" value="parallel"> Parallel sessions: one in every free lane</label>
       </fieldset>
+      <label>Room <select name="location" id="b-create-location"></select></label>
     </div>
     <p class="b-dialog-buttons"><button class="button" value="ok">Add</button> <button class="button button-secondary" value="cancel" formnovalidate>Cancel</button></p>
   </form>

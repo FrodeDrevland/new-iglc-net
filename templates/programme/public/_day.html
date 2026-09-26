@@ -3,7 +3,7 @@
 {% if several_parts %}<ul class="conf-legend conf-grid-legend">{% for part in grid.parts %}<li style="--part: {{ part.colour }}">{{ part.name }}</li>{% endfor %}</ul>{% endif %}
 <div class="conf-grid" style="--columns: {{ grid.count }}">
   <div class="conf-grid-corner"></div>
-  {% for loc in grid.columns %}<div class="conf-grid-head" style="grid-column: {{ forloop.counter|add:1 }}">{{ loc.name }}</div>{% endfor %}
+  {% for heading in grid.columns %}<div class="conf-grid-head" style="grid-column: {{ forloop.counter|add:1 }}">{{ heading }}</div>{% endfor %}
   {% for t, row in grid.labels %}<div class="conf-grid-time" style="grid-row: {{ row }}">{{ t|time:"H:i" }}</div>{% endfor %}
   {% for p in grid.placed %}<div class="conf-grid-cell" style="grid-row: {{ p.row }}; grid-column: {{ p.column }}">{% include "programme/public/_card.html" with s=p.session compact=True %}</div>{% endfor %}
 </div>

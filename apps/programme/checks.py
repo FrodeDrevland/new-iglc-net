@@ -62,8 +62,6 @@ def problems(programme) -> list[Problem]:
                                           f"({people_a[key][1]} and {people_b[key][1]}).", [a, b]))
 
     for s in sessions:
-        if not s.location_id and s.kind not in (Session.Kind.BREAK, Session.Kind.MEAL):
-            found.append(Problem(ERROR, "No location.", [s]))
         chairs = {_key(p.name) for p in s.people.all() if p.role in ("chair", "co_chair")}
         for item in s.items.all():
             if item.presenter and _key(item.presenter) in chairs:
@@ -82,6 +80,11 @@ def problems(programme) -> list[Problem]:
         if s.kind in Session.WITH_PAPERS and not s.items.all():
             found.append(Problem(NOTE, "No papers yet.", [s]))
 
+    roomless = [s for s in sessions if not s.location_id and s.kind not in (Session.Kind.BREAK, Session.Kind.MEAL)
+                and not s.cancelled]
+    if roomless:
+        found.append(Problem(NOTE, f"{len(roomless)} session{'s have' if len(roomless) != 1 else ' has'} "
+                                   f"no room yet.", roomless[:12]))
     found += paper_problems(programme)
     order = {ERROR: 0, WARNING: 1, NOTE: 2}
     return sorted(found, key=lambda p: order[p.level])

@@ -124,10 +124,12 @@ class AccessTests(ProgrammeTestCase):
 
 
 class SessionRuleTests(ProgrammeTestCase):
-    def test_plenary_needs_a_location(self):
-        with self.assertRaises(ValidationError) as caught:
-            self.session(location=None, plenary=True, kind=Session.Kind.KEYNOTE)
-        self.assertIn("A plenary session needs a location", str(caught.exception))
+    def test_the_room_can_wait(self):
+        from . import checks
+
+        self.session(location=None, plenary=True, kind=Session.Kind.KEYNOTE)
+        self.session(location=None, start_at=time(11), end_at=time(12))
+        self.assertIn("2 sessions have no room yet.", [p.text for p in checks.problems(self.programme)])
 
     def test_break_needs_no_location(self):
         self.session(location=None, kind=Session.Kind.BREAK)
@@ -433,12 +435,26 @@ class PublicPageTests(ProgrammeTestCase):
 
         day = by_day([self.opening, self.a, self.b])[0]
         grid = day.grid()
-        self.assertEqual([loc.name for loc in grid["columns"]], ["Room A", "Room B"])
+        self.assertEqual(grid["columns"], ["Room A", "Room B"])  # lanes, each headed by its one room
         placed = {p.session.pk: p for p in grid["placed"]}
         self.assertEqual(placed[self.opening.pk].column, "2 / -1")  # plenary, nothing beside it
         self.assertEqual(placed[self.a.pk].column, "2")
         self.assertEqual(placed[self.b.pk].column, "3")
         self.assertEqual(placed[self.a.pk].row, "4 / 5")  # rows: 09:00, 10:00, 10:30, 12:00
+
+    def test_grid_lanes_are_not_rooms(self):
+        from .public import by_day
+
+        # five rooms in use during the day, but never more than two sessions at once: two columns
+        rooms = [Location.objects.create(programme=self.programme, name=f"Room {n}") for n in "CDE"]
+        later = [self.session(start_at=time(13), end_at=time(14), location=None, title="Late 1"),
+                 self.session(start_at=time(13), end_at=time(14), location=None, title="Late 2")]
+        Session.objects.filter(pk=later[0].pk).update(location=rooms[0])
+        Session.objects.filter(pk=later[1].pk).update(location=rooms[1])
+        sessions = list(Session.objects.filter(date=date(2027, 7, 20), part=self.academic).select_related("location"))
+        grid = by_day(sessions)[0].grid()
+        self.assertEqual(grid["count"], 2)
+        self.assertEqual(grid["columns"], ["", ""])  # the rooms change during the day
 
     def test_private_link_in_the_back_office(self):
         dean = self.user("dean", "IGLC 35 PhD summer school deans")

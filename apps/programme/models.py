@@ -126,6 +126,14 @@ class Programme(models.Model):
         default = self.parts.filter(kind=Part.Kind.ACADEMIC).first() or self.parts.first()
         return [default] if default else []
 
+    DEFAULT_LANES = 3
+
+    def day_lanes(self, day) -> int:
+        """How many parallel lanes the day has: as set, else enough for its sessions, at least three."""
+        found = self.days_set.filter(date=day).first() if self.pk else None
+        used = self.sessions.filter(date=day).aggregate(models.Max("lane"))["lane__max"] if self.pk else None
+        return max(found.lanes if found and found.lanes else self.DEFAULT_LANES, used or 0)
+
     MARGIN_DAYS = 31  # how far the programme's days may reach beyond the conference's own
 
     def sync_days(self, save=True):
@@ -182,6 +190,8 @@ class ProgrammeDay(models.Model):
     programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="days_set")
     date = models.DateField()
     parts = models.ManyToManyField(Part, related_name="days", blank=True)
+    lanes = models.PositiveSmallIntegerField(null=True, blank=True,
+                                             help_text="How many sessions can run in parallel on the day.")
 
     class Meta:
         ordering = ["programme", "date"]
@@ -232,8 +242,11 @@ class Session(models.Model):
     date = models.DateField()
     start = models.TimeField()
     end = models.TimeField()
+    lane = models.PositiveSmallIntegerField(
+        null=True, blank=True, help_text="Which of the day's parallel lanes the session is drawn in (1, 2, 3 ...). "
+                                         "Not a room: rooms are assigned to sessions, and may change during a day.")
     location = models.ForeignKey(Location, null=True, blank=True, on_delete=models.PROTECT, related_name="sessions",
-                                 help_text="Required, except for breaks and meals.")
+                                 help_text="The room. It can be assigned later: the checks list sessions without one.")
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.PAPERS)
     code = models.CharField(max_length=20, blank=True, help_text="Short name, e.g. 3B.")
     title = models.CharField(max_length=300, blank=True, help_text="Blank: the kind of session, e.g. 'Break'.")
@@ -288,9 +301,6 @@ class Session(models.Model):
         if programme and self.date and not (programme.first_day <= self.date <= programme.last_day):
             errors["date"] = (f"Outside the programme's days ({programme.first_day:%d %b} to "
                               f"{programme.last_day:%d %b %Y}). The conference chairs can extend them.")
-        if not self.location_id and (self.plenary or self.kind not in (self.Kind.BREAK, self.Kind.MEAL)):
-            errors["location"] = ("A plenary session needs a location." if self.plenary
-                                  else "Every session except breaks and meals needs a location.")
         if programme:
             if self.part_id and self.part.programme_id != programme.pk:
                 errors["part"] = "Not a part of this programme."

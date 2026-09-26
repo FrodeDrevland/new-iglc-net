@@ -2,17 +2,19 @@
 programme drafted in Excel can be brought in and then adjusted in the builder.
 
 One row per session. Columns (found by their headings, in any order; only Day, Start and End are
-needed): Day, Start, End, Room, Part, Kind, Code, Title, Plenary, Chairs, Papers, Contributions, Notes.
+needed): Day, Start, End, Lane, Room, Part, Kind, Code, Title, Plenary, Chairs, Papers, Contributions, Notes.
 
 - Day: a date (2027-07-20) or a cell formatted as a date. Start and End: 10:30.
-- Room: its name; a new name adds the room (for those who keep the rooms).
+- Lane: which parallel lane (1, 2, 3 ...) the session is drawn in; blank: the first free one.
+- Room: its name, or blank to give it later; a new name adds the room (for those who keep the rooms).
 - Part: only for a day that holds two parts; otherwise the day's own. Kind: as in the builder,
   e.g. "Paper session".
 - Plenary: yes or no. Chairs: "Ann Smith (NTNU); Bo Jones".
 - Papers: ConfTool IDs, e.g. "101, 117, 123". Contributions: titles, separated by ";". A title not in
   the list of contributions is added to it.
 
-A row whose day, start and room (or day and code) match a session updates it; other rows add sessions.
+A row whose day, start and lane, or day, start and room, or day and code match a session updates it;
+other rows add sessions.
 """
 
 from __future__ import annotations
@@ -27,7 +29,7 @@ from . import access
 from .builder import BuildError, _save, place
 from .models import Contribution, Location, Session, SessionPerson
 
-HEADINGS = ["Day", "Start", "End", "Room", "Part", "Kind", "Code", "Title", "Plenary", "Chairs", "Papers",
+HEADINGS = ["Day", "Start", "End", "Lane", "Room", "Part", "Kind", "Code", "Title", "Plenary", "Chairs", "Papers",
             "Contributions", "Notes"]
 YES = {"yes", "y", "true", "1", "x", "ja"}
 
@@ -49,12 +51,12 @@ def export(programme) -> bytes:
                            for p in s.people.all() if p.role in ("chair", "co_chair"))
         papers = ", ".join(str(i.submission.conftool_id) for i in s.items.all() if i.submission_id)
         contributions = "; ".join(i.contribution.title for i in s.items.all() if i.contribution_id)
-        sheet.append([s.date, s.start.strftime("%H:%M"), s.end.strftime("%H:%M"),
+        sheet.append([s.date, s.start.strftime("%H:%M"), s.end.strftime("%H:%M"), s.lane or "",
                       s.location.name if s.location_id else "", s.part.name, s.get_kind_display(), s.code,
                       s.title, "yes" if s.plenary else "", chairs, papers, contributions, s.notes])
     for row in sheet.iter_rows(min_row=2, max_col=1):
         row[0].number_format = "yyyy-mm-dd"
-    for column, width in zip("ABCDEFGHIJKLM", (12, 7, 7, 18, 20, 16, 7, 40, 8, 30, 20, 30, 30)):
+    for column, width in zip("ABCDEFGHIJKLMN", (12, 7, 7, 6, 18, 20, 16, 7, 40, 8, 30, 20, 30, 30)):
         sheet.column_dimensions[column].width = width
     sheet.freeze_panes = "A2"
     buffer = io.BytesIO()
@@ -166,12 +168,20 @@ def import_sheet(programme, user, path, replace_days: bool = False) -> dict:
                 if kind is None:
                     raise BuildError(f"Unknown kind “{row.get('Kind')}”")
                 code = str(row.get("Code") or "").strip()
-                existing = programme.sessions.filter(date=day, start=start, location=room, part__in=parts).first()
+                lane_text = str(row.get("Lane") or "").strip()
+                lane = int(float(lane_text)) if lane_text.replace(".", "", 1).isdigit() else None
+                existing = None
+                if lane:
+                    existing = programme.sessions.filter(date=day, start=start, lane=lane, part__in=parts).first()
+                if existing is None and room is not None:
+                    existing = programme.sessions.filter(date=day, start=start, location=room, part__in=parts).first()
                 if existing is None and code:
                     existing = programme.sessions.filter(date=day, code=code, part__in=parts).first()
                 session = existing or Session(programme=programme)
                 session.part, session.date, session.start, session.end = part, day, start, end
                 session.location, session.kind, session.code = room, kind, code
+                if lane:
+                    session.lane = lane
                 session.title = str(row.get("Title") or "").strip()[:300]
                 session.plenary = _norm(row.get("Plenary")) in YES
                 if row.get("Notes") is not None:
