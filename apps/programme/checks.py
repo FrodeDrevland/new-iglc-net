@@ -62,7 +62,7 @@ def problems(programme) -> list[Problem]:
                                           f"({people_a[key][1]} and {people_b[key][1]}).", [a, b]))
 
     for s in sessions:
-        if not s.location_id and s.kind != Session.Kind.BREAK:
+        if not s.location_id and s.kind not in (Session.Kind.BREAK, Session.Kind.MEAL):
             found.append(Problem(ERROR, "No location.", [s]))
         chairs = {_key(p.name) for p in s.people.all() if p.role in ("chair", "co_chair")}
         for item in s.items.all():
@@ -74,7 +74,7 @@ def problems(programme) -> list[Problem]:
                 if _key(item.presenter) not in authors:
                     found.append(Problem(WARNING, f"{item.presenter} is not an author of "
                                                   f"“{item.display_title}”.", [s]))
-            if item.submission_id is None and not item.title:
+            if item.submission_id is None and item.contribution_id is None and not item.title:
                 found.append(Problem(ERROR, "An item with neither paper nor title.", [s]))
         planned = sum(i.minutes or 0 for i in s.items.all())
         if planned > s.minutes:

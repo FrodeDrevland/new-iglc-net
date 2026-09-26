@@ -1,0 +1,37 @@
+{% extends "programme/_base.html" %}
+{% block titletag %}Contributions · {{ programme }}{% endblock %}
+{% block main %}
+{% include "programme/_head.html" with title="Contributions" lead="What is presented besides the papers: welcomes, keynotes, industry day talks, workshops, panels, the awards. Add them here or in the builder, then drag them into sessions there." %}
+<p><a class="button button-secondary" href="{% url 'programme:build' programme.number %}">Build the programme</a></p>
+{% if can_edit %}
+<div class="panel">
+  <h3>Add a contribution</h3>
+  <form method="post" class="form-grid">{% csrf_token %}
+    {% for field in form %}<label>{{ field.label }} {{ field }}</label>{% endfor %}
+    <p><button class="button" type="submit">Add</button></p>
+  </form>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="speakers">
+    <p class="small">Or <button class="linklike" type="submit">add one for every speaker under Speakers</button> who has none yet: keynote speakers as keynotes, industry day speakers in the industry day, the title from their talk.</p>
+  </form>
+</div>
+{% endif %}
+<table class="listing prod-table">
+  <thead><tr><th>Part</th><th>Kind</th><th>Title</th><th>Speakers</th><th>Min.</th><th>In session</th><th></th></tr></thead>
+  <tbody>{% for c in contributions %}{% with placed=c.programme_items.all %}
+  <tr>
+    <td>{{ c.part.name }}</td><td>{{ c.get_kind_display }}</td>
+    {% if c.part_id in editable_ids %}
+    <td colspan="3"><form method="post" class="b-inline">{% csrf_token %}<input type="hidden" name="id" value="{{ c.pk }}"><input type="hidden" name="part" value="{{ c.part_id }}">
+      <select name="kind" aria-label="Kind">{% for k, label in kinds %}<option value="{{ k }}"{% if k == c.kind %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <input type="text" name="title" value="{{ c.title }}" size="36" aria-label="Title" required>
+      <input type="text" name="speakers" value="{{ c.speakers }}" size="24" aria-label="Speakers">
+      <input type="number" name="minutes" value="{{ c.minutes|default:'' }}" min="1" style="width:4.5rem" aria-label="Minutes">
+      <input type="hidden" name="description" value="{{ c.description }}">
+      <button class="button button-small button-secondary" type="submit">Save</button></form></td>
+    {% else %}<td>{{ c.title }}</td><td>{{ c.speakers }}</td><td>{{ c.minutes|default:"–" }}</td>{% endif %}
+    <td>{% for i in placed %}<a href="{% url 'programme:session' programme.number i.session_id %}">{{ i.session }}</a>{% empty %}<span class="muted">not yet</span>{% endfor %}</td>
+    <td>{% if c.part_id in editable_ids %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ c.pk }}"><button class="linklike" type="submit" onclick="return confirm('Delete this contribution{% if placed %} and take it out of its session{% endif %}?')">delete</button></form>{% endif %}</td>
+  </tr>{% endwith %}
+  {% empty %}<tr><td colspan="7">None yet.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}
