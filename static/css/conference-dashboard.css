@@ -55,3 +55,9 @@
 .iglc-prod .conf-dates-form th { white-space: nowrap; }
 .iglc-prod .conf-dates-form td { padding-top: .35rem; padding-bottom: .35rem; }
 .iglc-prod .conf-field input[type=url], .iglc-prod .conf-field input[type=email] { max-width: 36rem; }
+/* Branding: a long image title wraps instead of running under the preview, and the chooser's
+   menu opens above the preview */
+.iglc-prod .conf-branding-form { min-width: 0; position: relative; z-index: 1; }
+.iglc-prod .conf-branding-preview { position: relative; z-index: 0; }
+.iglc-prod .conf-branding-form .chooser, .iglc-prod .conf-branding-form .chooser .chosen { max-width: 100%; min-width: 0; }
+.iglc-prod .conf-branding-form .chooser__title { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
