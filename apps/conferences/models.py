@@ -139,7 +139,24 @@ class ConferencePageMixin:
         home = self.conference_home
         context["home"] = home
         context["conference"] = home.conference if home else None
-        context["menu"] = home.get_children().live().in_menu().specific() if home else []
+        # in a preview (the editor's, or View draft) the draft pages are in the menu too, so that a
+        # website that is not yet published can be looked at as a whole
+        children = home.get_children().in_menu() if home else None
+        if home and not getattr(request, "is_preview", False):
+            children = children.live()
+        context["menu"] = list(children.specific()) if home else []
+        context["is_preview"] = getattr(request, "is_preview", False)
+        if context["is_preview"]:
+            # links in a preview open the other pages' drafts (Wagtail's View draft, on the main site)
+            from django.urls import reverse
+
+            def draft_url(page):
+                return settings.SITE_URL + reverse("wagtailadmin_pages:view_draft", args=[page.pk],
+                                                   urlconf=settings.ROOT_URLCONF)
+
+            for item in context["menu"]:
+                item.preview_url = draft_url(item)
+            context["home_preview_url"] = draft_url(home) if home else ""
         context["main_site_url"] = settings.SITE_URL
         # the menu item to mark: the page itself or its ancestor just below the home page
         context["menu_current"] = None

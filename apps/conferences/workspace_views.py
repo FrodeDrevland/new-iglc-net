@@ -132,6 +132,34 @@ def branding(request, number):
     return render(request, "conferences/admin/branding.html", context)
 
 
+def branding_preview(request, number):
+    """The home page as it would look with the branding in the form (not saved), in a new tab."""
+    from django.http import HttpResponse
+    from django.utils.html import escape
+
+    conference, context = _context(request, number, need="website")
+    home = context["home"]
+    if home is None or request.method != "POST":
+        return redirect("conference:branding", number)
+    form = BrandingForm(request.POST)
+    draft = home.get_latest_revision_as_object()
+    problems = []
+    if form.is_valid():
+        for name in BRANDING_FIELDS:
+            setattr(draft, name, form.cleaned_data[name])
+        try:
+            draft.clean()
+        except ValidationError as error:
+            problems = [message for messages_ in error.message_dict.values() for message in messages_]
+    else:
+        problems = [message for errors in form.errors.values() for message in errors]
+    if problems:
+        items = "".join(f"<li>{escape(problem)}</li>" for problem in problems)
+        return HttpResponse(f"<!DOCTYPE html><title>Preview</title><p>The preview cannot be shown:</p><ul>{items}</ul>"
+                            f"<p>Close this tab and correct the form.</p>")
+    return draft.make_preview_request(request, draft.default_preview_mode)
+
+
 # ---------------------------------------------------------------- actions
 
 class PersonForm(forms.Form):
@@ -377,6 +405,7 @@ urlpatterns = [
     path("", overview, name="overview"),
     path("website/", website, name="website"),
     path("branding/", branding, name="branding"),
+    path("branding/preview/", branding_preview, name="branding_preview"),
     path("people/", people, name="people"),
     path("do/<slug:action>/", action_view, name="action"),
 ]

@@ -274,6 +274,34 @@ class DashboardTests(TestCase):
         home.refresh_from_db()
         self.assertEqual((home.primary_colour, home.heading_font), ("#204060", "sans"))
 
+    def test_previews(self):
+        home = seed(self.conference)  # all drafts
+        cfp = home.get_children().get(slug="call-for-papers")
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        self.assertContains(self.client.get(self.url() + "website/"), f"/manage/pages/{cfp.pk}/view_draft/")
+        draft = self.client.get(f"/manage/pages/{home.pk}/view_draft/").content.decode()
+        # the draft pages are in the menu, linking to their drafts
+        self.assertIn("Call for papers", draft)
+        self.assertIn(f"/manage/pages/{cfp.pk}/view_draft/", draft)
+        self.assertIn("iglc-logo-symbol-white.svg", draft)  # no conference logo yet
+        # branding: the home page with unsaved settings
+        data = {"primary_colour": "#204060", "accent_colour": "#d4772a", "heading_font": "sans"}
+        self.assertContains(self.client.post(self.url() + "branding/preview/", data), "#204060")
+        self.assertEqual(home.get_latest_revision_as_object().primary_colour, "#365a91")  # nothing saved
+        self.assertContains(self.client.post(self.url() + "branding/preview/", dict(data, primary_colour="#ffff00")),
+                            "cannot be shown")
+
+    def test_the_live_menu_has_only_published_pages(self):
+        home = seed(self.conference)
+        cfp = home.get_children().get(slug="call-for-papers")
+        home.save_revision().publish()
+        cfp.specific.save_revision().publish()
+        page = self.client.get("/2099/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn('href="/2099/call-for-papers/"', page)
+        self.assertNotIn("Sponsors", page)
+        self.assertNotIn("view_draft", page)
+
     def test_scientific_chairs_edit_the_proceedings(self):
         from apps.production.access import productions_for, role
         from apps.production.models import Production

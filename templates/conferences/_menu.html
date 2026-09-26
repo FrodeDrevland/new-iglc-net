@@ -1,4 +1,4 @@
 {% load wagtailcore_tags %}<ul class="conf-menu {{ class }}">
-  <li><a href="{% pageurl home %}"{% if page.pk == home.pk %} aria-current="page"{% endif %}>Home</a></li>
-  {% for item in menu %}<li><a href="{% pageurl item %}"{% if item.pk == menu_current %} aria-current="page"{% endif %}>{{ item.title }}</a></li>{% endfor %}
+  <li><a href="{% if is_preview %}{{ home_preview_url }}{% else %}{% pageurl home %}{% endif %}"{% if page.pk == home.pk %} aria-current="page"{% endif %}>Home</a></li>
+  {% for item in menu %}<li><a href="{% if is_preview %}{{ item.preview_url }}{% else %}{% pageurl item %}{% endif %}"{% if item.pk == menu_current %} aria-current="page"{% endif %}>{% if is_preview %}{{ item.draft_title }}{% else %}{{ item.title }}{% endif %}</a></li>{% endfor %}
 </ul>

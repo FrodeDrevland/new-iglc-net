@@ -19,10 +19,10 @@
   <div class="conf-howto">
     <ol>
       <li>Click <strong>Edit</strong> next to a page.</li>
-      <li>Change the text, pictures and links. <strong>Save draft</strong> keeps your changes without showing them.</li>
+      <li>Change the text, pictures and links. The eye icon on the right shows the page as it will look, as you type. <strong>Save draft</strong> keeps your changes without showing them.</li>
       <li>When it is ready: the arrow next to Save draft, then <strong>Publish</strong>. It is public at once, and you come back here.</li>
     </ol>
-    <p class="small">The important dates, registration link and contact address are on the home page; the logo, colours and photograph under <a href="{% url 'conference:branding' conference.number %}">Branding</a>. More in the <a href="{% url 'site_help:doc' 'conference-organisers' %}">guide</a>.</p>
+    <p class="small"><strong>Preview</strong> next to a page shows its latest draft, with the draft pages in the menu, so you can look through the whole website before it is published. The important dates, registration link and contact address are on the home page; the logo, colours and photograph under <a href="{% url 'conference:branding' conference.number %}">Branding</a>. More in the <a href="{% url 'site_help:doc' 'conference-organisers' %}">guide</a>.</p>
   </div>
   {% endif %}
   <p class="conf-actions">
@@ -45,13 +45,15 @@
     <tbody>
       <tr><td><strong>{{ home.title }}</strong><br><span class="muted small">Home page: introduction, important dates, registration link, contact</span></td>
         <td>{% include "conferences/admin/_page_state.html" with page=home %}</td><td>–</td>
-        <td class="conf-row-actions">{% if can_publish and not home.frozen or is_iglc %}<a class="button button-small" href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit</a>{% endif %}
+        <td class="conf-row-actions">{% if can_publish and not home.frozen or is_iglc %}<a class="button button-small" href="{% url 'wagtailadmin_pages:edit' home.pk %}">Edit</a>
+          <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:view_draft' home.pk %}" target="_blank" rel="noopener">Preview</a>{% endif %}
           {% if home.live %}<a class="button button-small button-secondary" href="{{ home.full_url }}" target="_blank" rel="noopener">View</a>{% endif %}</td></tr>
       {% for row in pages %}
       <tr><td class="depth-{{ row.depth }}">{{ row.page.title }}</td>
         <td>{% include "conferences/admin/_page_state.html" with page=row.page %}</td>
         <td>{% if row.page.show_in_menus %}Yes{% else %}No{% endif %}</td>
-        <td class="conf-row-actions">{% if can_publish and not home.frozen or is_iglc %}<a class="button button-small" href="{% url 'wagtailadmin_pages:edit' row.page.pk %}">Edit</a>{% endif %}
+        <td class="conf-row-actions">{% if can_publish and not home.frozen or is_iglc %}<a class="button button-small" href="{% url 'wagtailadmin_pages:edit' row.page.pk %}">Edit</a>
+          <a class="button button-small button-secondary" href="{% url 'wagtailadmin_pages:view_draft' row.page.pk %}" target="_blank" rel="noopener">Preview</a>{% endif %}
           {% if row.page.live %}<a class="button button-small button-secondary" href="{{ row.page.full_url }}" target="_blank" rel="noopener">View</a>{% endif %}</td></tr>
       {% endfor %}
     </tbody>

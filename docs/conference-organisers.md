@@ -46,10 +46,15 @@ address, and freezes it after the conference. Ask the webmaster if any of these 
 2. Change the title, the introduction and the content. The content is made of blocks: text,
    picture, button, video or map, important dates, tracks and programme. Add a block with **+**,
    move it with the arrows, remove it with the bin.
-3. **Save draft** keeps your changes without showing them to anyone. **Preview** shows how the page
-   will look.
+3. The eye icon in the panel on the right shows the page as it will look, and follows what you type;
+   you can switch between phone, tablet and desktop sizes there, or open the preview in a new tab.
+   **Save draft** keeps your changes without showing them to anyone.
 4. When it is ready: the arrow next to Save draft, then **Publish**. It is public at once, no one
    needs to approve it, and you come back to Website.
+
+To look through the whole website before it is published, use **Preview** next to a page under
+Website: it shows the page's latest draft, with the draft pages in the menu, and the menu's links
+lead to the other pages' drafts.
 
 A published page that you change again shows "published" and "changes" until you publish the
 changes. **Publish changes…** under Website publishes several pages in one go.
@@ -75,8 +80,10 @@ before you publish it the first time.
 **Branding** in the menu sets the conference logo (about 60 pixels high in the header), a wide
 photograph for the top of the home page (at least 1600 pixels wide), two colours and the heading
 font, with a preview of the colours. The layout stays the IGLC's, so the website works on phones and
-for screen readers. A main colour too light for white text is refused, with the reason. **Save
-draft** keeps the change for later; **Save and publish** shows it at once (together with any other
+for screen readers. A main colour too light for white text is refused, with the reason. Without a
+conference logo, the header shows the IGLC symbol in white. **Save
+draft** keeps the change for later; **Preview** opens the home page with the new settings in a new tab
+without saving them; **Save and publish** shows it at once (together with any other
 unpublished changes to the home page).
 
 ## Pictures and documents

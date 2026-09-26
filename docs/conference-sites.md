@@ -101,9 +101,10 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
 - Edit and **publish** the pages themselves (Publish in the menu under Save draft), no IGLC approval
   needed; they can also unpublish. They cannot change the current/frozen settings,
   delete the site, or touch other conferences' pages.
-- Branding (in the conference's menu, `/manage/<number>/branding/`): logo, a wide photograph, two colours and the heading font. The layout
+- Branding (in the conference's menu, `/manage/<number>/branding/`, with a preview of the home page): logo (without one, the header shows the white IGLC symbol), a wide photograph, two colours and the heading font. The layout
   stays the IGLC's (responsive and accessible); a primary colour too light for white text is refused.
   Fonts are served by the site itself, not by a font service.
+- Preview: the eye icon in the page editor, or Preview next to a page under Website (the latest draft; in a preview the website's menu has the draft pages too, linking to their drafts).
 - Important dates are entered once, on the home page, and shown wherever a page has an
   "important dates" block. An extended deadline keeps the old date, struck through.
 

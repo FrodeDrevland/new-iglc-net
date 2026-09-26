@@ -18,8 +18,10 @@
       </div>
     {% endfor %}
     {% if other_changes %}<p class="small">The home page also has other changes that are not yet published; "Save and publish" publishes them too.</p>{% endif %}
-    {% if not frozen %}<p><button class="button" type="submit" name="publish" value="1">Save and publish</button>
-      <button class="button button-secondary" type="submit">Save draft</button></p>{% endif %}
+    {% if not frozen %}<p class="conf-actions"><button class="button" type="submit" name="publish" value="1">Save and publish</button>
+      <button class="button button-secondary" type="submit">Save draft</button>
+      <button class="button button-secondary" type="submit" formaction="{% url 'conference:branding_preview' conference.number %}" formtarget="_blank">Preview</button></p>
+    <p class="small muted">Preview opens the home page with these settings in a new tab, without saving them.</p>{% endif %}
   </form>
   <aside class="conf-branding-preview" aria-label="Preview">
     <p class="small muted">Preview of the colours</p>

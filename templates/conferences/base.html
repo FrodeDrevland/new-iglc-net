@@ -22,7 +22,7 @@
   <header class="conf-header">
     <div class="wrap conf-header-top">
       <a class="conf-brand" href="{% pageurl home %}">
-        {% if home.logo %}{% image home.logo height-60 alt=home.short_name %}{% endif %}
+        {% if home.logo %}{% image home.logo height-60 alt=home.short_name %}{% else %}<img class="conf-brand-iglc" src="{% static 'img/iglc-logo-symbol-white.svg' %}" alt="" width="43" height="48">{% endif %}
         <span class="conf-brand-text">
           <span class="conf-name">{{ home.short_name }}</span>
           <span class="conf-where">{% if conference.city %}{{ conference.location }}{% endif %}{% if conference.start_date %} &middot; {% date_range conference.start_date conference.end_date %}{% endif %}</span>
