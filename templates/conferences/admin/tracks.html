@@ -1,0 +1,48 @@
+{% extends "conferences/admin/_workspace.html" %}
+{% block pagetitle %}Tracks{% endblock %}
+{% block heading %}Tracks{% endblock %}
+{% block lead %}<p class="lead">The conference's tracks, decided by the scientific chairs. The website's "tracks" block, the programme's sessions and the proceedings all use them, so a change shows at once. The order here is the order in the proceedings.</p>{% endblock %}
+{% block content_main %}
+{% if not can_edit_tracks %}<p class="upload-report">Only the scientific chairs change the tracks{% if conference.is_published %}, and not after the proceedings are in the archive{% endif %}.</p>{% endif %}
+<form method="post">{% csrf_token %}
+  {{ formset.management_form }}
+  {% if formset.non_form_errors %}<div class="upload-report">{{ formset.non_form_errors }}</div>{% endif %}
+  <div class="conf-dates-wrap"><table class="listing prod-table conf-dates-form conf-tracks-form">
+    <thead><tr><th>Track</th><th>Description <span class="muted small">(optional)</span></th><th>Order</th><th>Remove</th></tr></thead>
+    <tbody id="track-rows">{% for form, used in rows %}
+      <tr>{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+        <td>{{ form.title }}{% for e in form.title.errors %}<br><span class="fail small">{{ e }}</span>{% endfor %}</td>
+        <td>{{ form.description }}</td>
+        <td class="nowrap">{% if form.instance.pk and can_edit_tracks %}{% if not forloop.first %}<button class="button button-small button-secondary" type="submit" name="move" value="{{ form.prefix }}:up" title="Move up" aria-label="Move {{ form.instance.title }} up">↑</button>{% endif %}
+          <button class="button button-small button-secondary" type="submit" name="move" value="{{ form.prefix }}:down" title="Move down" aria-label="Move {{ form.instance.title }} down">↓</button>{% endif %}</td>
+        <td>{% if form.instance.pk %}{% if used %}<span class="small muted" title="Papers, sessions or editors use it">in use</span>{% else %}{{ form.DELETE }}{% endif %}{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  <template id="track-row-template">      <tr>{% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+        <td>{{ formset.empty_form.title }}</td>
+        <td>{{ formset.empty_form.description }}</td>
+        <td></td><td></td></tr>
+</template>
+  {% if can_edit_tracks %}
+  <p><button type="button" class="button button-small button-secondary" id="add-track">Add a track</button></p>
+  <p class="small muted">A track that papers, sessions or editors already use cannot be removed, but it can be renamed. Empty rows are ignored.</p>
+  <p class="conf-actions"><button class="button" type="submit">Save</button></p>
+  {% endif %}
+</form>
+{% if can_edit_tracks %}
+<script>
+(function () {
+  var button = document.getElementById("add-track");
+  var total = document.getElementById("id_tracks-TOTAL_FORMS");
+  var template = document.getElementById("track-row-template").innerHTML;
+  button.addEventListener("click", function () {
+    var index = parseInt(total.value, 10);
+    document.getElementById("track-rows").insertAdjacentHTML("beforeend", template.replace(/__prefix__/g, index));
+    total.value = index + 1;
+    var added = document.getElementById("track-rows").lastElementChild.querySelector("input[type=text]");
+    if (added) added.focus();
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

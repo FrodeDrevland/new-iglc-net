@@ -170,6 +170,9 @@ def conference_items(request, conference):
         ]
     items.append(MenuItem("People", reverse("conference:people", args=[number]), name="conference-people",
                           icon_name="user", order=6))
+    if roles.can_edit_tracks(user, conference):
+        items.append(MenuItem("Tracks", reverse("conference:tracks", args=[number]), name="conference-tracks",
+                              icon_name="list-ol", order=6.5))
     if programmes_for(user).filter(conference=conference).exists():
         items.append(MenuItem("Programme", reverse("programme:overview", args=[number]),
                               name="conference-programme", icon_name="time", order=7))

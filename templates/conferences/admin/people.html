@@ -1,7 +1,7 @@
 {% extends "conferences/admin/_workspace.html" %}
 {% block pagetitle %}People{% endblock %}
 {% block heading %}People{% endblock %}
-{% block lead %}<p class="lead">Who does what for this conference. Adding someone is by e-mail address: someone who has an account gets the role at once; someone new gets an account and an e-mail with a link to choose a password.</p>{% endblock %}
+{% block lead %}<p class="lead">Who does what for this conference: the roles give access to the back office. (The titles on the website's committees page are only text.) Adding someone is by e-mail address: someone who has an account gets the role at once; someone new gets an account and an e-mail with a link to choose a password.</p>{% endblock %}
 {% block content_main %}
 <div class="conf-grid">
 {% for role in people %}
@@ -25,16 +25,11 @@
         <p><button class="button button-small" type="submit">Add</button></p>
       </form>
     </details>
-    {% elif role.key == "chairs" or role.key == "scientific" %}{% if not is_iglc %}<p class="small muted">Appointed by the IGLC.</p>{% endif %}{% endif %}
+    {% elif role.key == "chairs" or role.key == "scientific" %}{% if not is_iglc %}<p class="small muted">Appointed by the IGLC.</p>{% endif %}{% elif role.key == "assistants" %}<p class="small muted">Added by the scientific chairs.</p>{% endif %}
   </section>
 {% endfor %}
 {% if not programme %}
   <section class="panel conf-role"><h2>Part chairs</h2><p class="small muted">The industry day and workshop day chairs and the PhD summer school deans come with the programme{% if can_start_programme %}: <a href="{% url 'conference:action' conference.number 'start-programme' %}">start it</a>{% endif %}.</p></section>
-{% endif %}
-{% if production_editors %}
-  <section class="panel conf-role"><h2>Proceedings editors</h2>
-    <ul class="plain-list">{% for e in production_editors %}<li>{{ e.user.get_full_name|default:e.user.get_username }} <span class="muted small">({{ e.get_role_display|lower }})</span></li>{% endfor %}</ul>
-    <p class="small muted">Listed in the proceedings production{% if can_production %} (<a href="{% url 'proceedings:production' conference.number %}">Proceedings</a>){% endif %}. The scientific chairs are chief editors without being listed.</p></section>
 {% endif %}
 </div>
 {% endblock %}

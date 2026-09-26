@@ -23,7 +23,8 @@ Everything about a conference is under **Conferences** in the back office menu:
 - **Website standard pages**: the pages every new conference website starts with (superusers).
 
 The Overview shows the conference record and its tracks, the website and its pages, the important
-dates, the people (website organisers, programme chairs and editors, proceedings editors), the
+dates, the people (conference chairs, scientific chairs, editorial assistants, website organisers and
+programme part chairs), the
 programme, the proceedings (production, archive, DOIs) and recent activity. Its actions are, unless said otherwise, for
 superusers, each with a confirmation page:
 
@@ -85,8 +86,9 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
 
 ## Setting up a conference's website (IGLC)
 
-1. Conferences → All conferences → Add conference, with its number, city, country and dates, and the
-   tracks. It stays out of the public archive until its proceedings are published.
+1. Conferences → All conferences → Add conference, with its number, city, country and dates. The
+   scientific chairs add the tracks themselves (Tracks in the workspace). It stays out of the public
+   archive until its proceedings are published.
 2. In its workspace (All conferences → the conference): Website → **Create the website**. The standard pages come from Conferences → Website
    standard pages; changes there apply to sites created afterwards. Delete the ones that are not
    needed (All pages → the page → Delete).
@@ -113,7 +115,9 @@ the people themselves is docs/conference-organisers.md (Help → Site documentat
 
 ## From the platform
 
-- Conference number, city and dates, and the tracks: the conference record in the archive.
+- Conference number, city and dates: the conference record in the archive. The tracks are kept there too,
+  but the scientific chairs change them under Tracks in the workspace (until the proceedings are in the
+  archive).
 - Accepted papers: the papers the IGLC has from ConfTool for the proceedings (withdrawn papers left
   out, no e-mail addresses); after publication, the published papers with links.
 

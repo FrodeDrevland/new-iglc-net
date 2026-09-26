@@ -53,8 +53,9 @@ def recipients(submission: Submission) -> list[str]:
 
 
 def _editor_addresses(production) -> list[str]:
-    return [e.user.email for e in production.editors.filter(role=ProductionEditor.Role.CHIEF).select_related("user")
-            if e.user.email]
+    from .access import chief_editors
+
+    return [user.email for user in chief_editors(production) if user.email]
 
 
 def _link(check: MetadataCheck) -> str:

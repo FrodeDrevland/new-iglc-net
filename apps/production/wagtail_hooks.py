@@ -58,7 +58,9 @@ class ProductionPolicy(ModelPermissionPolicy):
     their own. Deleting needs the real permission."""
 
     def _chief_somewhere(self, user):
-        return user.is_active and user.production_roles.filter(role=ProductionEditor.Role.CHIEF).exists()
+        from .access import chief_conference_ids
+
+        return user.is_active and bool(chief_conference_ids(user))
 
     def user_has_permission(self, user, action):
         if action in ("change", "view") and self._chief_somewhere(user):
@@ -68,8 +70,9 @@ class ProductionPolicy(ModelPermissionPolicy):
     def user_has_permission_for_instance(self, user, action, instance):
         if super().user_has_permission(user, action):
             return True
-        return action in ("change", "view") and instance.editors.filter(
-            user=user, role=ProductionEditor.Role.CHIEF).exists()
+        from .access import chief_conference_ids
+
+        return action in ("change", "view") and instance.conference_id in chief_conference_ids(user)
 
 
 class ProductionEditView(EditView):

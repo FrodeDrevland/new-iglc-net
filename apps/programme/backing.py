@@ -315,13 +315,12 @@ def recipients(submission) -> list[str]:
 
 
 def _reply_to(programme) -> list[str]:
-    from apps.production.models import ProductionEditor
+    from apps.production.access import chief_editors
 
     production = getattr(programme.conference, "production", None)
     if production is None:
         return []
-    return [e.user.email for e in production.editors.filter(role=ProductionEditor.Role.CHIEF).select_related("user")
-            if e.user.email]
+    return [user.email for user in chief_editors(production) if user.email]
 
 
 def compose(programme, presentation, kind: str) -> EmailMessage:

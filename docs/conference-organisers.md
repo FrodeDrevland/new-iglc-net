@@ -3,7 +3,8 @@
 This guide is for the people who run an IGLC conference's website and programme on the IGLC's
 platform: the **conference chairs**, the **website organisers** and the **part chairs**
 (scientific, industry day and workshop day chairs, and the PhD summer school deans). The IGLC's
-webmaster gives you your role; you receive an e-mail with a link to choose a password.
+webmaster gives you your role; you receive an e-mail with a link to choose a password. The scientific
+chairs' **editorial assistants**, who help with the editing, are covered too.
 
 ## Logging in
 
@@ -17,6 +18,7 @@ Log in at `/manage/` with your e-mail address and password. You land on your con
 - **Committees**: the people on the website's committees page, with their portraits.
 - **Branding**: the logo, photograph, colours and heading font.
 - **People**: who has which role, and (for conference chairs) adding and removing people.
+- **Tracks** (scientific chairs): the conference's tracks.
 - **Programme** and **Proceedings**: when your role includes them.
 - **Images** and **Documents**: the conference's pictures and files.
 - **Help**: this guide and the other documentation.
@@ -28,19 +30,23 @@ Forgotten your password? Use "Forgotten password?" on the login page.
 
 ## Who does what
 
-| | Conference chairs | Scientific chairs | Website organisers | Other part chairs |
-| --- | --- | --- | --- | --- |
-| Edit and publish the website, branding | Yes | No | Yes | No |
-| Upload pictures and documents | Yes | No | Yes | No |
-| Add and remove organisers and part chairs | Yes | No | No | No |
-| The programme | All of it, and its settings | The academic conference's sessions | The locations | Their own part's sessions |
-| The proceedings | No | Yes, as chief editors | No | No |
-| See the Overview and People | Yes | Yes | Yes | Yes |
+| | Conference chairs | Scientific chairs | Editorial assistants | Website organisers | Other part chairs |
+| --- | --- | --- | --- | --- | --- |
+| Edit and publish the website, branding | Yes | No | No | Yes | No |
+| Upload pictures and documents | Yes | No | No | Yes | No |
+| Add and remove people | Organisers and part chairs | Editorial assistants | No | No | No |
+| The tracks | No | Yes | No | No | No |
+| The programme | All of it, and its settings | The academic conference's sessions | No | The locations | Their own part's sessions |
+| The proceedings | No | Yes, as chief editors | Yes, as editors: the papers, not publication | No | No |
+| See the Overview and People | Yes | Yes | Yes | Yes | Yes |
 
 The industry day and workshop day chairs and the PhD summer school deans come with the programme.
 The IGLC appoints the conference chairs and the scientific chairs, keeps the conference's number,
-dates, place and tracks, decides when the website becomes the conference shown at the conference
-address, and freezes it after the conference. Ask the webmaster if any of these should change.
+dates and place, decides when the website becomes the conference shown at the conference address,
+and freezes it after the conference. Ask the webmaster if any of these should change.
+
+The roles are about access only. The titles on the website's committees page ("Scientific chair",
+"Editorial assistant", "Track chair") are text you choose there and give no access.
 
 ## Editing a page
 
@@ -149,6 +155,15 @@ page** if you like.
 Changes are saved as a draft of the committees page: **Preview** shows it, **Publish** puts it on
 the website. The page's title and introduction are edited with "Title and introduction".
 
+## Tracks
+
+The scientific chairs decide the conference's tracks, under **Tracks** in the menu: add a track
+(**Add a track**), rename it, give it a short description, and put them in order with the arrows.
+The order is the order in the proceedings. The website's "tracks" block, the programme's sessions
+and the proceedings all use the same tracks, so a change shows at once. A track that papers,
+sessions or editors already use cannot be removed, only renamed. Once the proceedings are in the
+archive, only the IGLC can change the tracks.
+
 ## Pictures and documents
 
 Upload them in a picture block, a button or under **Images** and **Documents** in the menu. They go
@@ -159,7 +174,8 @@ shows, for readers who cannot see it; leave it empty only for decoration.
 
 You do not need to type these in; the website shows them from the IGLC's records:
 
-- the conference's number, city, dates and tracks (the "tracks" block);
+- the conference's number, city and dates, and the tracks the scientific chairs keep (the "tracks"
+  block);
 - the accepted papers (the accepted papers page), from the papers sent to the proceedings editors;
 - the programme (the "programme" block), from the programme editors' work (see the
   [programme guide](programme.md)).

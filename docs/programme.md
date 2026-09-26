@@ -27,7 +27,8 @@ Code: `apps/programme`. Back office: Conferences → Programmes (`/manage/progra
    registrations (Excel or CSV) under Registrations, as often as there is a newer one, and tick the
    registration types that back papers (the technical/academic conference). New types start
    unticked and are flagged.
-7. **Backing of the papers** (conference chairs and the chief editors of the proceedings; the
+7. **Backing of the papers** (conference chairs and the chief editors of the proceedings, that is the
+   scientific chairs; the
    organisers can look): set the deadline for authors and, if wanted, edit the email texts; then
    ask the authors, remind those who have not answered, and warn the papers without backing. The
    report shows every paper's backing, the authors' answer and where it is in the programme; a

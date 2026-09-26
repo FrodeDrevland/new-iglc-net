@@ -75,3 +75,10 @@
 .iglc-prod .conf-field textarea { width: 100%; }
 .iglc-prod .conf-layout-form fieldset { border: 0; padding: 0; margin: .5rem 0 1rem; }
 .iglc-prod .conf-layout-choice { display: inline-flex; gap: .4rem; align-items: center; margin: .3rem 1.5rem .3rem 0; }
+.iglc-prod .conf-tracks-form td:first-child { width: 40%; min-width: 16rem; }
+.iglc-prod .conf-tracks-form td:first-child input { width: 100%; }
+.iglc-prod .conf-tracks-form textarea { width: 100%; min-width: 14rem; min-height: 0; height: 3.4rem; }
+.iglc-prod .conf-tracks-form .nowrap { white-space: nowrap; }
+.iglc-prod .conf-tracks-form { table-layout: fixed; width: 100%; }
+.iglc-prod .conf-tracks-form th:nth-child(3) { width: 7rem; }
+.iglc-prod .conf-tracks-form th:nth-child(4) { width: 5.5rem; }

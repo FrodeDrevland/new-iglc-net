@@ -15,7 +15,7 @@ from django.urls import path
 
 from apps.archive.models import Conference
 
-from . import committee_views, dashboard, roles
+from . import committee_views, dashboard, roles, track_views
 from .models import (DARKEN_HELP, HEADING_FONTS, HERO_HELP, HERO_LOGO_HELP, HERO_SIZE, ICON_HELP,
                      LIGHT_LOGO_HELP, LOGO_HELP, PRIMARY_HELP, ConferenceHomePage)
 
@@ -45,6 +45,7 @@ def _context(request, number, need=None):
         "can_edit": can_edit_record,
         "can_publish": roles.can_publish(user, conference),
         "can_start_programme": bool(mine & {"iglc", "chair"}),
+        "can_edit_tracks": roles.can_edit_tracks(user, conference),
         "can_programme": context["programme"] is not None and programmes_for(user)
                          .filter(pk=context["programme"].pk).exists(),
         "can_production": context["production"] is not None and productions_for(user)
@@ -490,7 +491,7 @@ def _do(request, conference, home, action, pages, form) -> str:
 def _person_action(request, conference, action):
     key = request.POST.get("role", "")
     group = dashboard.role_group(conference, key) if key else None
-    if group is None or not roles.can_manage(request.user, conference, key if key in (roles.CHAIRS, roles.ORGANISERS)
+    if group is None or not roles.can_manage(request.user, conference, key if key in (roles.CHAIRS, roles.ORGANISERS, roles.ASSISTANTS)
                                              else group.name):
         raise PermissionDenied
     User = get_user_model()
@@ -520,6 +521,7 @@ urlpatterns = [
     path("dates/", dates_links, name="dates"),
     path("committees/", committee_views.committees, name="committees"),
     path("committees/<int:index>/", committee_views.member_edit, name="committee_member"),
+    path("tracks/", track_views.tracks, name="tracks"),
     path("branding/", branding, name="branding"),
     path("branding/preview/", branding_preview, name="branding_preview"),
     path("people/", people, name="people"),

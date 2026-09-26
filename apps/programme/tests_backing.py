@@ -2,7 +2,7 @@ import tempfile
 from datetime import date, time
 from pathlib import Path
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core import mail
 from django.urls import reverse
 
@@ -247,8 +247,10 @@ class BackOfficeTests(BackingTestCase):
                                              {"action": "warning"}).status_code, 200)
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_scientific_chair_without_chief_role_sees_nothing(self):
+    def test_scientific_chairs_are_chief_editors_and_assistants_are_not(self):
         self.client.force_login(self.user("sci", "IGLC 35 scientific chairs"))
+        self.assertEqual(self.client.get(reverse("programme:backing", args=[35])).status_code, 200)
+        self.client.force_login(self.user("assistant", Group.objects.create(name="IGLC 35 editorial assistants")))
         self.assertNotEqual(self.client.get(reverse("programme:backing", args=[35])).status_code, 200)
 
     def test_types_are_ticked(self):

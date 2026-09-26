@@ -161,7 +161,9 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
   were printed in several); when published, the papers go into the volume(s) by page.
 - *Production editors*: chief editors see and arrange everything; editors see the papers of their tracks, or all papers.
   The conference's scientific chairs (People in the conference's workspace, group "IGLC nn scientific chairs")
-  are chief editors of its production without being listed.
+  are chief editors of its production without being listed, and its editorial assistants (the group
+  "IGLC nn editorial assistants", added by the scientific chairs on the conference's People page) are
+  editors of all its papers. Listing an assistant here as editor with tracks limits them to those tracks.
 - *Submission*: an accepted paper (ConfTool ID, registered title, track, registered authors
   with email addresses, status, editor, position in its track, first page, DOI
   10.24928/year/ConfTool ID, and later the published archive paper).
@@ -171,7 +173,8 @@ docs/deploy-azure.md, needs the iglc.net DNS), and a ConfTool export of accepted
   accepted papers (columns found by their headings, or named with --column);
   `import_conftool 34 --from-archive` builds one from the archive for trying out.
 - Editor accounts: Manage → Settings → Users → add user; then on the production's page,
-  "Editors and settings", add the person as editor or chief editor. That role is what lets them
+  "Editors and settings", add the person as editor or chief editor (for a conference, the scientific
+  chairs and the editorial assistants need no entry). That role is what lets them
   into the back office (no group needed). Publishers: add the user to the group "Publishers".
 - New productions: Manage → Proceedings production → "Start a production", from ConfTool's
   export of accepted papers or from a conference already published (superusers and publishers).

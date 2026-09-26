@@ -83,7 +83,7 @@
     <dt>Editors</dt><dd>{% for e in editors %}{{ e }}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</dd>
     <dt>Tracks</dt><dd>{% for t in tracks %}{{ t.title }}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>
   </dl>
-  {% if not can_edit %}<p class="small muted">The number, dates, place and tracks are kept by the IGLC: ask the webmaster to change them.</p>{% endif %}
+  {% if not can_edit %}<p class="small muted">The number, dates and place are kept by the IGLC: ask the webmaster to change them. The scientific chairs decide the tracks{% if can_edit_tracks %} (<a href="{% url 'conference:tracks' conference.number %}">Tracks</a>){% endif %}.</p>{% endif %}
 </section>
 
 <section class="panel">

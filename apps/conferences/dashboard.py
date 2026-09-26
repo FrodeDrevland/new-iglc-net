@@ -343,7 +343,7 @@ def people(conference, user) -> list[dict]:
     from . import roles
 
     rows = []
-    for key in (roles.CHAIRS, roles.SCIENTIFIC, roles.ORGANISERS):
+    for key in (roles.CHAIRS, roles.SCIENTIFIC, roles.ASSISTANTS, roles.ORGANISERS):
         group = roles.group(conference, key)
         rows.append({"key": key, "label": roles.LABELS[key], "description": roles.DESCRIPTIONS[key],
                      "group": group, "members": _people_of_group(group),
@@ -367,7 +367,7 @@ def role_group(conference, key: str) -> Group | None:
         if home:
             roles.grant_website(group, home)
         return group
-    if key == roles.SCIENTIFIC:
+    if key in (roles.SCIENTIFIC, roles.ASSISTANTS):
         return roles.group(conference, key, create=True)
     if key.startswith("part-") and key[5:].isdigit():
         for part, group in roles.part_groups(conference):

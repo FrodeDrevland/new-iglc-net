@@ -9,8 +9,14 @@
     Scientific chairs       IGLC nn scientific chairs          the proceedings, as chief editors
                                                                (apps/production/access.py), and the academic
                                                                conference's sessions in the programme
+    Editorial assistants    IGLC nn editorial assistants       the proceedings, as editors: the papers, not
+                                                               publication (apps/production/access.py)
     Other part chairs       IGLC nn industry day chairs, ...   their part of the programme (apps/programme)
-    Proceedings editors     (the production's editor list)     the proceedings (apps/production)
+
+The scientific chairs also keep the conference's tracks, and add and remove the editorial assistants.
+Roles are access only: the titles shown on the website's committees page are text and give none.
+(A production's own editor list, apps/production, still gives access to whoever is on it; the IGLC
+keeps it, for special cases such as editors limited to some tracks.)
 
 Everyone with a role sees the conference's dashboard; only the IGLC changes its settings (current,
 frozen, archive) or deletes it. The conference chairs group is the programme's chairs group
@@ -23,13 +29,16 @@ from __future__ import annotations
 
 from django.contrib.auth.models import Group, Permission
 
-ORGANISERS, CHAIRS, SCIENTIFIC = "organisers", "chairs", "scientific"
+ORGANISERS, CHAIRS, SCIENTIFIC, ASSISTANTS = "organisers", "chairs", "scientific", "assistants"
 IGLC_APPOINTS = {CHAIRS, SCIENTIFIC}
 
-LABELS = {CHAIRS: "Conference chairs", SCIENTIFIC: "Scientific chairs", ORGANISERS: "Website organisers"}
+LABELS = {CHAIRS: "Conference chairs", SCIENTIFIC: "Scientific chairs", ASSISTANTS: "Editorial assistants",
+          ORGANISERS: "Website organisers"}
 DESCRIPTIONS = {
     CHAIRS: "Edit and publish the website, run the whole programme, and add or remove organisers and part chairs.",
-    SCIENTIFIC: "The proceedings (as chief editors) and the academic conference's sessions in the programme.",
+    SCIENTIFIC: "The tracks, the proceedings (as chief editors) and the academic conference's sessions in the "
+                "programme.",
+    ASSISTANTS: "Help the scientific chairs edit the proceedings: they work on the papers, but do not publish.",
     ORGANISERS: "Edit and publish the website, upload its pictures and documents, and keep the programme's "
                 "locations.",
 }
@@ -42,7 +51,8 @@ DOCUMENT_PERMISSIONS = ("add_document", "change_document", "choose_document")
 def group_name(conference, role: str) -> str:
     return {ORGANISERS: f"IGLC {conference.number} organisers",
             CHAIRS: f"IGLC {conference.number} conference chairs",
-            SCIENTIFIC: f"IGLC {conference.number} scientific chairs"}[role]
+            SCIENTIFIC: f"IGLC {conference.number} scientific chairs",
+            ASSISTANTS: f"IGLC {conference.number} editorial assistants"}[role]
 
 
 def group(conference, role: str, create: bool = False) -> Group | None:
@@ -110,7 +120,7 @@ def _has(obj, relation):
 
 
 def roles_of(user, conference) -> set[str]:
-    """{"iglc", "chair", "scientific", "organiser", "part", "editor"}: what this person is for this conference."""
+    """{"iglc", "chair", "scientific", "assistant", "organiser", "part", "editor"}: what this person is for this conference."""
     if not user.is_authenticated or not user.is_active:
         return set()
     found = set()
@@ -123,6 +133,8 @@ def roles_of(user, conference) -> set[str]:
         found.add("organiser")
     if group_name(conference, SCIENTIFIC) in names:
         found.add("scientific")
+    if group_name(conference, ASSISTANTS) in names:
+        found.add("assistant")
     if any(g.name in names for _, g in part_groups(conference)):
         found.add("part")
     if _has(conference, "production") and conference.production.editors.filter(user=user).exists():
@@ -150,13 +162,23 @@ def can_view(user, conference) -> bool:
 
 
 def can_manage(user, conference, role: str) -> bool:
-    """May add and remove people in this role (role: "chairs", "scientific", "organisers" or a part's
-    group name)."""
+    """May add and remove people in this role (role: "chairs", "scientific", "assistants", "organisers" or
+    a part's group name). The scientific chairs manage the editorial assistants, and only them."""
     mine = roles_of(user, conference)
     if "iglc" in mine:
         return True
+    if role in (ASSISTANTS, group_name(conference, ASSISTANTS)):
+        return "scientific" in mine
     return "chair" in mine and role not in IGLC_APPOINTS and role not in (
         group_name(conference, CHAIRS), group_name(conference, SCIENTIFIC))
+
+
+def can_edit_tracks(user, conference) -> bool:
+    """The tracks are the scientific chairs' (and the IGLC's), until the proceedings are in the archive."""
+    mine = roles_of(user, conference)
+    if "iglc" in mine or user.has_perm("archive.change_conference"):
+        return True
+    return "scientific" in mine and not conference.is_published
 
 
 def can_publish(user, conference) -> bool:

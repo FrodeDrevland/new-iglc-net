@@ -77,13 +77,11 @@ def programmes_for(user):
     by_part = Part.objects.filter(editors_id__in=groups).values_list("programme_id", flat=True)
     from django.db.models import Q
 
-    from apps.production.access import is_publisher
-    from apps.production.models import ProductionEditor
+    from apps.production.access import chief_conference_ids, is_publisher
 
     if is_publisher(user):
         return programmes
-    chief_of = ProductionEditor.objects.filter(user=user, role=ProductionEditor.Role.CHIEF).values_list(
-        "production__conference_id", flat=True)
+    chief_of = chief_conference_ids(user)
     return programmes.filter(Q(chairs_id__in=groups) | Q(pk__in=by_part)
                              | Q(conference__number__in=organiser_numbers) | Q(conference_id__in=chief_of)).distinct()
 
@@ -92,15 +90,13 @@ def programmes_for(user):
 
 def is_chief_editor(user, programme) -> bool:
     """A chief editor of the conference's proceedings production, or a publisher."""
-    from apps.production.access import is_publisher
-    from apps.production.models import ProductionEditor
+    from apps.production.access import chief_conference_ids, is_publisher
 
     if not user.is_authenticated or not user.is_active:
         return False
     if is_publisher(user):
         return True
-    return ProductionEditor.objects.filter(production__conference_id=programme.conference_id, user=user,
-                                           role=ProductionEditor.Role.CHIEF).exists()
+    return programme.conference_id in chief_conference_ids(user)
 
 
 def can_manage_backing(user, programme) -> bool:

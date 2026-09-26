@@ -509,6 +509,105 @@ class DashboardTests(TestCase):
         self.assertNotEqual(self.client.get("/manage/production/98/").status_code, 200)
         self.assertIn("Proceedings", self.client.get(self.url()).content.decode())
 
+    def test_editorial_assistants(self):
+        from apps.production.access import chief_editors, productions_for, role, submissions_for
+        from apps.production.models import Production
+
+        production = Production.objects.create(conference=self.conference)
+        self.client.post(self.url("add-person"), {"role": "scientific", "email": "sci@example.com"})
+        self.client.post(self.url("add-person"), {"role": "chairs", "email": "chair@example.com"})
+        sci = User.objects.get(email="sci@example.com")
+        chair = User.objects.get(email="chair@example.com")
+        self.assertEqual(list(chief_editors(production)), [sci])
+
+        # the conference chairs cannot add editorial assistants; the scientific chairs can
+        self.client.force_login(chair)
+        self.client.post(self.url("add-person"), {"role": "assistants", "email": "x@example.com"})
+        self.assertFalse(User.objects.filter(email="x@example.com").exists())
+        self.client.force_login(sci)
+        people = self.client.get(self.url() + "people/").content.decode()
+        self.assertIn("Editorial assistants", people)
+        self.assertNotIn("Proceedings editors", people)
+        self.client.post(self.url("add-person"), {"role": "assistants", "email": "assistant@example.com"})
+        assistant = User.objects.get(email="assistant@example.com")
+        self.assertTrue(assistant.groups.filter(name="IGLC 99 editorial assistants").exists())
+        self.assertIn("editorial assistants", mail.outbox[-1].body)
+        # scientific chairs cannot add organisers
+        self.client.post(self.url("add-person"), {"role": "organisers", "email": "y@example.com"})
+        self.assertFalse(User.objects.filter(email="y@example.com").exists())
+
+        # the assistant edits the papers, but is not a chief editor and not a scientific chair
+        self.assertEqual(role(assistant, production), "editor")
+        self.assertEqual(list(productions_for(assistant)), [production])
+        self.assertEqual(submissions_for(assistant, production).query.__str__(),
+                         production.submissions.select_related("track", "editor").query.__str__())
+        self.assertNotIn(assistant, chief_editors(production))
+        self.client.force_login(assistant)
+        self.assertEqual(self.client.get("/manage/production/99/").status_code, 200)
+        self.assertNotIn('"url": "/manage/99/tracks/"', self.client.get(self.url()).content.decode())
+
+    def test_scientific_chairs_decide_the_tracks(self):
+        from apps.production.models import Production, Submission
+
+        seed(self.conference)
+        self.client.post(self.url("add-person"), {"role": "scientific", "email": "sci@example.com"})
+        sci = User.objects.get(email="sci@example.com")
+        planning = self.conference.tracks.get()
+        used = ConferenceTrack.objects.create(conference=self.conference, title="Used", order=2)
+        production = Production.objects.create(conference=self.conference)
+        Submission.objects.create(production=production, conftool_id=1, title="A paper", track=used)
+
+        # organisers see the tracks but cannot change them
+        organiser = self._person("org", "organisers")
+        self.client.force_login(organiser)
+        self.assertEqual(self.client.get(self.url() + "tracks/").status_code, 200)
+        self.assertNotEqual(self.client.post(self.url() + "tracks/", {}).status_code, 200)
+
+        self.client.force_login(sci)
+        page = self.client.get(self.url() + "tracks/").content.decode()
+        self.assertIn('"url": "/manage/99/tracks/"', page)  # in the sidebar
+        self.assertIn("in use", page)
+
+        def data(rows, **extra):
+            post = {"tracks-TOTAL_FORMS": str(len(rows)), "tracks-INITIAL_FORMS": str(sum(1 for r in rows if r.get("id"))),
+                    "tracks-MIN_NUM_FORMS": "0", "tracks-MAX_NUM_FORMS": "1000"}
+            for i, row in enumerate(rows):
+                for key, value in row.items():
+                    post[f"tracks-{i}-{key}"] = value
+            post.update(extra)
+            return post
+
+        rows = [{"id": planning.pk, "title": "Planning and control", "description": ""},
+                {"id": used.pk, "title": "Used", "description": ""},
+                {"title": "Digital construction", "description": "BIM and more"},
+                {"title": "", "description": ""}]
+        self.client.post(self.url() + "tracks/", data(rows))
+        titles = list(self.conference.tracks.order_by("order").values_list("title", flat=True))
+        self.assertEqual(titles, ["Planning and control", "Used", "Digital construction"])
+
+        new = self.conference.tracks.get(title="Digital construction")
+        rows = [{"id": planning.pk, "title": "Planning and control"}, {"id": used.pk, "title": "Used"},
+                {"id": new.pk, "title": "Digital construction"}]
+        self.client.post(self.url() + "tracks/", data(rows, move="tracks-2:up"))
+        titles = list(self.conference.tracks.order_by("order").values_list("title", flat=True))
+        self.assertEqual(titles, ["Planning and control", "Digital construction", "Used"])
+
+        # a track in use cannot be removed; an unused one can
+        rows[1]["DELETE"] = "on"
+        response = self.client.post(self.url() + "tracks/", data(rows))
+        self.assertContains(response, "cannot be removed")
+        self.assertTrue(ConferenceTrack.objects.filter(pk=used.pk).exists())
+        del rows[1]["DELETE"]
+        rows[2]["DELETE"] = "on"
+        self.client.post(self.url() + "tracks/", data(rows))
+        self.assertFalse(ConferenceTrack.objects.filter(pk=new.pk).exists())
+
+        # not after the proceedings are in the archive
+        Conference.objects.filter(pk=self.conference.pk).update(is_published=True)
+        rows[0]["title"] = "Too late"
+        self.client.post(self.url() + "tracks/", data(rows[:2]))
+        self.assertFalse(ConferenceTrack.objects.filter(title="Too late").exists())
+
     def test_existing_sites_get_chairs_with_website_rights(self):
         """What migration 0007 does, through the setup code: both groups edit the website."""
         home = seed(self.conference)
