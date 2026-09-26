@@ -45,7 +45,7 @@ def visible(programme, request=None) -> bool:
 def sessions_of(programme, parts):
     return (programme.sessions.filter(part__in=parts)
             .select_related("location", "part", "keynote")
-            .prefetch_related("people", "items__submission__paper__authors", "items__submission__presentation"))
+            .prefetch_related("people", "items__submission__paper__authors", "items__submission__presentation", "items__contribution"))
 
 
 def by_day(sessions) -> list:

@@ -5,9 +5,11 @@
   <p class="kicker"><a href="{% url 'programme:list' %}">Programmes</a></p>
   <h1>{{ programme }}</h1>
   <p class="lead">{{ programme.get_status_display }} · {{ programme.first_day|date:"j M" }} to {{ programme.last_day|date:"j M Y" }} · {{ programme.time_zone }}{% if frozen %} · <strong>frozen</strong>: the conference has taken place{% endif %}</p>
-  <p>{% if can_add %}<a class="button" href="{% url 'programme:session_add' programme.number %}">Add a session</a>
+  <p>{% if can_add %}<a class="button" href="{% url 'programme:build' programme.number %}">Build the programme</a>
+     <a class="button button-secondary" href="{% url 'programme:contributions' programme.number %}">Contributions</a>
+     <a class="button button-secondary" href="{% url 'programme:session_add' programme.number %}">Add a session (form)</a>
      <a class="button button-secondary" href="{% url 'programme:papers' programme.number %}">Papers{% if unplaced %} ({{ unplaced }} not placed){% endif %}</a>
-     <a class="button button-secondary" href="{% url 'programme:plan' programme.number %}">Plan by dragging</a>{% endif %}
+{% endif %}
      <a class="button button-secondary" href="{% url 'programme:locations' programme.number %}">Locations</a>
      {% if can_backing %}<a class="button button-secondary" href="{% url 'programme:backing' programme.number %}">Backing of the papers</a>{% endif %}
      {% if can_settings %}<a class="button button-secondary" href="{% url 'programme:settings' programme.number %}">Parts and settings</a>{% endif %}

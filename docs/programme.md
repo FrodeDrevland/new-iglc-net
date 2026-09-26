@@ -20,9 +20,9 @@ Code: `apps/programme`. Back office: Conferences → Programmes (`/manage/progra
    parts: rename, recolour, make public or not, add or delete. A new part gets its own group of
    editors when saved.
 4. **Locations** (organisers and conference chairs), with map links and floor plans.
-5. **Sessions** (each part's editors): time, location, kind, plenary, people, and the papers with
-   their presenters; **Papers** adds several unplaced papers to a session at once. The overview
-   lists the checks below.
+5. **Build the programme** (each part's editors), on the programme's overview; see "The builder"
+   below. The form for a single session and the Papers page are still there for special cases.
+   The overview lists the checks below.
 6. **Registrations** (organisers, conference chairs, chief editors): upload the export of
    registrations (Excel or CSV) under Registrations, as often as there is a newer one, and tick the
    registration types that back papers (the technical/academic conference). New types start
@@ -69,7 +69,7 @@ Code: `apps/programme`. Back office: Conferences → Programmes (`/manage/progra
 
 Rules the back office enforces or warns about:
 
-- Every session has a location, except breaks (optional). A plenary session must have one.
+- Every session has a location, except breaks and meals (optional). A plenary session must have one.
 - Warning when anything in the same part runs in parallel with a plenary session.
 - Two sessions in one location at the same time.
 - A chair or presenter in two sessions at the same time. Chairing a session and presenting in the
@@ -170,12 +170,41 @@ After the conference the frozen programme stays as the record of what was presen
 - **Room signs**: Locations → Room signs (PDF), one A4 page per location with a QR code for its page
   on the conference site (what is on there, and its map).
 
+## The builder
+
+One day at a time, as a grid with a column per room and time running down in 15-minute steps.
+
+- **Draw** a session by dragging down in a room's column (a click gives an hour). A small form asks
+  for its kind, title and part, and where: in that room, **across all rooms** (a plenary session, a
+  break or a meal; a plenary session is held in a room of its own), or **parallel sessions in every
+  room** at once.
+- **Move** a session by dragging it (to another time or room), change its length by dragging its
+  lower edge, and **click** it for its details: title, code, kind, part, day, times, room, plenary,
+  track, notes, cancellation and late change, its people (chairs and others) and its items with
+  presenters and minutes. A red mark shows a session with a problem from the checks.
+- **Papers and contributions**: the list on the right has the accepted papers and the contributions
+  not yet in a session. Drag them into sessions, between sessions, into order, or back to the list.
+  A paper dropped into a poster session becomes a poster.
+- **Contributions** are what is presented besides the papers: a welcome or opening, keynotes,
+  industry day talks, workshops, panels, the awards, the closing. They are added in the builder's
+  list, or on the Contributions page, which can also make one for every speaker under Speakers
+  (keynote speakers become keynotes, industry day speakers go to the industry day).
+- **Copy this day's sessions** to another day (without papers and people), to start from the same
+  structure; **Number the sessions** gives the parallel sessions codes by time slot (1A, 1B ...; I1A
+  for the industry day, W1A for the workshop day, P1A for the PhD summer school).
+- **Rooms** are added from the builder by the organisers and the conference chairs.
+- **Excel**: the programme downloads as a spreadsheet, and the same columns can be imported, so a
+  draft made in Excel can be brought in and then adjusted: Day, Start, End, Room, Part, Kind, Code,
+  Title, Plenary, Chairs ("Ann Smith (NTNU); Bo Jones"), Papers (ConfTool IDs), Contributions
+  (titles; new ones are added), Notes. Only Day, Start and End are needed. A row with the same day,
+  start and room as a session (or the same day and code) updates it; rows with a problem are left
+  out and listed.
+
+Moving sessions and items needs a mouse or touch; without one, use the details panel (times and
+room) and the form for a single session.
+
 ## Extras
 
-- **Plan by dragging** (programme overview): one day at a time, drag papers from the list of papers
-  not placed into paper and poster sessions, between sessions, back to the list, and into order;
-  then save. A paper dragged into a poster session becomes a poster. Keyboard users use Papers and
-  the session pages instead.
 - **Booklet**: the programme as an A5 PDF (title page, parts, every day's sessions with chairs,
   papers and presenters, late changes, locations, and an index of people with their sessions), at
   /2027/programme/programme.pdf and on program.iglc.net, and in the back office (Booklet (PDF)) also
@@ -201,9 +230,9 @@ After the conference the frozen programme stays as the record of what was presen
 4. **At the venue** (built): program.iglc.net, now and next, my programme (kept in the visitor's
    browser, no login), calendar files and subscribable feeds, QR codes for room signs, marks for
    changed and cancelled sessions, and a notice banner.
-5. **Extras** (built, see above): the PDF booklet, working offline at the venue, drag-and-drop
-   planning and presenters' slide uploads. Presenters from the IGLC's own submission system follow
-   with that system (2028).
+5. **Extras** (built, see above): the PDF booklet, working offline at the venue, the programme
+   builder with contributions and Excel, and presenters' slide uploads. Presenters from the IGLC's
+   own submission system follow with that system (2028).
 
 The IGLC 35 programme is to be public in June 2027.
 

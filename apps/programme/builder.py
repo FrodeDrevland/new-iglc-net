@@ -1,0 +1,398 @@
+"""The programme builder: one day at a time, sessions drawn as blocks in a grid of rooms by time,
+and papers and contributions dragged into them (templates/programme/builder.html,
+static/js/programme-builder.js). The page talks to this module through one JSON address:
+
+    state(programme, user, day)          what the page draws
+    apply(programme, user, day, data)    one change; returns the new state, or raises BuildError
+
+Every change is checked like the forms (the model's clean) and the permissions (access.py): a
+person changes only the sessions of the parts they edit, and rooms only if they keep the rooms.
+"""
+
+from __future__ import annotations
+
+from datetime import date as Date, datetime, time, timedelta
+
+from django.core.exceptions import ValidationError
+from django.db import transaction
+
+from . import access, checks
+from .models import Contribution, Location, Part, Session, SessionItem, SessionPerson
+
+STEP = 15  # minutes
+SPANNING_KINDS = {Session.Kind.BREAK, Session.Kind.MEAL}
+PARALLEL_KINDS = {Session.Kind.PAPERS, Session.Kind.POSTERS, Session.Kind.WORKSHOP, Session.Kind.INDUSTRY,
+                  Session.Kind.PANEL}
+PREFIX = {Part.Kind.ACADEMIC: "", Part.Kind.INDUSTRY: "I", Part.Kind.WORKSHOP: "W", Part.Kind.PHD: "P",
+          Part.Kind.OTHER: "X"}
+
+
+class BuildError(Exception):
+    pass
+
+
+def _hm(value: time) -> str:
+    return value.strftime("%H:%M")
+
+
+def _time(text) -> time:
+    try:
+        hours, minutes = (int(x) for x in str(text).split(":")[:2])
+        return time(hours, minutes)
+    except (TypeError, ValueError):
+        raise BuildError(f"Not a time: {text}")
+
+
+def _date(text) -> Date:
+    try:
+        return Date.fromisoformat(str(text))
+    except ValueError:
+        raise BuildError(f"Not a date: {text}")
+
+
+def _messages(error: ValidationError) -> str:
+    if hasattr(error, "message_dict"):
+        return " ".join(m for messages in error.message_dict.values() for m in messages)
+    return " ".join(error.messages)
+
+
+# ---------------------------------------------------------------- what the page draws
+
+def days_of(programme) -> list[Date]:
+    return programme.days()
+
+
+def _item_json(item) -> dict:
+    if item.submission_id:
+        entry = f"s{item.submission_id}"
+        sub = ", ".join(item.author_names())
+        label = f"{item.submission.conftool_id}"
+    elif item.contribution_id:
+        entry = f"c{item.contribution_id}"
+        sub = item.contribution.speakers
+        label = item.contribution.get_kind_display()
+    else:
+        entry, sub, label = f"i{item.pk}", item.speaker, ""
+    return {"id": item.pk, "entry": entry, "label": label, "title": item.display_title, "sub": sub,
+            "presenter": item.presenter, "minutes": item.minutes, "presentation": item.presentation,
+            "paper": bool(item.submission_id)}
+
+
+def _pool(programme) -> dict:
+    papers = [{"entry": f"s{s.pk}", "label": str(s.conftool_id), "title": s.title,
+               "sub": ", ".join(a.get("name", "") for a in s.registered_authors if a.get("name")),
+               "track": s.track.title if s.track_id else "", "track_id": s.track_id or ""}
+              for s in checks.unplaced(programme).select_related("track")]
+    contributions = [{"entry": f"c{c.pk}", "label": c.get_kind_display(), "title": c.title, "sub": c.speakers,
+                      "part": c.part_id, "kind": c.kind, "minutes": c.minutes}
+                     for c in programme.contributions.filter(programme_items__isnull=True).select_related("part")]
+    return {"papers": papers, "contributions": contributions}
+
+
+def spans(session, day_sessions) -> bool:
+    """Drawn across every room: plenary sessions, and breaks and meals without a room of their own."""
+    return session.plenary or (session.kind in SPANNING_KINDS and not session.location_id)
+
+
+def state(programme, user, day: Date) -> dict:
+    editable = {p.pk for p in access.editable_parts(user, programme)}
+    sessions = list(programme.sessions.filter(date=day).select_related("location", "part", "track")
+                    .prefetch_related("people", "items__submission__paper__authors", "items__contribution"))
+    flagged = {}
+    for problem in checks.problems(programme):
+        if problem.level == checks.NOTE:
+            continue
+        for s in problem.sessions:
+            if s.date == day:
+                flagged.setdefault(s.pk, []).append(problem.text)
+    times = [s.start for s in sessions] + [s.end for s in sessions]
+    first = min([t.hour for t in times] + [8])
+    last = max([t.hour + (1 if t.minute else 0) for t in times] + [18])
+    return {
+        "day": day.isoformat(),
+        "days": [{"date": d.isoformat(), "label": f"{d:%a} {d.day} {d:%b}",
+                  "count": programme.sessions.filter(date=d).count()} for d in days_of(programme)],
+        "range": {"start": f"{max(first - 1, 0):02d}:00", "end": f"{min(last + 1, 24):02d}:00"},
+        "rooms": [{"id": loc.pk, "name": loc.name} for loc in programme.locations.all()],
+        "can_rooms": access.can_edit_locations(user, programme),
+        "parts": [{"id": p.pk, "name": p.name, "colour": p.colour, "kind": p.kind, "editable": p.pk in editable}
+                  for p in programme.parts.all()],
+        "kinds": [[k, label] for k, label in Session.Kind.choices],
+        "contribution_kinds": [[k, label] for k, label in Contribution.Kind.choices],
+        "roles": [[k, label] for k, label in SessionPerson.Role.choices],
+        "tracks": [{"id": t.pk, "title": t.title} for t in programme.conference.tracks.all()],
+        "sessions": [{
+            "id": s.pk, "part": s.part_id, "kind": s.kind, "kind_label": s.get_kind_display(), "code": s.code,
+            "title": s.title, "display": s.display_title, "start": _hm(s.start), "end": _hm(s.end),
+            "location": s.location_id, "plenary": s.plenary, "spans": spans(s, sessions),
+            "editable": s.part_id in editable, "cancelled": s.cancelled, "change_note": s.change_note,
+            "notes": s.notes, "track": s.track_id or "",
+            "people": [{"role": p.role, "name": p.name, "affiliation": p.affiliation} for p in s.people.all()],
+            "items": [_item_json(i) for i in s.items.all()],
+            "problems": flagged.get(s.pk, []),
+        } for s in sessions],
+        "pool": _pool(programme),
+    }
+
+
+# ---------------------------------------------------------------- changes
+
+def _editable_part(user, programme, part_id) -> Part:
+    part = programme.parts.filter(pk=part_id).first()
+    if part is None or not access.can_edit_part(user, part):
+        raise BuildError("You cannot edit that part of the programme.")
+    return part
+
+
+def _session(user, programme, session_id) -> Session:
+    session = programme.sessions.select_related("part").filter(pk=session_id).first()
+    if session is None:
+        raise BuildError("That session no longer exists. Reload the page.")
+    if not access.can_edit_part(user, session.part):
+        raise BuildError("That session belongs to a part you do not edit.")
+    return session
+
+
+def _save(session):
+    try:
+        session.full_clean()
+    except ValidationError as error:
+        raise BuildError(_messages(error))
+    session.save()
+
+
+def _location(programme, value):
+    if value in (None, "", "null"):
+        return None
+    location = programme.locations.filter(pk=value).first()
+    if location is None:
+        raise BuildError("Unknown room.")
+    return location
+
+
+def create(programme, user, day, data) -> list[Session]:
+    part = _editable_part(user, programme, data.get("part"))
+    kind = data.get("kind") or Session.Kind.PAPERS
+    if kind not in Session.Kind.values:
+        raise BuildError("Unknown kind of session.")
+    start, end = _time(data.get("start")), _time(data.get("end"))
+    mode = data.get("mode", "room")
+    base = dict(programme=programme, part=part, date=day, start=start, end=end, kind=kind,
+                title=(data.get("title") or "").strip()[:300])
+    if mode == "parallel":
+        rooms = list(programme.locations.all())
+        if not rooms:
+            raise BuildError("Add the rooms first.")
+        made = []
+        for room in rooms:
+            session = Session(location=room, **base)
+            _save(session)
+            made.append(session)
+        return made
+    location = _location(programme, data.get("location"))
+    session = Session(location=location, plenary=(mode == "all" and kind not in SPANNING_KINDS), **base)
+    _save(session)
+    return [session]
+
+
+FIELDS = {"title", "code", "kind", "notes", "change_note"}
+
+
+def update(programme, user, data):
+    from django.utils import timezone
+
+    session = _session(user, programme, data.get("id"))
+    before = (session.cancelled, session.change_note)
+    for name in FIELDS & data.keys():
+        setattr(session, name, (data[name] or "").strip() if isinstance(data[name], str) else data[name])
+    if "start" in data:
+        session.start = _time(data["start"])
+    if "end" in data:
+        session.end = _time(data["end"])
+    if "date" in data:
+        session.date = _date(data["date"])
+    if "location" in data:
+        session.location = _location(programme, data["location"])
+    if "plenary" in data:
+        session.plenary = bool(data["plenary"])
+    if "cancelled" in data:
+        session.cancelled = bool(data["cancelled"])
+    if "track" in data:
+        session.track = programme.conference.tracks.filter(pk=data["track"]).first() if data["track"] else None
+    if "part" in data and str(data["part"]) != str(session.part_id):
+        session.part = _editable_part(user, programme, data["part"])
+    if (session.cancelled, session.change_note) != before and (session.cancelled or session.change_note):
+        session.changed = timezone.now()
+    _save(session)
+    if "people" in data:
+        session.people.all().delete()
+        for order, person in enumerate(data["people"] or [], start=1):
+            name = (person.get("name") or "").strip()
+            if name:
+                role = person.get("role") if person.get("role") in SessionPerson.Role.values else "chair"
+                SessionPerson.objects.create(session=session, role=role, name=name[:200],
+                                             affiliation=(person.get("affiliation") or "").strip()[:300], order=order)
+    return session
+
+
+def place(programme, user, data):
+    """Put a paper (s<id>), a contribution (c<id>) or an existing item (i<id>) into a session at a position."""
+    from .models import PaperPresentation
+
+    session = _session(user, programme, data.get("session"))
+    entry = str(data.get("entry", ""))
+    kind, pk = entry[:1], entry[1:]
+    if not pk.isdigit():
+        raise BuildError("Unknown item.")
+    pk = int(pk)
+    item = None
+    if kind == "i":
+        item = SessionItem.objects.select_related("session__part").filter(pk=pk, session__programme=programme).first()
+    elif kind == "s":
+        item = SessionItem.objects.select_related("session__part").filter(
+            submission_id=pk, session__programme=programme).first()
+        if item is None:
+            submission = checks.unplaced(programme).filter(pk=pk).first()
+            if submission is None:
+                raise BuildError("That paper is withdrawn, or no longer in the list.")
+            answer = PaperPresentation.objects.filter(submission=submission).first()
+            item = SessionItem(submission=submission, presenter=answer.presenter if answer else "")
+    elif kind == "c":
+        contribution = programme.contributions.filter(pk=pk).first()
+        if contribution is None:
+            raise BuildError("That contribution no longer exists.")
+        item = contribution.programme_items.select_related("session__part").first() or SessionItem(
+            contribution=contribution, minutes=contribution.minutes)
+    if item is None:
+        raise BuildError("Unknown item.")
+    if item.pk and not access.can_edit_part(user, item.session.part):
+        raise BuildError("That item is in a session you do not edit.")
+    if item.submission_id:
+        item.presentation = (SessionItem.Presentation.POSTER if session.kind == Session.Kind.POSTERS
+                             else SessionItem.Presentation.TALK)
+    item.session = session
+    others = [i for i in session.items.exclude(pk=item.pk or 0).order_by("order", "pk")]
+    index = max(0, min(int(data.get("index", len(others)) or 0), len(others)))
+    others.insert(index, item)
+    for order, each in enumerate(others, start=1):
+        each.order = order
+        each.save()
+
+
+def unplace(programme, user, data):
+    item = SessionItem.objects.select_related("session__part").filter(pk=data.get("item"),
+                                                                     session__programme=programme).first()
+    if item is None:
+        return
+    if not access.can_edit_part(user, item.session.part):
+        raise BuildError("That item is in a session you do not edit.")
+    item.delete()
+
+
+def item_details(programme, user, data):
+    item = SessionItem.objects.select_related("session__part").filter(pk=data.get("item"),
+                                                                     session__programme=programme).first()
+    if item is None or not access.can_edit_part(user, item.session.part):
+        raise BuildError("That item is in a session you do not edit.")
+    if "presenter" in data:
+        item.presenter = (data["presenter"] or "").strip()[:200]
+    if "minutes" in data:
+        item.minutes = int(data["minutes"]) if str(data["minutes"] or "").isdigit() else None
+    item.save()
+
+
+def add_room(programme, user, data):
+    if not access.can_edit_locations(user, programme):
+        raise BuildError("Only the organisers and the conference chairs add rooms.")
+    name = (data.get("name") or "").strip()
+    if not name:
+        raise BuildError("Give the room a name.")
+    last = programme.locations.order_by("-sort_order").values_list("sort_order", flat=True).first() or 0
+    Location.objects.create(programme=programme, name=name[:200], sort_order=last + 1)
+
+
+def copy_day(programme, user, source: Date, target: Date, replace: bool = False) -> int:
+    """The sessions of the parts one edits, without their papers and people, to another day."""
+    parts = access.editable_parts(user, programme)
+    if not (programme.first_day <= target <= programme.last_day):
+        raise BuildError("That day is outside the programme's days.")
+    if replace:
+        programme.sessions.filter(date=target, part__in=parts).delete()
+    count = 0
+    for s in programme.sessions.filter(date=source, part__in=parts):
+        copy = Session(programme=programme, part=s.part, date=target, start=s.start, end=s.end, location=s.location,
+                       kind=s.kind, title=s.title, plenary=s.plenary, track=s.track)
+        _save(copy)
+        count += 1
+    return count
+
+
+def renumber(programme, user) -> int:
+    """Codes by time slot, per part: 1A, 1B ... in room order; the industry day I1A, the workshop day
+    W1A and so on. Only sessions that run beside others get a code; plenary sessions and breaks lose it."""
+    changed = 0
+    for part in access.editable_parts(user, programme):
+        sessions = list(part.sessions.select_related("location").order_by("date", "start", "location__sort_order"))
+        slots = []
+        for s in sessions:
+            parallel = (not s.plenary and s.kind not in SPANNING_KINDS
+                        and (s.kind in PARALLEL_KINDS or any(o is not s and o.overlaps(s) for o in sessions)))
+            if not parallel:
+                code = ""
+            else:
+                key = (s.date, s.start)
+                if key not in slots:
+                    slots.append(key)
+                letters = [o for o in sessions if (o.date, o.start) == key and not o.plenary
+                           and o.kind not in SPANNING_KINDS]
+                letter = chr(ord("A") + letters.index(s)) if len(letters) > 1 else ""
+                code = f"{PREFIX.get(part.kind, '')}{slots.index(key) + 1}{letter}"
+            if s.code != code:
+                Session.objects.filter(pk=s.pk).update(code=code)
+                changed += 1
+    return changed
+
+
+@transaction.atomic
+def apply(programme, user, day: Date, data: dict) -> dict:
+    if access.is_frozen(programme) and not user.is_superuser:
+        raise BuildError("The conference has taken place: the programme is frozen.")
+    action = data.get("action")
+    note = ""
+    if action == "create":
+        made = create(programme, user, day, data)
+        note = f"{len(made)} session{'s' if len(made) != 1 else ''} added."
+    elif action == "update":
+        update(programme, user, data)
+    elif action == "delete":
+        _session(user, programme, data.get("id")).delete()
+        note = "Session deleted."
+    elif action == "place":
+        place(programme, user, data)
+    elif action == "unplace":
+        unplace(programme, user, data)
+    elif action == "item":
+        item_details(programme, user, data)
+    elif action == "room":
+        add_room(programme, user, data)
+    elif action == "copy_day":
+        count = copy_day(programme, user, day, _date(data.get("to")), bool(data.get("replace")))
+        note = f"{count} session{'s' if count != 1 else ''} copied to {_date(data.get('to')):%A %d %B}."
+    elif action == "renumber":
+        note = f"{renumber(programme, user)} codes changed."
+    elif action == "contribution":
+        part = _editable_part(user, programme, data.get("part"))
+        contribution = Contribution(programme=programme, part=part, kind=data.get("kind") or "talk",
+                                    title=(data.get("title") or "").strip()[:300],
+                                    speakers=(data.get("speakers") or "").strip()[:300])
+        try:
+            contribution.full_clean()
+        except ValidationError as error:
+            raise BuildError(_messages(error))
+        contribution.save()
+        note = "Added to the list."
+    else:
+        raise BuildError("Unknown action.")
+    result = state(programme, user, day)
+    result["note"] = note
+    return result

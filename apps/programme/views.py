@@ -10,6 +10,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from . import access, checks, setup
@@ -471,3 +472,136 @@ def _save_plan(programme, shown, layout):
         for item in items.values():
             if item.pk not in seen and item.submission_id:
                 item.delete()  # dragged back to the papers not placed
+
+
+# ---------------------------------------------------------------- the builder (builder.py)
+
+@login_required
+def build(request, number):
+    import json
+
+    from django.http import JsonResponse
+
+    from . import builder
+
+    programme = _programme(request, number)
+    days = programme.days()
+    wanted = request.GET.get("day", "")
+    day = next((d for d in days if d.isoformat() == wanted), None)
+    if day is None:
+        with_sessions = sorted(set(programme.sessions.values_list("date", flat=True)))
+        day = with_sessions[0] if with_sessions and with_sessions[0] in days else days[0]
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            return JsonResponse(builder.apply(programme, request.user, day, data))
+        except (ValueError, builder.BuildError) as error:
+            return JsonResponse({"error": str(error)}, status=400)
+    if request.GET.get("format") == "json":
+        return JsonResponse(builder.state(programme, request.user, day))
+    from django.middleware.csrf import get_token
+
+    return render(request, "programme/builder.html", {
+        "programme": programme, "day": day,
+        "can_edit": bool(access.editable_parts(request.user, programme)),
+        "config": {"url": request.path, "day": day.isoformat(), "csrf": get_token(request),
+                   "session_url": reverse("programme:session", args=[number, 0]),
+                   "contributions_url": reverse("programme:contributions", args=[number])},
+    })
+
+
+@login_required
+def spreadsheet(request, number):
+    """Export the programme to Excel (GET), or import a sheet (POST)."""
+    import tempfile
+    from pathlib import Path
+
+    from django.http import HttpResponse
+
+    from . import builder
+    from . import spreadsheet as sheets
+
+    programme = _programme(request, number)
+    if request.method == "GET":
+        response = HttpResponse(sheets.export(programme), content_type=(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+        response["Content-Disposition"] = f'attachment; filename="iglc{number}-programme.xlsx"'
+        return response
+    upload = request.FILES.get("file")
+    if not upload or Path(upload.name).suffix.lower() not in (".xlsx", ".xlsm"):
+        messages.error(request, "Choose an Excel file (.xlsx).")
+        return redirect("programme:build", number=number)
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "programme.xlsx"
+        path.write_bytes(upload.read())
+        try:
+            report = sheets.import_sheet(programme, request.user, path, bool(request.POST.get("replace")))
+        except builder.BuildError as error:
+            messages.error(request, str(error))
+            return redirect("programme:build", number=number)
+    messages.success(request, f"{report['added']} sessions added, {report['updated']} updated.")
+    for problem in report["problems"][:20]:
+        messages.warning(request, problem)
+    return redirect("programme:build", number=number)
+
+
+# ---------------------------------------------------------------- contributions
+
+@login_required
+def contributions(request, number):
+    from .forms import ContributionForm
+    from .models import Contribution
+
+    programme = _programme(request, number)
+    parts = access.editable_parts(request.user, programme)
+    if request.method == "POST":
+        if not parts:
+            raise PermissionDenied
+        action = request.POST.get("action")
+        if action == "speakers":
+            count = _contributions_from_speakers(programme, parts)
+            messages.success(request, f"{count} added from Speakers.")
+        elif action == "delete":
+            contribution = get_object_or_404(Contribution, pk=request.POST.get("id"), programme=programme,
+                                             part__in=parts)
+            contribution.delete()
+            messages.success(request, "Deleted.")
+        else:
+            instance = (get_object_or_404(Contribution, pk=request.POST.get("id"), programme=programme, part__in=parts)
+                        if request.POST.get("id") else Contribution(programme=programme))
+            form = ContributionForm(request.POST, instance=instance, parts=parts)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Saved.")
+            else:
+                for field, errors in form.errors.items():
+                    messages.error(request, f"{field}: {' '.join(errors)}")
+        return redirect("programme:contributions", number=number)
+    items = programme.contributions.select_related("part", "speaker").prefetch_related("programme_items__session")
+    return render(request, "programme/contributions.html", {
+        "programme": programme, "contributions": items, "can_edit": bool(parts),
+        "form": ContributionForm(parts=parts) if parts else None, "editable_ids": {p.pk for p in parts},
+        "kinds": Contribution.Kind.choices, "parts": parts})
+
+
+def _contributions_from_speakers(programme, parts) -> int:
+    """A contribution for every speaker (under Speakers) who has none yet."""
+    from apps.conferences.models import Speaker
+
+    from .models import Contribution, Part
+
+    by_kind = {p.kind: p for p in parts}
+    taken = set(programme.contributions.exclude(speaker=None).values_list("speaker_id", flat=True))
+    count = 0
+    for speaker in Speaker.objects.filter(conference=programme.conference).exclude(pk__in=taken):
+        group = (speaker.group or "").lower()
+        part = (by_kind.get(Part.Kind.INDUSTRY) if "industry" in group else
+                by_kind.get(Part.Kind.WORKSHOP) if "workshop" in group else
+                by_kind.get(Part.Kind.PHD) if "phd" in group or "doctoral" in group else
+                by_kind.get(Part.Kind.ACADEMIC)) or parts[0]
+        kind = Contribution.Kind.KEYNOTE if "keynote" in group else Contribution.Kind.TALK
+        speakers = f"{speaker.name} ({speaker.affiliation})" if speaker.affiliation else speaker.name
+        Contribution.objects.create(programme=programme, part=part, kind=kind, speaker=speaker,
+                                    title=(speaker.talk_title or f"{speaker.name}")[:300], speakers=speakers[:300])
+        count += 1
+    return count

@@ -179,3 +179,17 @@ class BackingEmailsForm(forms.ModelForm):
                 self.initial[name] = default
             self.fields[name].help_text = ("Blank: the standard text. Filled in when sent: {title}, {paper_id}, "
                                            "{number}, {deadline}, {link} (the authors' page).")
+
+
+class ContributionForm(forms.ModelForm):
+    class Meta:
+        from .models import Contribution
+
+        model = Contribution
+        fields = ["part", "kind", "title", "speakers", "minutes", "description"]
+        widgets = {"description": forms.Textarea(attrs={"rows": 2})}
+
+    def __init__(self, *args, parts=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["part"].queryset = Part.objects.filter(pk__in=[p.pk for p in parts])
+        self.fields["part"].empty_label = None

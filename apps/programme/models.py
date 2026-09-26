@@ -176,7 +176,7 @@ class Session(models.Model):
     start = models.TimeField()
     end = models.TimeField()
     location = models.ForeignKey(Location, null=True, blank=True, on_delete=models.PROTECT, related_name="sessions",
-                                 help_text="Required, except for breaks.")
+                                 help_text="Required, except for breaks and meals.")
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.PAPERS)
     code = models.CharField(max_length=20, blank=True, help_text="Short name, e.g. 3B.")
     title = models.CharField(max_length=300, blank=True, help_text="Blank: the kind of session, e.g. 'Break'.")
@@ -231,9 +231,9 @@ class Session(models.Model):
         if programme and self.date and not (programme.first_day <= self.date <= programme.last_day):
             errors["date"] = (f"Outside the programme's days ({programme.first_day:%d %b} to "
                               f"{programme.last_day:%d %b %Y}). The conference chairs can extend them.")
-        if not self.location_id and self.kind != self.Kind.BREAK:
+        if not self.location_id and (self.plenary or self.kind not in (self.Kind.BREAK, self.Kind.MEAL)):
             errors["location"] = ("A plenary session needs a location." if self.plenary
-                                  else "Every session except breaks needs a location.")
+                                  else "Every session except breaks and meals needs a location.")
         if programme:
             if self.part_id and self.part.programme_id != programme.pk:
                 errors["part"] = "Not a part of this programme."
@@ -269,6 +269,43 @@ class SessionPerson(models.Model):
         return f"{self.name} ({self.get_role_display()})"
 
 
+class Contribution(models.Model):
+    """Something presented in the programme that is not a paper: a welcome, a keynote, an industry day
+    talk, a workshop, a panel, the awards. Kept in a list per part and dragged into sessions like the
+    papers (the programme builder)."""
+
+    class Kind(models.TextChoices):
+        WELCOME = "welcome", "Welcome or opening"
+        KEYNOTE = "keynote", "Keynote"
+        TALK = "talk", "Talk"
+        WORKSHOP = "workshop", "Workshop"
+        PANEL = "panel", "Panel"
+        AWARDS = "awards", "Awards"
+        CLOSING = "closing", "Closing"
+        OTHER = "other", "Other"
+
+    programme = models.ForeignKey(Programme, on_delete=models.CASCADE, related_name="contributions")
+    part = models.ForeignKey(Part, on_delete=models.PROTECT, related_name="contributions")
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.TALK)
+    title = models.CharField(max_length=300)
+    speakers = models.CharField(max_length=300, blank=True, help_text="Who presents it, e.g. 'Ann Smith (TUM)'.")
+    speaker = models.ForeignKey("conferences.Speaker", null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name="+", help_text="The speaker's profile, from Speakers.")
+    description = models.TextField(blank=True)
+    minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["programme", "part__sort_order", "kind", "title"]
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        if self.part_id and self.programme_id and self.part.programme_id != self.programme_id:
+            raise ValidationError({"part": "Not a part of this programme."})
+
+
 class SessionItem(models.Model):
     class Presentation(models.TextChoices):
         TALK = "talk", "Talk"
@@ -278,6 +315,8 @@ class SessionItem(models.Model):
     order = models.PositiveIntegerField(default=0)
     submission = models.ForeignKey("production.Submission", null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name="programme_items", verbose_name="paper")
+    contribution = models.ForeignKey(Contribution, null=True, blank=True, on_delete=models.CASCADE,
+                                     related_name="programme_items")
     presentation = models.CharField(max_length=10, choices=Presentation.choices, default=Presentation.TALK)
     presenter = models.CharField(max_length=200, blank=True, help_text="One of the paper's authors.")
     title = models.CharField(max_length=300, blank=True, help_text="For an item that is not a paper.")
@@ -292,7 +331,7 @@ class SessionItem(models.Model):
         return self.display_title
 
     def clean(self):
-        if not self.submission_id and not self.title:
+        if not self.submission_id and not self.contribution_id and not self.title:
             raise ValidationError("Choose a paper or give a title.")
         if self.submission_id and self.session_id and (
                 self.submission.production.conference_id != self.session.programme.conference_id):
@@ -309,6 +348,8 @@ class SessionItem(models.Model):
             return self.paper.title
         if self.submission_id:
             return self.submission.title
+        if self.contribution_id:
+            return self.contribution.title
         return self.title
 
     def author_names(self) -> list[str]:
@@ -316,6 +357,8 @@ class SessionItem(models.Model):
             return [f"{a.first_name} {a.last_name}".strip() for a in self.paper.authors.all()]
         if self.submission_id:
             return [a.get("name", "") for a in self.submission.registered_authors if a.get("name")]
+        if self.contribution_id and self.contribution.speakers:
+            return [self.contribution.speakers]
         return [self.speaker] if self.speaker else []
 
     @property

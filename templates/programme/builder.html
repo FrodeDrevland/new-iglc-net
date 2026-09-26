@@ -1,0 +1,64 @@
+{% extends "programme/_base.html" %}
+{% load static %}
+{% block titletag %}Build the programme · {{ programme }}{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/programme-builder.css' %}">{% endblock %}
+{% block main %}
+{% include "programme/_head.html" with title="Build the programme" %}
+<div class="b-help small muted">
+  <p><strong>Draw</strong> a session by dragging down in a room's column (or click for an hour). <strong>Move</strong> it by dragging, change its length by dragging its lower edge, and <strong>click</strong> it for its details, chairs and papers. <strong>Drag papers and contributions</strong> from the list on the right into sessions, between them, or back to the list. Everything is saved at once.</p>
+</div>
+<div class="b-toolbar">
+  <nav class="b-days" id="b-days" aria-label="Days"></nav>
+  <div class="b-tools">
+    {% if can_edit %}
+    <form class="b-inline" id="b-copy"><label>Copy this day's sessions to <select name="to" id="b-copy-to"></select></label>
+      <label><input type="checkbox" name="replace"> replacing what is there</label> <button class="button button-small button-secondary" type="submit">Copy</button></form>
+    <button class="button button-small button-secondary" type="button" id="b-renumber" title="Codes by time slot: 1A, 1B ...">Number the sessions</button>
+    {% endif %}
+    <form class="b-inline" id="b-room" hidden><input type="text" name="name" placeholder="New room" size="12" aria-label="Name of the new room"> <button class="button button-small button-secondary" type="submit">Add room</button></form>
+  </div>
+</div>
+<div class="b-layout">
+  <div class="b-grid-wrap"><div class="b-grid" id="b-grid" aria-live="polite"></div></div>
+  <aside class="b-side">
+    <div id="b-pool"></div>
+    <div id="b-panel" hidden></div>
+  </aside>
+</div>
+<p class="b-status" id="b-status" role="status"></p>
+<details class="b-excel">
+  <summary>Excel</summary>
+  <p><a class="button button-small button-secondary" href="{% url 'programme:spreadsheet' programme.number %}">Download the programme as Excel</a>
+    <span class="small muted">The same columns can be imported: Day, Start, End, Room, Part, Kind, Code, Title, Plenary, Chairs, Papers (ConfTool IDs), Contributions (titles), Notes.</span></p>
+  {% if can_edit %}
+  <form method="post" enctype="multipart/form-data" action="{% url 'programme:spreadsheet' programme.number %}" class="prod-filters">{% csrf_token %}
+    <label>Import <input type="file" name="file" accept=".xlsx,.xlsm"></label>
+    <label><input type="checkbox" name="replace" value="1"> Replace the sessions on the days in the file</label>
+    <button class="button button-small" type="submit">Import</button>
+  </form>
+  <p class="small muted">A row with the same day, start and room as a session (or the same day and code) updates it; other rows add sessions. Rooms not yet in the list are added.</p>
+  {% endif %}
+</details>
+<p class="small"><a href="{% url 'programme:contributions' programme.number %}">Contributions</a> (talks, keynotes, workshops... that are not papers) · <a href="{% url 'programme:locations' programme.number %}">Rooms</a> · <a href="{% url 'programme:overview' programme.number %}">Overview and checks</a></p>
+
+<dialog id="b-create" class="b-dialog">
+  <form method="dialog" id="b-create-form">
+    <h2>New session</h2>
+    <div class="b-form">
+      <label>Kind <select name="kind" id="b-create-kind"></select></label>
+      <label>Title <input type="text" name="title" placeholder="Blank: the kind, e.g. Coffee break"></label>
+      <label>Part <select name="part" id="b-create-part"></select></label>
+      <label>From <input type="time" name="start" step="900" required></label>
+      <label>To <input type="time" name="end" step="900" required></label>
+      <fieldset><legend>Where</legend>
+        <label><input type="radio" name="mode" value="room" checked> In <span data-room-name></span></label>
+        <label><input type="radio" name="mode" value="all"> Across all rooms (plenary, break, meal), held in <select name="location" id="b-create-location"></select></label>
+        <label><input type="radio" name="mode" value="parallel"> Parallel sessions: one in every room</label>
+      </fieldset>
+    </div>
+    <p class="b-dialog-buttons"><button class="button" value="ok">Add</button> <button class="button button-secondary" value="cancel" formnovalidate>Cancel</button></p>
+  </form>
+</dialog>
+{{ config|json_script:"builder-config" }}
+{% endblock %}
+{% block page_js %}<script src="{% static 'js/programme-builder.js' %}"></script>{% endblock %}
