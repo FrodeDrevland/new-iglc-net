@@ -1,4 +1,4 @@
-{% load conference_tags %}{% with dates=home.important_dates.all %}{% if dates %}
+{% load conference_tags %}{% if dates %}
 <table class="conf-dates">
   <caption class="visually-hidden">Important dates</caption>
   <tbody>
@@ -10,4 +10,4 @@
   {% endfor %}
   </tbody>
 </table>
-{% endif %}{% endwith %}
+{% endif %}

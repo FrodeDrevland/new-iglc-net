@@ -379,6 +379,21 @@ class DashboardTests(TestCase):
         card = home.important_dates.get(label="Academic conference").card
         self.assertEqual(card, {"weekdays": "Wed–Fri", "days": "24–26", "month": "June 2099"})
 
+        # an Important dates block for the papers' dates only
+        from .models import ConferencePage, ImportantDate
+
+        ImportantDate.objects.filter(page=home, label="Full papers due").update(belongs_to="papers")
+        cfp = ConferencePage.objects.child_of(home).get(slug="call-for-papers")
+        cfp.body = [("important_dates", {"belongs_to": "papers"})]
+        cfp.save_revision().publish()
+        page = self.client.get("/2099/call-for-papers/", HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("Full papers due", page)
+        self.assertNotIn("Welcome reception", page)
+        general = ConferencePage.objects.child_of(home).get(slug="important-dates")
+        page = self.client.get(general.url, HTTP_HOST="conference.localhost").content.decode()
+        self.assertIn("Full papers due", page)  # an old block without settings: all dates
+        self.assertIn("Welcome reception", page)
+
         # the programme page shows them until the programme is published
         page = self.client.get("/2099/programme/", HTTP_HOST="conference.localhost").content.decode()
         self.assertIn('class="conf-events"', page)

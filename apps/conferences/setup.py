@@ -93,7 +93,7 @@ def seed(conference, current: bool = False, publish: bool = False):
         home = ConferenceHomePage(
             title=f"IGLC {conference.number}: {conference.location}" if conference.city else f"IGLC {conference.number}",
             slug=str(conference.start_date.year), conference=conference, is_current=current,
-            body=[("important_dates", None)], live=publish)
+            body=[("important_dates", {})], live=publish)
         index_page().add_child(instance=home)
         ImportantDate.objects.create(page=home, label="Conference", date=conference.start_date,
                                      end_date=conference.end_date, sort_order=0)

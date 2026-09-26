@@ -10,7 +10,7 @@
   <h2>Important dates</h2>
   <p class="small muted">As many as the conference needs: <strong>Add a date</strong> gives another empty row, and saving always leaves a few empty rows at the end. Empty rows are ignored.</p>
   <div class="conf-dates-wrap"><table class="listing prod-table conf-dates-form" id="date-rows">
-    <thead><tr><th>What</th><th>Date</th><th>To (for a period)</th><th>Before extension</th><th>Note</th><th>Main event</th><th>Remove</th></tr></thead>
+    <thead><tr><th>What</th><th>Date</th><th>To (for a period)</th><th>Before extension</th><th>Note</th><th>Remove</th></tr></thead>
     {% for form in formset %}{% with f=form existing=form.instance.pk %}
     <tbody class="conf-date-row">
       <tr>{% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
@@ -19,11 +19,13 @@
         <td>{{ f.end_date }}</td>
         <td>{{ f.original_date }}</td>
         <td>{{ f.note }}</td>
-        <td class="conf-center">{{ f.main_event }}</td>
         <td class="conf-center">{% if existing %}{{ f.DELETE }}{% endif %}</td></tr>
-      <tr class="conf-event-extra"><td colspan="7">
-        <label>Description <span class="muted small">(on the card)</span> {{ f.description }}</label>
-        <label>Icon {{ f.icon }}</label></td></tr>
+      <tr class="conf-date-more"><td colspan="6">
+        <label>Belongs to {{ f.belongs_to }}</label>
+        <label class="conf-check">{{ f.main_event }} Main event</label>
+        <span class="conf-event-extra">
+          <label>Description <span class="muted small">(on the card)</span> {{ f.description }}</label>
+          <label>Icon {{ f.icon }}</label></span></td></tr>
     </tbody>
     {% endwith %}{% endfor %}
   </table></div>
@@ -35,16 +37,19 @@
         <td>{{ f.end_date }}</td>
         <td>{{ f.original_date }}</td>
         <td>{{ f.note }}</td>
-        <td class="conf-center">{{ f.main_event }}</td>
         <td class="conf-center">{% if existing %}{{ f.DELETE }}{% endif %}</td></tr>
-      <tr class="conf-event-extra"><td colspan="7">
-        <label>Description <span class="muted small">(on the card)</span> {{ f.description }}</label>
-        <label>Icon {{ f.icon }}</label></td></tr>
+      <tr class="conf-date-more"><td colspan="6">
+        <label>Belongs to {{ f.belongs_to }}</label>
+        <label class="conf-check">{{ f.main_event }} Main event</label>
+        <span class="conf-event-extra">
+          <label>Description <span class="muted small">(on the card)</span> {{ f.description }}</label>
+          <label>Icon {{ f.icon }}</label></span></td></tr>
     </tbody>
   {% endwith %}</template>
   <p><button type="button" class="button button-small button-secondary" id="add-date">Add a date</button></p>
   <p class="small muted">For example "Abstracts due" or "Full papers due". An extended deadline: put the new date under Date and the old one under Before extension, and the website shows the old one struck through.</p>
   <p class="small muted">Tick <strong>Main event</strong> for the parts of the conference itself (the welcome reception, the industry day, the conference days, the dinner, the PhD summer school...): they get a description and an icon, and the <strong>Main events</strong> block shows them as cards. The programme page shows them until the detailed programme is published.</p>
+  <p class="small muted"><strong>Belongs to</strong> lets a page show only its own dates: an Important dates block set to "Papers (submission, review)" on the call for papers page shows the abstract and paper deadlines and the review dates, and nothing else.</p>
 
   <h2>Links</h2>
   {% for field in links %}

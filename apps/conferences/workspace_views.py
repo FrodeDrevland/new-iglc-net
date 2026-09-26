@@ -191,15 +191,16 @@ class DateForm(forms.ModelForm):
         from .models import ImportantDate
 
         model = ImportantDate
-        fields = ["label", "date", "end_date", "original_date", "note", "main_event", "description", "icon"]
+        fields = ["label", "date", "end_date", "original_date", "note", "belongs_to", "main_event", "description",
+                  "icon"]
         widgets = {name: forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
                    for name in ("date", "end_date", "original_date")}
         labels = {"label": "What", "end_date": "To (for a period)", "original_date": "Before extension"}
-        help_texts = {"main_event": "", "description": ""}
+        help_texts = {"main_event": "", "description": "", "belongs_to": ""}
 
     def has_changed(self):
         # an empty row stays empty whatever its icon says
-        return bool(set(self.changed_data) - {"icon"})
+        return bool(set(self.changed_data) - {"icon", "belongs_to"})
 
 
 class LinksForm(forms.Form):

@@ -138,6 +138,48 @@ class ProgrammeBlock(blocks.StructBlock):
         template = "conferences/blocks/programme.html"
 
 
+# What an important date belongs to: the same for every conference, so that the standard pages can show
+# their own dates (the call for papers the paper deadlines, say).
+DATE_GROUPS = [
+    ("", "General"),
+    ("papers", "Papers (submission, review)"),
+    ("registration", "Registration"),
+    ("industry", "Industry day"),
+    ("workshop", "Workshop day"),
+    ("phd", "PhD summer school"),
+]
+
+
+class ImportantDatesBlock(blocks.StructBlock):
+    """The important dates (Dates and links), all or those belonging to one part of the conference."""
+
+    belongs_to = blocks.ChoiceBlock(
+        choices=[("", "All")] + DATE_GROUPS[1:] + [("general", "General dates only")], required=False,
+        help_text="Which dates to show. All: every date. The others: only the dates marked as belonging to it "
+                  "under Dates and links.")
+
+    class Meta:
+        icon = "date"
+        label = "Important dates"
+        template = "conferences/blocks/important_dates.html"
+
+    def to_python(self, value):
+        return super().to_python(value or {})  # the block used to have no settings (None)
+
+    def bulk_to_python(self, values):
+        return super().bulk_to_python([value or {} for value in values])
+
+    def get_context(self, value, parent_context=None):
+        context = super().get_context(value, parent_context)
+        home = (parent_context or {}).get("home")
+        dates = list(home.important_dates.all()) if home else []
+        wanted = value.get("belongs_to") or ""
+        if wanted:
+            dates = [d for d in dates if (d.belongs_to or "general") == wanted]
+        context["dates"] = dates
+        return context
+
+
 class SpeakersBlock(blocks.StructBlock):
     """The conference's speakers, entered under Speakers in the conference's workspace (Speaker)."""
 
@@ -171,9 +213,7 @@ BODY_BLOCKS = [
     ("image", ImageBlock()),
     ("button", ButtonBlock()),
     ("embed", EmbedBlock(help_text="A video or a map, by its address (YouTube, Vimeo...).", icon="media")),
-    ("important_dates", blocks.StaticBlock(
-        admin_text="The important dates, as entered on the conference's home page.",
-        template="conferences/blocks/important_dates.html", icon="date")),
+    ("important_dates", ImportantDatesBlock()),
     ("tracks", blocks.StaticBlock(
         admin_text="The conference's tracks, from the IGLC's conference record.",
         template="conferences/blocks/tracks.html", icon="list-ul")),
@@ -499,6 +539,10 @@ class ImportantDate(Orderable):
     original_date = models.DateField(
         null=True, blank=True, help_text="If the deadline was extended: the old date, shown struck through.")
     note = models.CharField(max_length=200, blank=True)
+    belongs_to = models.CharField(
+        max_length=20, choices=DATE_GROUPS, blank=True, default="",
+        help_text="An Important dates block can show only the dates of one part: the call for papers page, say, "
+                  "the paper deadlines.")
     main_event = models.BooleanField(
         default=False, help_text="A part of the conference itself (the reception, the industry day, the "
                                  "conference days, the dinner...), shown as a card by the Main events block.")
@@ -506,7 +550,7 @@ class ImportantDate(Orderable):
     icon = models.CharField(max_length=20, choices=EVENT_ICONS, default="calendar", blank=True)
 
     panels = [FieldPanel("label"), FieldPanel("date"), FieldPanel("end_date"), FieldPanel("original_date"),
-              FieldPanel("note"), FieldPanel("main_event"), FieldPanel("description"), FieldPanel("icon")]
+              FieldPanel("note"), FieldPanel("belongs_to"), FieldPanel("main_event"), FieldPanel("description"), FieldPanel("icon")]
 
     class Meta(Orderable.Meta):
         verbose_name = "important date"

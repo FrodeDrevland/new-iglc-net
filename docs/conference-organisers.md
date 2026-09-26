@@ -91,6 +91,10 @@ publish it the first time.
   deadline: put the new date under Date and the old one under "Before extension"; the website shows
   the old one struck through. They appear on the home page and wherever a page has an "important
   dates" block.
+- **belongs to**: which part of the conference a date is about: papers (submission and review),
+  registration, the industry day, the workshop day, the PhD summer school, or general. An
+  **Important dates** block shows all the dates, or only one part's: set to "Papers (submission,
+  review)" on the call for papers page, it shows the paper deadlines and nothing else.
 - **main events**: tick **Main event** for a date that is part of the conference itself (the welcome
   reception, the industry day, the workshop day, the conference days, the dinner, the business
   meeting, the PhD summer school). It then gets a short description and an icon, and the **Main
